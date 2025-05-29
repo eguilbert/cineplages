@@ -57,61 +57,128 @@
         {{ tmdbFilms.length }} films
       </h3>
 
-      <div
-        v-for="(film, index) in sortedTmdbFilms"
-        :key="index"
-        class="flex items-center gap-4 border p-2 rounded mb-2"
-      >
-        <img :src="film.poster_url" alt="" width="100" />
-        <input type="checkbox" v-model="film.selected" />
-        <div class="flex-1">
-          <small> {{ film.release_date }} </small><br />
+      <div v-for="category in categories" :key="category" class="mb-6">
+        <h4 class="text-md font-bold mb-2">{{ category }}</h4>
+        <div
+          v-for="(film, index) in sortedTmdbFilms.filter(
+            (f) => (f.category || '') === category
+          )"
+          :key="index"
+          class="flex items-center gap-4 border p-2 rounded mb-2"
+        >
+          <img :src="film.poster_url" alt="" width="100" />
+          <input type="checkbox" v-model="film.selected" />
+          <div class="flex-1">
+            <small> {{ film.release_date }} </small><br />
 
-          <strong
-            ><a
-              :href="`https://www.themoviedb.org/movie/${film.tmdb_id}`"
-              target="_blank"
-              class="text-blue-600 hover:underline"
+            <strong
+              ><a
+                :href="`https://www.themoviedb.org/movie/${film.tmdb_id}`"
+                target="_blank"
+                class="text-blue-600 hover:underline"
+              >
+                {{ film.title }}
+              </a></strong
+            ><small
+              ><span v-if="film.production_countries">
+                [{{ film.production_countries.join(", ") }}]</span
+              ></small
+            ><br />
+            <small>
+              <small
+                class="inline-block px-2 py-1 rounded text-white text-xs"
+                :style="{ backgroundColor: getGenreColor(film.genre) }"
+              >
+                {{ film.genre }}
+              </small>
+              <Tag severity="secondary" value="Secondary"
+                >{{ film.duration }} min</Tag
+              >
+              —
+              {{ film.director }}
+              <br /><span>{{ film.keywords }}</span></small
             >
-              {{ film.title }}
-            </a></strong
-          ><small
-            ><span v-if="film.production_countries">
-              [{{ film.production_countries.join(", ") }}]</span
-            ></small
-          ><br />
-          <small>
-            <small
-              class="inline-block px-2 py-1 rounded text-white text-xs"
-              :style="{ backgroundColor: getGenreColor(film.genre) }"
-            >
-              {{ film.genre }}
-            </small>
-            <Tag severity="secondary" value="Secondary"
-              >{{ film.duration }} min</Tag
-            >
-            —
-            {{ film.director }}
-            <br /><span>{{ film.keywords }}</span></small
-          >
-          <small> — {{ film.synopsis }}</small>
-          <br />
-          <small>Avec: {{ film.actors }}</small>
-          <div class="mt-1">
-            <label class="text-sm mr-2">Catégorie :</label>
-            <select
-              v-model="film.category"
-              class="border rounded px-2 py-1 text-sm"
-            >
-              <option disabled value="">-- Choisir --</option>
-              <option value="Art et Essai">Art et Essai</option>
-              <option value="Documentaire">Documentaire</option>
-              <option value="Jeunesse">Jeunesse</option>
-              <option value="Grand Public">Grand Public</option>
-            </select>
+            <small> — {{ film.synopsis }}</small>
+            <br />
+            <small>Avec: {{ film.actors }}</small>
+            <div class="mt-1">
+              <label class="text-sm mr-2">Catégorie :</label>
+              <select
+                v-model="film.category"
+                class="border rounded px-2 py-1 text-sm"
+              >
+                <option disabled value="">-- Choisir --</option>
+                <option value="Art et Essai">Art et Essai</option>
+                <option value="Documentaire">Documentaire</option>
+                <option value="Jeunesse">Jeunesse</option>
+                <option value="Grand Public">Grand Public</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- FIlms non encore classés
+ -->
+      <div v-if="sortedTmdbFilms.filter((f) => !f.category).length">
+        <h4 class="text-md font-bold mb-2">Non classés</h4>
+        <div
+          v-for="(film, index) in sortedTmdbFilms.filter((f) => !f.category)"
+          :key="index"
+          class="flex items-center gap-4 border p-2 rounded mb-2"
+        >
+          <img :src="film.poster_url" alt="" width="100" />
+          <input type="checkbox" v-model="film.selected" />
+          <div class="flex-1">
+            <small> {{ film.release_date }} </small><br />
+
+            <strong
+              ><a
+                :href="`https://www.themoviedb.org/movie/${film.tmdb_id}`"
+                target="_blank"
+                class="text-blue-600 hover:underline"
+              >
+                {{ film.title }}
+              </a></strong
+            ><small
+              ><span v-if="film.production_countries">
+                [{{ film.production_countries.join(", ") }}]</span
+              ></small
+            ><br />
+            <small>
+              <small
+                class="inline-block px-2 py-1 rounded text-white text-xs"
+                :style="{ backgroundColor: getGenreColor(film.genre) }"
+              >
+                {{ film.genre }}
+              </small>
+              <Tag severity="secondary" value="Secondary"
+                >{{ film.duration }} min</Tag
+              >
+              —
+              {{ film.director }}
+              <br /><span>{{ film.keywords }}</span></small
+            >
+            <small> — {{ film.synopsis }}</small>
+            <br />
+            <small>Avec: {{ film.actors }}</small>
+            <div class="mt-1">
+              <label class="text-sm mr-2">Catégorie :</label>
+              <select
+                v-model="film.category"
+                class="border rounded px-2 py-1 text-sm"
+              >
+                <option disabled value="">-- Choisir --</option>
+                <option value="Art et Essai">Art et Essai</option>
+                <option value="Documentaire">Documentaire</option>
+                <option value="Jeunesse">Jeunesse</option>
+                <option value="Grand Public">Grand Public</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button
         @click="validerTmdbSelection"
         class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded"
