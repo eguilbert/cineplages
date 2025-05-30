@@ -220,15 +220,7 @@ const minRating = ref(6.5);
 const movies = ref([]);
 const filmCounts = ref({});
 
-const jours = [
-  "Lundi",
-  "Mardi",
-  "Mercredi",
-  "Jeudi",
-  "Vendredi",
-  "Samedi",
-  "Dimanche",
-];
+const jours = ["Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const horaires = ["14:00", "16:00", "18:00", "20:00", "22:00"];
 const salles = ["Salle 1", "Salle 2"];
 const grille = ref({});

@@ -1,6 +1,9 @@
 <template>
   <div class="overflow-x-auto">
     <div class="min-w-max">
+      <div class="text-xs text-gray-500">
+        Films trouvés: {{ getFilmsAt(day, hour, room).length }} Grille
+      </div>
       <div class="grid" :style="gridStyle">
         <div
           class="font-bold text-center bg-gray-100 border border-gray-300"
@@ -20,6 +23,7 @@
             >
               {{ room }}<br />{{ day }}
             </div>
+
             <div
               v-for="hour in hours"
               :key="hour + day + room"
@@ -30,15 +34,13 @@
             >
               <div
                 v-for="(film, index) in getFilmsAt(day, hour, room)"
-                :key="film.id + '-' + index"
-                class="absolute top-0 left-0 right-0 bottom-0 m-1 rounded shadow text-white text-xs text-center p-1 cursor-move"
-                :style="{ backgroundColor: genreColors[film.genre] || '#666' }"
-                draggable="true"
-                @dragstart="onDragStart($event, film)"
-                @dblclick="removeFilm(day, hour, room, index)"
-                :title="`Double-cliquez pour retirer`"
+                :key="film.tmdb_id + '-' + index"
+                class="film-slot"
+                :style="{
+                  backgroundColor: getGenreColor(film.genre) || '#999',
+                }"
               >
-                {{ film.title }}
+                {{ film.title }} ({{ film.category || film.genre }})
               </div>
             </div>
           </template>
@@ -62,6 +64,11 @@ const props = defineProps({
   removeFilm: Function,
   gridStyle: String,
 });
+const grilleStore = useGrilleStore();
+
+console.log("Programmation actuelle :", grilleStore.programmation);
+
+import { getGenreColor } from "@/utils/genreColors";
 </script>
 
 <style scoped>

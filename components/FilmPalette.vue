@@ -20,7 +20,7 @@ import { getGenreColor } from "@/utils/genreColors";
 
 const props = defineProps({
   films: Array,
-  genreColors: Object,
+  genreColors: String,
   onDragStart: Function,
 });
 </script>

@@ -26,7 +26,26 @@
             class="border rounded p-3 bg-white shadow-sm"
           >
             <div class="flex justify-between items-center">
-              <strong>{{ film.title }}</strong>
+              <!--               <OverlayBadge :value="film.genre" severity="danger">
+ -->
+              <img
+                :src="film.poster_url"
+                alt=""
+                width="80"
+                style="margin-right: 10px"
+              />
+              <!--               </OverlayBadge>
+ -->
+              <strong
+                ><a
+                  :href="`https://www.themoviedb.org/movie/${film.tmdb_id}`"
+                  target="_blank"
+                  class="text-blue-600 hover:underline"
+                >
+                  {{ film.title }} </a
+                ><br />
+                <small>{{ film.director }}</small></strong
+              >
               <span
                 class="text-xs rounded px-2 py-0.5"
                 :class="badgeClass(film.category)"
@@ -35,7 +54,10 @@
               </span>
             </div>
             <div class="text-sm text-gray-600">
-              {{ film.release_date }}
+              {{ film.release_date }} <br />
+              <span v-if="film.production_countries">
+                {{ film.production_countries.join(", ") }}</span
+              >
               <span v-if="film.genre"> | {{ film.genre }}</span>
             </div>
           </div>

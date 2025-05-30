@@ -1,6 +1,21 @@
 <template>
   <div class="p-4">
-    <button
+    <h2 class="text-xl mb-4">Importer une sélection existante</h2>
+    <Button
+      label="Importer dans la grille"
+      icon="pi pi-upload"
+      :disabled="!selectedId"
+      @click="importerSelection"
+    />
+    <Dropdown
+      v-model="selectedId"
+      :options="selections"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Choisir une sélection"
+      class="w-full mb-4"
+    />
+    <!--  <button
       @click="autoFillGrid"
       class="mb-4 px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
     >
@@ -12,12 +27,12 @@
     >
       Importer les films OMDb dans la grille
     </button>
-
+ -->
     <FilmGrid
       :days="days"
       :hours="hours"
       :rooms="rooms"
-      :genreColors="genreColors"
+      :genreColors="genreColorMap"
       :suggestionColor="suggestionColor"
       :getFilmsAt="getFilmsAt"
       :onDrop="onDrop"
@@ -26,27 +41,30 @@
       :gridStyle="gridStyle"
     />
 
-    <FilmForm />
+    <!--  <FilmForm />
 
-    <FilmPalette
+   <FilmPalette
       :films="unplacedFilms"
       :genreColors="genreColors"
       :onDragStart="onDragStart"
     />
 
-    <FilmSummary :summary="summary" />
+    <FilmSummary :summary="summary" /> -->
 
     <GenreCategories
-      :genreColors="genreColors"
+      :genreColors="genreColorMap"
       :genreCategories="genreCategories"
     />
 
-    <CategoryPieChart :data="categoryDistribution" />
+    <!--     <CategoryPieChart :data="categoryDistribution" />
+ -->
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, onMounted } from "vue";
+import { useGrilleStore } from "@/stores/grille";
+
 import FilmGrid from "@/components/FilmGrid.vue";
 import FilmForm from "@/components/FilmForm.vue";
 import FilmPalette from "@/components/FilmPalette.vue";
@@ -55,17 +73,22 @@ import GenreCategories from "@/components/GenreCategories.vue";
 import CategoryPieChart from "@/components/CategoryPieChart.vue";
 import { useFilms } from "@/composables/useFilms";
 import { getGenreColor, genreList } from "@/utils/genreColors";
+const config = useRuntimeConfig();
 
-const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-const hours = [14, 16, 18, 20];
+const days = ["Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const hours = ["14:00", "17:00", "20:00"];
 const rooms = ["Salle 1", "Salle 2"];
+
+const grilleStore = useGrilleStore();
+const selections = ref([]);
+const selectedId = ref(null);
 
 const gridStyle = `grid-template-columns: repeat(${
   hours.length + 1
 }, minmax(120px, 1fr));`;
 
-const { films } = useFilms();
-const placements = reactive([]);
+/* const { films } = useFilms();
+ */ const placements = reactive([]);
 const genreCategories = reactive({
   SF: "Grand Public",
   Drame: "Art et Essai",
@@ -74,6 +97,23 @@ const genreCategories = reactive({
 });
 
 const genreColors = getGenreColor();
+
+onMounted(async () => {
+  const res = await $fetch(`${config.public.apiBase}/selections`);
+  selections.value = res;
+});
+
+async function importerSelection() {
+  if (!selectedId.value) return;
+  const selection = await $fetch(
+    `${config.public.apiBase}/selections/${selectedId.value}`
+  );
+  console.log("selection", selection);
+  console.log("films", selection[0]["films"]);
+  grilleStore.loadFromSelection(selection[0]["films"]);
+  console.log("Films chargés :", selection[0]["films"]);
+  console.log("Programmation générée :", grilleStore.programmation);
+}
 
 function suggestionColor(day, hour, room) {
   if (hour === 14) return "#dbeafe";
@@ -128,13 +168,24 @@ function removeFilm(day, hour, room, index) {
   }
 }
 
-function getFilmsAt(day, hour, room) {
-  return placements.filter(
-    (f) => f.day === day && f.hour === hour && f.room === room
+function getFilmsAt(jour, heure, salle) {
+  console.log("Cherche :", jour, heure, salle);
+  console.log(
+    "Dans programmation :",
+    grilleStore.programmation.map((f) => [f.title, f.jour, f.heure, f.salle])
   );
+
+  const matches = grilleStore.programmation.filter(
+    (f) => f.jour === jour && f.heure === heure && f.salle === salle
+  );
+  console.log(
+    `[${jour} ${heure} ${salle}] =>`,
+    matches.map((f) => f.title)
+  );
+  return matches;
 }
 
-function autoFillGrid() {
+/* function autoFillGrid() {
   const slots = [];
   for (const room of rooms) {
     for (const day of days) {
@@ -174,7 +225,7 @@ function autoFillGrid() {
       }
     }
   }
-}
+} */
 
 const summary = computed(() => {
   const map = {};
@@ -209,7 +260,7 @@ const categoryDistribution = computed(() => {
 
 const unplacedFilms = computed(() => films.filter((f) => f.remaining > 0));
 
-const importToGrille = async () => {
+/* const importToGrille = async () => {
   const res = await fetch("http://localhost:4000/api/import/premiere");
   const imported = await res.json();
 
@@ -229,5 +280,5 @@ const importToGrille = async () => {
   films.value = await r.json();
 
   alert("Importation réussie ! Les films ont été ajoutés.");
-};
+}; */
 </script>

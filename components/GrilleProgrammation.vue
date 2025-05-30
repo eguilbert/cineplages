@@ -60,7 +60,8 @@
           </template>
           <div class="mt-8">
             <h2 class="text-lg font-bold mb-2">Répartition par catégorie</h2>
-            <PieChart :data="categoryDistribution" />
+            <!--             <PieChart :data="categoryDistribution" />
+ -->
           </div>
         </div>
         <div class="col-span-full h-2 bg-black/10"></div>
