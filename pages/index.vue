@@ -1,9 +1,9 @@
 <template>
   <div class="p-6 max-w-7xl mx-auto">
-    <GrilleProgrammation />
+    <FilmPreparation />
   </div>
 </template>
 
 <script setup>
-import GrilleProgrammation from "@/components/GrilleProgrammation.vue";
+import FilmPreparation from "@/components/FilmPreparation.vue";
 </script>

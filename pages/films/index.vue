@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-4">Liste des films en base</h1>
+    <h1 class="text-2xl font-bold mb-4">
+      Programmation: Préselection des films
+    </h1>
     <!-- 🔘 Sélecteur de période -->
     <div class="mb-6">
       <label class="block font-semibold mb-1">Période de programmation :</label>
@@ -44,6 +46,7 @@
           <select
             id="sortField"
             v-model="sortField"
+            impo
             class="border rounded px-2 py-1 ml-2"
           >
             <option value="title">Titre</option>
@@ -96,8 +99,9 @@
               >
               —
               {{ film.director }}
-              <br /><span>{{ film.keywords }}</span></small
-            >
+              <br />
+              <!-- <span>{{ film.keywords }}</span> -->
+            </small>
             <small> — {{ film.synopsis }}</small>
             <br />
             <small>Avec: {{ film.actors }}</small>
@@ -198,41 +202,6 @@
       </span>
     </div>
 
-    <!-- <button
-      @click="fetchMovies"
-      class="mt-6 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-    >
-      Importer les films de la semaine
-    </button> -->
-
-    <!--    <table class="min-w-full border text-sm">
-      <thead class="bg-gray-200">
-        <tr>
-          <th class="p-2 border">Titre</th>
-          <th class="p-2 border">Réalisateur</th>
-          <th class="p-2 border">Genre</th>
-          <th class="p-2 border">Durée</th>
-          <th class="p-2 border">Catégorie</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="film in films" :key="film.id" class="hover:bg-gray-50">
-          <td class="p-2 border">{{ film.title }}</td>
-          <td class="p-2 border">{{ film.director }}</td>
-          <td class="p-2 border">{{ film.genre }}</td>
-          <td class="p-2 border">{{ film.duration }} min</td>
-          <td class="p-2 border">{{ film.category || "—" }}</td>
-        </tr>
-      </tbody>
-    </table> -->
-
-    <!--  <button
-      @click="importToGrille"
-      class="mt-6 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 btn btn-primary"
-    >
-      Importer les films OMDb
-    </button> -->
-
     <div v-if="importedFilms.length" class="mt-6">
       <h3 class="text-lg font-semibold mb-2">Films importés (sélection)</h3>
       <div
@@ -285,11 +254,60 @@ const formatDate = (date) => date.toISOString().split("T")[0];
 const startDate = ref(formatDate(today));
 const endDate = ref(formatDate(sixDaysLater));
 
-const startD = startDate || lastThursday.toISOString().slice(0, 10);
-const endD = endDate || today.toISOString().slice(0, 10);
-
 const categories = ["Art et Essai", "Documentaire", "Jeunesse", "Grand Public"];
 
+const currentSelection = ref(null);
+
+const handleSelection = (selection) => {
+  currentSelection.value = selection;
+};
+const handleDeleted = (id) => {
+  currentSelection.value = null;
+  // Optionnel : recharger la liste des sélections
+};
+
+const inferCategory = (film) => {
+  const title = film.title.toLowerCase();
+  const genre = (film.genre || "").toLowerCase();
+  const keywords = Array.isArray(film.keywords)
+    ? film.keywords.map((k) => k.toLowerCase())
+    : [];
+  const countries = (film.production_countries || []).map((c) =>
+    c.toLowerCase()
+  );
+  const director = (film.director || "").toLowerCase();
+  const budget = Number(film.budget || 0);
+  console.log("budget", budget);
+
+  if (genre.includes("documentaire") || keywords.includes("documentary"))
+    return "Documentaire";
+  if (
+    genre.includes("animation") ||
+    genre.includes("familial") ||
+    keywords.includes("children")
+  )
+    return "Jeunesse";
+  if (
+    genre.includes("drame") &&
+    (countries.includes("france") ||
+      countries.includes("belgium") ||
+      countries.includes("japan")) &&
+    !genre.includes("action") &&
+    budget > 0 &&
+    budget < 5000000
+  )
+    return "Art et Essai";
+  if (
+    genre.includes("comédie") ||
+    genre.includes("action") ||
+    genre.includes("aventure") ||
+    genre.includes("fantasy") ||
+    budget >= 5000000
+  )
+    return "Grand Public";
+
+  return "Art et Essai";
+};
 const importFromTMDB = async () => {
   loading.value = true;
   const params = new URLSearchParams();
@@ -304,13 +322,11 @@ const importFromTMDB = async () => {
   tmdbFilms.value = data.map((f) => ({
     ...f,
     selected: false,
-    category: "",
+    category: inferCategory(f),
     tmdb_id: f.tmdb_id || f.id,
   }));
   loading.value = false;
   console.log(sortField.value);
-
-  console.log(tmdbFilms.value);
 };
 
 const sortedTmdbFilms = computed(() => {
@@ -325,10 +341,6 @@ const sortedTmdbFilms = computed(() => {
     return valA.toString().localeCompare(valB.toString());
   });
 });
-console.log(
-  "Filtered:",
-  sortedTmdbFilms.value.map((f) => [f.title, f.genre, f.release_date])
-);
 
 const validerTmdbSelection = async () => {
   const selection = tmdbFilms.value.filter((f) => f.selected);
@@ -383,7 +395,7 @@ const validerSelection = async () => {
 
   importedFilms.value = [];
 
-  const r = await fetch("http://localhost:3000/api/films");
+  const r = await fetch("http://localhost:4000/api/films");
   films.value = await r.json();
 
   alert("Importation réussie !");

@@ -1,7 +1,7 @@
 import Aura from "@primeuix/themes/aura";
 
 export default defineNuxtConfig({
-  css: ["@/assets/css/tailwind.css"],
+  css: ["@/assets/css/tailwind.css", "primeicons/primeicons.css"],
   postcss: {
     plugins: {
       tailwindcss: {},
@@ -19,7 +19,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: "/",
   },
-  modules: ["@primevue/nuxt-module"],
+  modules: ["@primevue/nuxt-module", "@pinia/nuxt"],
   primevue: {
     options: {
       theme: {
