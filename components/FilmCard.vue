@@ -8,7 +8,9 @@
     "
   >
     <div>
-      <small class="center"> {{ formatDate(film.releaseDate) }} </small>
+      <small class="center">
+        {{ formatDate(film.releaseDate) }} {{ displayMode }}</small
+      >
 
       <img
         :src="film.poster"

@@ -88,7 +88,7 @@
             v-for="film in getFilteredFilms(categorie)"
             :key="film.tmdbId"
             :film="film"
-            :layout="layout"
+            :displayMode="layout"
             @update="handleFilmUpdate"
             @remove="handleFilmRemove"
           />
