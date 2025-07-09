@@ -111,7 +111,7 @@
         </div>
 
         <!-- Bouton "+" -->
-        <div class="absolute bottom-4 right-2">
+        <div class="absolute bottom-4 right-2" v-if="role === 'ADMIN'">
           <button
             @click="toggleMenu"
             class="bg-gray-200 rounded-full p-1 hover:bg-gray-300"
@@ -172,7 +172,7 @@
         <TrailerPlayer :youtubeUrl="film.trailerUrl" />
 
         <!-- Actions rapides -->
-        <div class="mt-3 flex gap-2 text-xs flex-wrap">
+        <div class="mt-3 flex gap-2 text-xs flex-wrap" v-if="role === 'ADMIN'">
           <!--  <Button
             icon="pi pi-refresh"
             label="MAJ TMDB"

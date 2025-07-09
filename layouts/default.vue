@@ -6,18 +6,37 @@
         <slot name="header-actions" />
         <!--         <NuxtLink to="/" class="hover:underline">Accueil</NuxtLink>
  -->
-        <NuxtLink to="/films/import">Présélection</NuxtLink>
+        <NuxtLink v-if="role === 'ADMIN'" to="/films/import"
+          >Présélection</NuxtLink
+        >
         <!-- <NuxtLink to="/films/preparer">Préparer une sélection</NuxtLink>
       <NuxtLink to="/films/sauver">Sauvegarder une sélection</NuxtLink> -->
         <NuxtLink to="/films/selections">Programmation</NuxtLink>
         <!--         <NuxtLink to="/films/TagValidation">Tags</NuxtLink>
  -->
-        <NuxtLink to="/selections/" class="hover:underline">Séances</NuxtLink>
+        <NuxtLink
+          to="/selections/"
+          class="hover:underline"
+          v-if="role === 'ADMIN'"
+          >Séances</NuxtLink
+        >
         <NuxtLink to="/programmation" class="hover:underline">Grille</NuxtLink>
-        <NuxtLink to="/films/films" class="hover:underline">Films</NuxtLink>
-        <NuxtLink to="/selections/preferences" class="hover:underline"
+        <NuxtLink
+          to="/films/films"
+          class="hover:underline"
+          v-if="role === 'ADMIN'"
+          >Films</NuxtLink
+        >
+        <NuxtLink
+          to="/selections/preferences"
+          class="hover:underline"
+          v-if="role === 'ADMIN'"
           >Preferences</NuxtLink
         >
+        <NuxtLink to="/admin" v-if="role === 'ADMIN'" class="hover:underline"
+          >Admin</NuxtLink
+        >
+        <button @click="logout" v-if="isLoggedIn">Se déconnecter</button>
       </div>
     </header>
 
@@ -32,7 +51,24 @@
 </template>
 
 <script setup>
-// Layout de base allégé + palette douce (inspirée sable/vert nature)
+const { role, fetchRole, isLoggedIn } = useUserRole();
+import { useUserRole } from "@/composables/useUserRole";
+const loading = ref(true);
+
+onMounted(async () => {
+  console.log("logged", isLoggedIn.value);
+  if (isLoggedIn.value) {
+    await fetchRole();
+    navigateTo("/films/selections");
+    console.log("role", role.value);
+  }
+  loading.value = false;
+});
+const supabase = useSupabaseClient();
+const logout = async () => {
+  await supabase.auth.signOut();
+  await navigateTo("/login");
+};
 </script>
 
 <style scoped>

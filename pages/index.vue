@@ -1,7 +1,5 @@
 <template>
-  <div class="p-6 max-w-7xl mx-auto">
-    <FilmPreparation />
-  </div>
+  <div class="p-6 max-w-7xl mx-auto"></div>
 </template>
 
 <script setup>

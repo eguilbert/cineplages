@@ -12,14 +12,18 @@ export default defineNuxtConfig({
     transpile: ["primevue"],
   },
   runtimeConfig: {
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     public: {
-      apiBase: "https://cineapi-production.up.railway.app/api", // ou le port réel de ton serveur Node.js
+      apiBase: "https://cineapi-production.up.railway.app/api",
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseKey: process.env.SUPABASE_ANON_KEY,
     },
   },
   app: {
     baseURL: "/",
   },
-  modules: ["@primevue/nuxt-module", "@pinia/nuxt"],
+  modules: ["@primevue/nuxt-module", "@pinia/nuxt", "@nuxtjs/supabase"],
   primevue: {
     options: {
       theme: {
