@@ -13,7 +13,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBase: "http://localhost:4000/api", // ou le port réel de ton serveur Node.js
+      apiBase: "https://cineapi-production.up.railway.app/api", // ou le port réel de ton serveur Node.js
     },
   },
   app: {

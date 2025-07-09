@@ -143,6 +143,8 @@ import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
 import { reactive, ref, computed } from "vue";
 
+const config = useRuntimeConfig();
+
 const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const hours = [14, 16, 18, 20, 22];
 const rooms = ["Salle 1", "Salle 2"];
@@ -157,7 +159,7 @@ const films = reactive([]);
 
 onMounted(async () => {
   try {
-    const res = await fetch("http://localhost:4000/api/films");
+    const res = await fetch(`${config.public.apiBase}/films`);
     const data = await res.json();
     data.forEach((film, i) => {
       films.push({ ...film, remaining: film.remaining ?? 3, id: i + 100 });
@@ -285,7 +287,7 @@ function autoFillGrid() {
     }
   }
 
-  for (const film of films.slice()) {
+  for (const film of filmsToInject.slice()) {
     let count = film.remaining;
     for (const slot of slots.slice()) {
       if (count <= 0) break;

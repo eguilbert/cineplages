@@ -34,12 +34,14 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import Button from "primevue/button";
+const config = useRuntimeConfig();
+
 
 const emit = defineEmits(["select"]);
 const selections = ref([]);
 
 const fetchSelections = async () => {
-  const res = await fetch("http://localhost:4000/api/selections");
+  const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
 };
 

@@ -69,7 +69,7 @@
           :key="index"
           class="flex items-center gap-4 border p-2 rounded mb-2"
         >
-          <img :src="film.poster_url" alt="" width="100" />
+          <img :src="film.posterUrl" alt="" width="100" />
           <input type="checkbox" v-model="film.selected" />
           <div class="flex-1">
             <small> {{ film.release_date }} </small><br />
@@ -84,7 +84,7 @@
               </a></strong
             ><small
               ><span v-if="film.production_countries">
-                [{{ film.production_countries.join(", ") }}]</span
+                [{{ film.productionzzountries.join(", ") }}]</span
               ></small
             ><br />
             <small>
@@ -131,7 +131,7 @@
           :key="index"
           class="flex items-center gap-4 border p-2 rounded mb-2"
         >
-          <img :src="film.poster_url" alt="" width="100" />
+          <img :src="film.posterUrl" alt="" width="100" />
           <input type="checkbox" v-model="film.selected" />
           <div class="flex-1">
             <small> {{ film.release_date }} </small><br />
@@ -248,6 +248,7 @@ const loading = ref(false);
 const today = new Date();
 const sixDaysLater = new Date();
 sixDaysLater.setDate(today.getDate() + 6);
+const config = useRuntimeConfig();
 
 const formatDate = (date) => date.toISOString().split("T")[0];
 
@@ -315,7 +316,7 @@ const importFromTMDB = async () => {
   if (endDate.value) params.append("end", endDate.value);
 
   const res = await fetch(
-    `http://localhost:4000/api/import/tmdb?${params.toString()}`
+    `${config.public.apiBase}/import/tmdb?${params.toString()}`
   );
 
   const data = await res.json();
@@ -346,7 +347,7 @@ const validerTmdbSelection = async () => {
   const selection = tmdbFilms.value.filter((f) => f.selected);
 
   for (const film of selection) {
-    await fetch("http://localhost:4000/api/films", {
+    await fetch(`${config.public.apiBase}/films`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -358,7 +359,7 @@ const validerTmdbSelection = async () => {
 
   tmdbFilms.value = [];
 
-  const r = await fetch("http://localhost:4000/api/films");
+  const r = await fetch(`${config.public.apiBase}/films`);
   films.value = await r.json();
 
   alert("Films TMDb ajoutés avec succès !");
@@ -374,7 +375,7 @@ onMounted(async () => {
 });
 
 const importToGrille = async () => {
-  const res = await fetch("http://localhost:4000/api/import/premiere");
+  const res = await fetch(`${config.public.apiBase}/import/premiere`);
   const data = await res.json();
   importedFilms.value = data.map((f) => ({ ...f, selected: false }));
 };
@@ -383,7 +384,7 @@ const validerSelection = async () => {
   const selection = importedFilms.value.filter((f) => f.selected);
 
   for (const film of selection) {
-    await fetch("http://localhost:4000/api/films", {
+    await fetch(`${config.public.apiBase}/films`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -395,7 +396,7 @@ const validerSelection = async () => {
 
   importedFilms.value = [];
 
-  const r = await fetch("http://localhost:4000/api/films");
+  const r = await fetch(`${config.public.apiBase}/films`);
   films.value = await r.json();
 
   alert("Importation réussie !");

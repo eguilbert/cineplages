@@ -34,12 +34,18 @@
             >
               <div
                 v-for="(film, index) in getFilmsAt(day, hour, room)"
-                :key="film.tmdb_id + '-' + index"
-                class="film-slot"
+                :key="film.tmdbId + '-' + index"
+                class="film-slot flex"
                 :style="{
                   backgroundColor: getGenreColor(film.genre) || '#999',
                 }"
               >
+                <img
+                  :src="film.poster"
+                  alt=""
+                  width="50"
+                  style="margin-right: 10px"
+                />
                 {{ film.title }} ({{ film.category || film.genre }})
               </div>
             </div>

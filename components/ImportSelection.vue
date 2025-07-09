@@ -77,8 +77,12 @@ const importFilms = async () => {
 };
 
 const handleValidatedFilms = (validated) => {
+  console.log(validated.length);
+  if (validated.length == 0) {
+    alert("pas de données");
+  }
   importStore.setImportedFilms(validated);
-  navigateTo("/films/sauver");
+  /* navigateTo("/films/sauver"); */
 };
 </script>
 

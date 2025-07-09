@@ -11,12 +11,20 @@
         </span>
       </div>
     </div>
-
+    <div v-if="preparedFilms">
+      Nombre de films trouvés: {{ preparedFilms.length }}
+    </div>
     <div class="mb-4 flex gap-2 items-center">
       <Button
         label="Définir catégorie automatiquement"
         icon="pi pi-tags"
         @click="autoCategorize"
+      />
+      <Button
+        label="Tout sélectionner"
+        icon="pi pi-times"
+        severity="secondary"
+        @click="selectAll"
       />
       <Button
         label="Tout désélectionner"
@@ -33,15 +41,43 @@
         v-for="film in preparedFilms"
         :key="film.id"
         class="border p-3 rounded relative"
-        :class="{ 'bg-red-50': film.exclude }"
+        :class="{ 'bg-red-50': film.include }"
+        :style="{ borderColor: getCategoryColor(film.category) }"
       >
         <div class="flex justify-between">
-          <strong>{{ film.title }}</strong>
-          <Checkbox v-model="film.exclude" :binary="true" class="mt-1" />
+          <img
+            :src="film.posterUrl"
+            alt=""
+            width="80"
+            style="margin-right: 10px"
+          />
+          <div>
+            <strong
+              ><a
+                :href="`https://www.themoviedb.org/movie/${film.tmdbId}`"
+                target="_blank"
+                class="text-blue-600 hover:underline"
+              >
+                {{ film.title }} ({{ film.origin }})</a
+              ></strong
+            >
+            - <small> Réal : </small>{{ film.directorName }}
+            <small> ({{ film.origin }}) </small>
+          </div>
+          <Checkbox v-model="film.include" :binary="true" class="mt-1" />
         </div>
         <small class="block text-gray-500"
-          >{{ film.release_date }} — {{ film.genre }}</small
-        >
+          >{{ film.duration }} min. — {{ film.genre }} <br />
+          Avec: {{ film.actors }}
+        </small>
+        <div v-if="film.synopsis">
+          <small
+            class="line-clamp-2"
+            style="border: 1px solid lightblue; padding: 4px; margin: 8px"
+          >
+            {{ film.synopsis }}
+          </small>
+        </div>
 
         <div class="mt-2">
           <label class="text-sm text-gray-700">Catégorie :</label>
@@ -50,6 +86,7 @@
             :options="categoryOptions"
             placeholder="Choisir..."
             class="w-full mt-1"
+            @change="() => updateCategory(film)"
           />
         </div>
       </div>
@@ -62,7 +99,7 @@
       @click="
         $emit(
           'validate',
-          preparedFilms.filter((f) => !f.exclude)
+          preparedFilms.filter((f) => f.include)
         )
       "
     />
@@ -74,7 +111,8 @@ import { ref, watch } from "vue";
 import Dropdown from "primevue/dropdown";
 import Checkbox from "primevue/checkbox";
 import Button from "primevue/button";
-
+import { getCategoryColor } from "@/utils/genreColors";
+const config = useRuntimeConfig();
 const props = defineProps({
   films: Array,
 });
@@ -88,6 +126,18 @@ const categoryOptions = [
 
 const preparedFilms = ref([]);
 
+const updateCategory = async (film) => {
+  // alert("change category", film.id);
+  try {
+    await $fetch(`${config.public.apiBase}/films/${film.id}/category`, {
+      method: "PUT",
+      body: { category: film.category },
+    });
+  } catch (e) {
+    console.error("Erreur de mise à jour de la catégorie", e);
+  }
+};
+
 watch(
   () => props.films,
   (newFilms) => {
@@ -95,7 +145,7 @@ watch(
       preparedFilms.value = newFilms.map((f) => ({
         ...f,
         category: f.category || "",
-        exclude: false,
+        include: false,
       }));
     } else {
       preparedFilms.value = [];
@@ -105,7 +155,11 @@ watch(
 );
 
 const clearSelection = () => {
-  preparedFilms.value.forEach((f) => (f.exclude = true));
+  preparedFilms.value.forEach((f) => (f.include = false));
+};
+
+const selectAll = () => {
+  preparedFilms.value.forEach((f) => (f.include = true));
 };
 
 const autoCategorize = () => {

@@ -19,3 +19,14 @@ export const genreList: string[] = Object.keys(genreColorMap).filter(
 
 export const getGenreColor = (genre: string): string =>
   genreColorMap[genre] || genreColorMap.default;
+
+export const getCategoryColor = (category: string): string =>
+  categoryColorMap[category] || categoryColorMap.default;
+
+export const categoryColorMap: Record<string, string> = {
+  "Art et Essai": "#a78bfa",
+  "Grand Public": "#f87171",
+  Jeunesse: "#facc15",
+  Documentaire: "#34d399",
+  default: "#d1d5db",
+};

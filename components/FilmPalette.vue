@@ -6,7 +6,7 @@
         v-for="film in films"
         :key="film.id"
         class="p-2 rounded shadow text-white cursor-move text-sm"
-        :style="{ backgroundColor: getGenreColor(film.genre) }"
+        :style="{ backgroundColor: getCategoryColor(film.category) }"
         draggable="true"
         @dragstart="onDragStart($event, film)"
       >
@@ -17,6 +17,7 @@
 </template>
 <script setup>
 import { getGenreColor } from "@/utils/genreColors";
+import { getCategoryColor } from "@/utils/genreColors";
 
 const props = defineProps({
   films: Array,

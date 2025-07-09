@@ -69,23 +69,48 @@ const canSave = computed(() => {
 onMounted(async () => {
   const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
+  console.log(selections.value);
 });
 
 const saveSelection = async () => {
-  const payload = {
-    name: existingSelection.value?.name || selectionName.value,
-    films: filmsToSave,
-  };
-  const res = await fetch(`${config.public.apiBase}/selections`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  if (existingSelection.value) {
+    const payload = {
+      name: existingSelection.value?.name || selectionName.value,
+      films: filmsToSave,
+    };
+    console.log(payload);
+    console.log(existingSelection.value?.id);
 
-  if (res.ok) {
-    navigateTo("/films/selections");
+    const res = await fetch(
+      `${config.public.apiBase}/selections/${existingSelection.value?.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (res.ok) {
+      navigateTo("/films/selections");
+    } else {
+      alert("Erreur lors de la sauvegarde.");
+    }
   } else {
-    alert("Erreur lors de la sauvegarde.");
+    const payload = {
+      name: existingSelection.value?.name || selectionName.value,
+      films: filmsToSave,
+    };
+    const res = await fetch(`${config.public.apiBase}/selections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      navigateTo("/films/selections");
+    } else {
+      alert("Erreur lors de la sauvegarde.");
+    }
   }
 };
 </script>

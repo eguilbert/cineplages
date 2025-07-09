@@ -70,7 +70,7 @@ import FilmForm from "@/components/FilmForm.vue";
 import FilmPalette from "@/components/FilmPalette.vue";
 import FilmSummary from "@/components/FilmSummary.vue";
 import GenreCategories from "@/components/GenreCategories.vue";
-import CategoryPieChart from "@/components/CategoryPieChart.vue";
+// import CategoryPieChart from "@/components/CategoryPieChart.vue";
 import { useFilms } from "@/composables/useFilms";
 import { getGenreColor, genreList } from "@/utils/genreColors";
 const config = useRuntimeConfig();
@@ -104,14 +104,15 @@ onMounted(async () => {
 });
 
 async function importerSelection() {
+  console.log("importerSelection", selectedId.value);
   if (!selectedId.value) return;
   const selection = await $fetch(
     `${config.public.apiBase}/selections/${selectedId.value}`
   );
   console.log("selection", selection);
-  console.log("films", selection[0]["films"]);
-  grilleStore.loadFromSelection(selection[0]["films"]);
-  console.log("Films chargés :", selection[0]["films"]);
+  // console.log("films", selection[0]["films"]);
+  grilleStore.loadFromSelection(selection["films"]);
+  console.log("Films chargés :", selection["films"]);
   console.log("Programmation générée :", grilleStore.programmation);
 }
 
@@ -176,8 +177,12 @@ function getFilmsAt(jour, heure, salle) {
   );
 
   const matches = grilleStore.programmation.filter(
-    (f) => f.jour === jour && f.heure === heure && f.salle === salle
+    (f) =>
+      f.jour === String(jour) &&
+      f.heure === String(heure) &&
+      f.salle === String(salle)
   );
+  console.log("!!!matches", matches);
   console.log(
     `[${jour} ${heure} ${salle}] =>`,
     matches.map((f) => f.title)

@@ -27,12 +27,42 @@
     >
       Sauvegarder les préférences
     </button>
+
+    <!-- Ajout : édition des sélections avec commentaire et rating -->
+    <div v-if="grilleStore.selectionActive" class="mt-10">
+      <h3 class="text-lg font-semibold mb-2">
+        Éditer les films de la sélection
+      </h3>
+      <div
+        v-for="(film, index) in grilleStore.selectionActive.films"
+        :key="film.tmdb_id"
+        class="mb-4 p-3 border rounded"
+      >
+        <div class="font-bold">{{ film.title }}</div>
+        <label class="block text-sm mt-2">Commentaire :</label>
+        <textarea
+          v-model="film.commentaire"
+          rows="2"
+          class="w-full border rounded p-1"
+        ></textarea>
+
+        <label class="block text-sm mt-2">Note :</label>
+        <Rating type="number" v-model.number="film.rating" :stars="10" />
+      </div>
+      <button
+        class="mt-4 px-4 py-2 bg-green-600 text-white rounded"
+        @click="saveSelectionDetails"
+      >
+        Sauvegarder la sélection
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useGrilleStore } from "@/stores/grille";
+import Rating from "primevue/rating";
 
 const grilleStore = useGrilleStore();
 
@@ -58,6 +88,11 @@ function savePreferences() {
   localStorage.setItem("preferencesGrille", JSON.stringify(preferences.value));
   grilleStore.setPreferences(preferences.value);
   alert("Préférences sauvegardées !");
+}
+
+function saveSelectionDetails() {
+  grilleStore.saveActiveSelection(); // suppose que cette méthode existe dans ton store
+  alert("Sélection mise à jour !");
 }
 
 onMounted(() => {
