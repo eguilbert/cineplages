@@ -77,7 +77,7 @@
             v-for="film in getFilteredFilms(categorie)"
             :key="film.tmdbId"
             :film="film"
-            :layout="layout"
+            :displayMode="layout"
             @update="handleFilmUpdate"
             @remove="handleFilmRemove"
           />
@@ -136,16 +136,22 @@ onMounted(async () => {
   const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
 });
+
 watch(selectedSelectionId, async (newId) => {
   if (newId) {
     await loadSelection();
   }
 });
+
 const loadSelection = async () => {
   const res = await fetch(
     `${config.public.apiBase}/selections/${selectedSelectionId.value}`
   );
   selection.value = await res.json();
+  selection.value.films = selection.value.films.map((film) => ({
+    ...film,
+    layout: undefined, // ou ne pas l'inclure
+  }));
 };
 
 const getFilteredFilms = (category) => {
@@ -161,14 +167,18 @@ const getFilteredFilms = (category) => {
 };
 
 const handleFilmUpdate = async (updatedFilm) => {
+  alert(JSON.stringify(updatedFilm, null, 2));
+  console.log("Mise à jour film", updatedFilm, updatedFilm.externalLinks);
   try {
-    await fetch(`${config.public.apiBase}/films/${updatedFilm.id}/tags`, {
+    await fetch(`${config.public.apiBase}/films/${updatedFilm.id}/details`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         commentaire: updatedFilm.commentaire,
         rating: updatedFilm.rating,
         tags: updatedFilm.tags,
+        awards: updatedFilm.awards,
+        externalLinks: updatedFilm.externalLinks,
       }),
     });
   } catch (error) {
@@ -191,179 +201,3 @@ const scrollToCategory = (cat) => {
 </script>
 
 <style scoped></style>
-
-<!-- <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">Mes Sélections</h1>
-
-    <div v-if="selections.length === 0" class="text-gray-500 italic">
-      Aucune sélection enregistrée.
-    </div>
-    <Button
-      icon="pi pi-th-large"
-      text
-      @click="layout = 'grid'"
-      v-if="layout === 'row'"
-    />
-    <Button icon="pi pi-bars" text @click="layout = 'row'" v-else />
-    <div
-      v-for="selection in selections"
-      :key="selection.id"
-      class="mb-4 border rounded"
-    >
-      <div
-        @click="toggleSelection(selection.id)"
-        class="cursor-pointer bg-gray-100 p-2 font-semibold flex justify-between"
-      >
-        {{ selection.name }} ({{ selection.films.length }} films)
-        <Button
-          icon="pi pi-trash"
-          label="Effacer"
-          severity="warn"
-          text
-          @click="deleteSelection(selection.id)"
-        />
-        <span>{{ openSelections.has(selection.id) ? "▲" : "▼" }}</span>
-      </div>
-      <div
-        v-if="openSelections.has(selection.id)"
-        class="flex justify-between items-center mb-2 flex-col"
-      >
-        <div
-          v-for="categorie in categories"
-          :key="categorie"
-          class="mb-6 flex flex-col"
-        >
-          <h3 class="text-lg font-semibold mb-2 pb-1 p-1">
-            {{ categorie }}
-          </h3>
-          <div
-            class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-            v-if="layout === 'grid'"
-          >
-            <FilmCard
-              v-for="film in getFilteredFilms(selection).filter(
-                (f) => f.category === categorie
-              )"
-              :key="film.tmdbId || index"
-              :film="film"
-              :layout="layout"
-              @update="handleFilmUpdate"
-              @remove="handleFilmRemove"
-            />
-          </div>
-
-          <div class="flex flex-col gap-4" v-else>
-            <FilmCard
-              v-for="film in getFilteredFilms(selection).filter(
-                (f) => f.category === categorie
-              )"
-              :key="film.tmdbId || index"
-              :film="film"
-              :layout="layout"
-              @update="handleFilmUpdate"
-              @remove="handleFilmRemove"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted } from "vue";
-import Button from "primevue/button";
-
-const selections = ref([]);
-const config = useRuntimeConfig();
-const selection = ref({
-  films: [],
-});
-const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
-const layout = ref("grid");
-
-onMounted(async () => {
-  const res = await fetch(`${config.public.apiBase}/selections`);
-  selections.value = await res.json();
-});
-
-const formatDate = (dateStr) =>
-  new Date(dateStr).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-const openSelections = ref(new Set());
-
-function toggleSelection(id) {
-  if (openSelections.value.has(id)) {
-    openSelections.value.delete(id);
-  } else {
-    openSelections.value.add(id);
-  }
-}
-
-function getFilteredFilms(sel) {
-  console.log(sel.films[0]);
-  const filtre = "";
-
-  const filmByDate = sel.films;
-  filmByDate.sort((a, b) => {
-    const dateA = new Date(a.releaseDate || "1900-01-01");
-    const dateB = new Date(b.releaseDate || "1900-01-01");
-    return dateA - dateB;
-  });
-  return filmByDate;
-}
-const deleteSelection = async (id) => {
-  if (!confirm("Supprimer cette sélection ?")) return;
-  await fetch(`${config.public.apiBase}/selections/${id}`, {
-    method: "DELETE",
-  });
-  selections.value = selections.value.filter((sel) => sel.id !== id);
-};
-
-const badgeClass = (category) => {
-  const map = {
-    "Art et Essai": "bg-purple-100 text-purple-800",
-    Documentaire: "bg-green-100 text-green-800",
-    Jeunesse: "bg-yellow-100 text-yellow-800",
-    "Grand Public": "bg-blue-100 text-blue-800",
-    "": "bg-gray-100 text-gray-800",
-  };
-  return map[category] || "bg-gray-100 text-gray-800";
-};
-
-const handleFilmUpdate = async (updatedFilm) => {
-  console.log(updatedFilm);
-  try {
-    await fetch(`${config.public.apiBase}/films/${updatedFilm.id}/tags`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        commentaire: updatedFilm.commentaire,
-        rating: updatedFilm.rating,
-        tags: updatedFilm.tags,
-      }),
-    });
-    console.log("✅ Film mis à jour:", updatedFilm.title);
-  } catch (error) {
-    console.error("❌ Erreur mise à jour film", error);
-  }
-};
-
-const handleFilmRemove = (filmToRemove) => {
-  const selectionIndex = selections.value.findIndex((sel) =>
-    sel.films.some((f) => f.film.id === filmToRemove.id)
-  );
-
-  if (selectionIndex !== -1) {
-    const selection = selections.value[selectionIndex];
-    selection.films = selection.films.filter(
-      (f) => f.film.id !== filmToRemove.id
-    );
-  }
-};
-</script> -->

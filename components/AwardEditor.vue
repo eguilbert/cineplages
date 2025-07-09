@@ -1,38 +1,64 @@
 <template>
   <div>
-    <h3 class="font-bold">Récompenses</h3>
-    <div v-for="(award, i) in awards" :key="i" class="flex gap-2 mb-2">
-      <InputText v-model="award.prize" placeholder="Prix" />
-      <InputText v-model="award.festival" placeholder="Festival" />
-      <InputNumber
-        v-model="award.year"
+    <h3 class="font-bold mb-2">Récompenses</h3>
+
+    <div
+      v-for="(award, i) in awards"
+      :key="i"
+      class="flex flex-col gap-1 items-center mb-2"
+    >
+      <input v-model="award.prize" placeholder="Prix" class="input" />
+      <input v-model="award.festival" placeholder="Festival" class="input" />
+
+      <input
+        v-model.number="award.year"
         placeholder="Année"
-        :useGrouping="false"
+        class="input"
+        type="number"
       />
-      <Button icon="pi pi-trash" severity="danger" text @click="remove(i)" />
+      <button @click="removeAward(i)">❌</button>
     </div>
-    <Button
-      label="Ajouter une récompense"
-      @click="add"
-      icon="pi pi-plus"
-      size="small"
-    />
+
+    <button @click="addAward" class="mt-2 text-sm text-blue-600 underline">
+      + Ajouter une récompense
+    </button>
   </div>
 </template>
 
 <script setup>
-import InputText from "primevue/inputtext";
-import InputNumber from "primevue/inputnumber";
-import Button from "primevue/button";
+import { onMounted, computed } from "vue";
 
-const props = defineProps({ modelValue: Array });
+const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => [],
+  },
+});
 const emit = defineEmits(["update:modelValue"]);
 
 const awards = computed({
   get: () => props.modelValue,
-  set: (v) => emit("update:modelValue", v),
+  set: (val) => emit("update:modelValue", val),
 });
 
-const add = () => awards.value.push({ prize: "", festival: "", year: null });
-const remove = (i) => awards.value.splice(i, 1);
+const addAward = () => {
+  awards.value.push({ prize: "", festival: "", year: null });
+};
+
+const removeAward = (index) => {
+  awards.value.splice(index, 1);
+};
+
+onMounted(() => {
+  if (!awards.value.length) addAward();
+});
 </script>
+
+<style scoped>
+.input {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+  flex: 1;
+}
+</style>

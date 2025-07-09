@@ -1,21 +1,22 @@
 <template>
   <div class="p-4">
-    <h2 class="text-xl mb-4">Importer une sélection existante</h2>
-    <Button
-      label="Importer dans la grille"
-      icon="pi pi-upload"
-      :disabled="!selectedId"
-      @click="importerSelection"
-    />
-    <Dropdown
-      v-model="selectedId"
-      :options="selections"
-      optionLabel="name"
-      optionValue="id"
-      placeholder="Choisir une sélection"
-      class="w-full mb-4"
-    />
-    <!--  <button
+    <div v-if="role === 'ADMIN'">
+      <h2 class="text-xl mb-4">Importer une sélection existante</h2>
+      <Button
+        label="Importer dans la grille"
+        icon="pi pi-upload"
+        :disabled="!selectedId"
+        @click="importerSelection"
+      />
+      <Dropdown
+        v-model="selectedId"
+        :options="selections"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Choisir une sélection"
+        class="w-full mb-4"
+      />
+      <!--  <button
       @click="autoFillGrid"
       class="mb-4 px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
     >
@@ -28,20 +29,20 @@
       Importer les films OMDb dans la grille
     </button>
  -->
-    <FilmGrid
-      :days="days"
-      :hours="hours"
-      :rooms="rooms"
-      :genreColors="genreColorMap"
-      :suggestionColor="suggestionColor"
-      :getFilmsAt="getFilmsAt"
-      :onDrop="onDrop"
-      :onDragStart="onDragStart"
-      :removeFilm="removeFilm"
-      :gridStyle="gridStyle"
-    />
+      <FilmGrid
+        :days="days"
+        :hours="hours"
+        :rooms="rooms"
+        :genreColors="genreColorMap"
+        :suggestionColor="suggestionColor"
+        :getFilmsAt="getFilmsAt"
+        :onDrop="onDrop"
+        :onDragStart="onDragStart"
+        :removeFilm="removeFilm"
+        :gridStyle="gridStyle"
+      />
 
-    <!--  <FilmForm />
+      <!--  <FilmForm />
 
    <FilmPalette
       :films="unplacedFilms"
@@ -51,19 +52,30 @@
 
     <FilmSummary :summary="summary" /> -->
 
-    <GenreCategories
-      :genreColors="genreColorMap"
-      :genreCategories="genreCategories"
-    />
+      <GenreCategories
+        :genreColors="genreColorMap"
+        :genreCategories="genreCategories"
+      />
 
-    <!--     <CategoryPieChart :data="categoryDistribution" />
+      <!--     <CategoryPieChart :data="categoryDistribution" />
  -->
+    </div>
+    <div v-else>
+      La grille est en travaux...
+      <img
+        src="https://macollectionpaschere.com/88140-thickbox_default/affiche-film-affiche-de-cinema-du-film-travaux-de-2005-dimension-40-x-53-cm-e006.jpg"
+        alt=""
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, computed, onMounted } from "vue";
 import { useGrilleStore } from "@/stores/grille";
+
+import { useUserRole } from "@/composables/useUserRole";
+const { role, fetchRole, isLoggedIn } = useUserRole();
 
 import FilmGrid from "@/components/FilmGrid.vue";
 import FilmForm from "@/components/FilmForm.vue";

@@ -2,7 +2,7 @@
   <div
     class="border rounded p-3 bg-white shadow-sm relative"
     :class="
-      layout === 'grid'
+      displayMode === 'grid'
         ? 'flex flex-col'
         : 'flex flex-row gap-4 w-full items-start'
     "
@@ -14,7 +14,9 @@
         :src="film.poster"
         alt="Poster"
         class="rounded"
-        :class="layout === 'grid' ? 'w-full mb-2' : 'w-40 h-auto object-cover'"
+        :class="
+          displayMode === 'grid' ? 'w-full mb-2' : 'w-40 h-auto object-cover'
+        "
       />
     </div>
 
@@ -78,7 +80,7 @@
         </div> -->
         <!-- Commentaire -->
 
-        <div v-if="film.commentaire">
+        <div v-if="localFilm.commentaire">
           <p class="text-gray-700 italic">« {{ film.commentaire }} »</p>
         </div>
 
@@ -89,25 +91,30 @@
 
         <!-- Awards -->
         <div v-if="film.awards && film.awards.length">
-          <p class="mt-2 text-sm text-yellow-700">
-            🏆 {{ film.awards.join(", ") }}
-          </p>
+          <ul class="mt-2 text-sm text-green-600">
+            <li v-for="(award, index) in film.awards" :key="index">
+              <span v-if="award.festival">
+                🏆 {{ award.festival }} - {{ award.prize }}
+              </span>
+            </li>
+          </ul>
         </div>
 
         <!-- External Links -->
         <div v-if="film.externalLinks && film.externalLinks.length">
           <ul class="mt-2 text-sm text-green-600">
             <li v-for="(link, index) in film.externalLinks" :key="index">
-              <a :href="link.url" target="_blank" rel="noopener noreferrer">{{
-                link.label
-              }}</a>
+              <a :href="link.url" target="_blank" rel="noopener noreferrer">
+                <i class="pi pi-external-link" v-if="link.label"></i>
+                {{ link.label }}</a
+              >
             </li>
           </ul>
         </div>
 
         <div class="mt-2">
           <label class="block text-xs mb-1">Votes :</label>
-          <Rating v-model.number="local.rating" :stars="10" />
+          <Rating v-model.number="localFilm.rating" :stars="10" />
         </div>
 
         <!-- Bouton "+" -->
@@ -149,17 +156,22 @@
           />
           <button @click="addTags">OK</button>
         </div>
+        <AwardEditor v-model="localFilm.awards" v-if="formToShow === 'award'" />
+        <ExternalLinksEditor
+          v-model="localFilm.externalLinks"
+          v-if="formToShow === 'link'"
+        />
 
-        <div v-if="formToShow === 'award'" class="mt-4">
+        <!-- <div v-if="formToShow === 'award'" class="mt-4">
           <input
             v-model="newAward"
             class="border p-1"
             placeholder="Nom de la récompense"
           />
           <button @click="addAward">OK</button>
-        </div>
+        </div> -->
 
-        <div v-if="formToShow === 'link'" class="mt-4">
+        <!--  <div v-if="formToShow === 'link'" class="mt-4">
           <input
             v-model="newLinkLabel"
             class="border p-1"
@@ -167,7 +179,7 @@
           />
           <input v-model="newLinkUrl" class="border p-1" placeholder="URL" />
           <button @click="addExternalLink">OK</button>
-        </div>
+        </div> -->
 
         <TrailerPlayer :youtubeUrl="film.trailerUrl" />
 
@@ -184,7 +196,7 @@
             label="Sauvegarder"
             text
             severity="success"
-            @click="saveChanges"
+            @click="emitUpdate"
           />
           <Button
             icon="pi pi-times"
@@ -202,37 +214,50 @@
 <script setup>
 import { reactive, watch } from "vue";
 
+import { useUserRole } from "@/composables/useUserRole";
+const { role, fetchRole, isLoggedIn } = useUserRole();
+
 import Rating from "primevue/rating";
 import Button from "primevue/button";
 import Chips from "primevue/chips";
 import TrailerPlayer from "./TrailerPlayer.vue";
-
+const loading = ref(true);
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    await fetchRole();
+    navigateTo("/films/selections");
+  }
+  loading.value = false;
+});
 const emit = defineEmits(["update", "remove"]);
 
+const emitUpdate = () => {
+  emit("update", toRaw(localFilm));
+};
 const props = defineProps({
   film: Object,
-  layout: {
+  displayMode: {
     type: String,
     default: "grid",
   },
-  id: {
-    type: [String, Number],
-    required: true,
-  },
 });
-
-const local = reactive({
+const awards = ref([]);
+const externalLinks = ref([]);
+const localFilm = reactive({
+  id: props.film.id,
   commentaire: props.film.commentaire || "",
-  rating: props.film.rating || 0,
+  rating: props.film.rating ?? null,
   tags: props.film.tags || [],
+  awards: JSON.parse(JSON.stringify(props.film.awards || [])),
+  externalLinks: JSON.parse(JSON.stringify(props.film.externalLinks || [])),
 });
 
 watch(
   () => props.film,
   (newFilm) => {
-    local.commentaire = newFilm.commentaire || "";
-    local.rating = newFilm.rating || 0;
-    local.tags = newFilm.tags || [];
+    localFilm.commentaire = newFilm.commentaire || "";
+    localFilm.rating = newFilm.rating || 0;
+    localFilm.tags = newFilm.tags || [];
   }
 );
 
@@ -254,19 +279,21 @@ const badgeClass = (category) => {
   return map[category] || "bg-gray-100 text-gray-800";
 };
 
-function refreshFilm() {
+/* function refreshFilm() {
   console.log("🔁 Demande de mise à jour TMDB pour", props.film.title);
   // TODO : appel API de refresh
-}
+} */
 
-function saveChanges() {
+/* function saveChanges() {
   emit("update", {
     ...props.film,
-    commentaire: local.commentaire,
-    rating: local.rating,
-    tags: local.tags,
+    commentaire: localFilm.commentaire,
+    rating: localFilm.rating,
+    tags: localFilm.tags,
+    awards: localFilm.awards,
+    externalLinks: localFilm.externalLinks,
   });
-}
+} */
 
 function removeFilm() {
   emit("remove", props.film);
@@ -304,7 +331,7 @@ const addTags = () => {
   formToShow.value = null;
 };
 
-const addAward = () => {
+/* const addAward = () => {
   if (!props.film.awards) props.film.awards = [];
   props.film.awards.push(newAward.value);
   newAward.value = "";
@@ -320,7 +347,7 @@ const addExternalLink = () => {
   newLinkLabel.value = "";
   newLinkUrl.value = "";
   formToShow.value = null;
-};
+}; */
 </script>
 
 <style scoped>
