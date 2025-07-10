@@ -36,6 +36,12 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
+      <p v-if="selection.id == 11" class="text-sm mb-4">
+        Cette sélection comprend les films d'Art et Essai et Documentaires de
+        début août jusqu'au 3 septembre, et les films Grand Public et Jeunesse
+        de septembre.
+      </p>
+
       <!-- Changer affichage -->
       <div class="mb-4" v-if="selectedSelectionId">
         <Button
