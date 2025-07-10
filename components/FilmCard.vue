@@ -11,6 +11,7 @@
       <small class="center"> {{ formatDate(film.releaseDate) }}</small>
 
       <img
+        v-if="film.poster"
         :src="film.poster"
         alt="Poster"
         class="rounded"

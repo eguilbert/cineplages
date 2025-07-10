@@ -12,6 +12,14 @@ PRESELECTION
   ok - possiblite rajouter BA/trailer direct
 - rajouter qté films sélectionn.és dans chaque categ
 
+VOTE
+ne pas confondre avec rating
+par invité;
+
+- intéressé
+- je veux le voir
+- pas intéressé
+
 SELECTION
 
 - enelver maj
@@ -30,6 +38,12 @@ ok - dans chaque case Film, ajout notes, tags
   ok - faire une vue avec films dans la largeur
   ok - petit menu lateral pour naviguer d'une section a l'autre
   ok - Filtrer par date, categorie
+
+PERSONNALISATION
+
+- votes par personne
+- envie de le voir ou suivre ce film
+- avec pages de suivi des films
 
 Seance Progr
 

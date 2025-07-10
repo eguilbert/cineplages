@@ -22,6 +22,11 @@ export default defineNuxtConfig({
   },
   app: {
     baseURL: "/",
+    head: {
+      link: [
+        { rel: "icon", type: "image/x-icon", href: "/favicon_cinesplages.ico" },
+      ],
+    },
   },
   modules: ["@primevue/nuxt-module", "@pinia/nuxt", "@nuxtjs/supabase"],
   primevue: {
