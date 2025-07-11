@@ -14,7 +14,7 @@
         v-if="film.poster"
         :src="film.poster"
         alt="Poster"
-        class="rounded"
+        class="rounded screen-only"
         :class="
           displayMode === 'grid' ? 'w-full mb-2' : 'w-40 h-auto object-cover'
         "
@@ -58,29 +58,6 @@
       </small>
 
       <div class="text-sm text-gray-600 space-y-2">
-        <hr />
-        <hr />
-
-        <!--  <div class="mt-2">
-          <label class="block text-xs mb-1">Notes :</label>
-          <textarea
-            v-model="local.commentaire"
-            class="w-full text-sm border rounded p-1 italic"
-            rows="2"
-          />
-        </div>
-
-        <div class="mt-2">
-          <label class="block text-xs mb-1">Votes :</label>
-          <Rating v-model.number="local.rating" :stars="10" />
-        </div>
-
-        <div class="mt-2">
-          <label class="block text-xs mb-1">Tags :</label>
-          <Chips v-model="local.tags" separator="," class="w-full" />
-        </div> -->
-        <!-- Commentaire -->
-
         <div v-if="localFilm.commentaire">
           <p class="text-gray-700 italic">« {{ film.commentaire }} »</p>
         </div>
@@ -102,7 +79,10 @@
         </div>
 
         <!-- External Links -->
-        <div v-if="film.externalLinks && film.externalLinks.length">
+        <div
+          v-if="film.externalLinks && film.externalLinks.length"
+          class="screen-only"
+        >
           <ul class="mt-2 text-sm text-green-600">
             <li v-for="(link, index) in film.externalLinks" :key="index">
               <a :href="link.url" target="_blank" rel="noopener noreferrer">
@@ -113,13 +93,16 @@
           </ul>
         </div>
 
-        <div class="mt-2">
+        <div class="mt-2 screen-only">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating v-model.number="localFilm.rating" :stars="10" />
         </div>
 
         <!-- Bouton "+" -->
-        <div class="absolute bottom-4 right-2" v-if="role === 'ADMIN'">
+        <div
+          class="absolute bottom-4 right-2 screen-only"
+          v-if="role === 'ADMIN'"
+        >
           <button
             @click="toggleMenu"
             class="bg-gray-200 rounded-full p-1 hover:bg-gray-300"
@@ -163,35 +146,13 @@
           v-if="formToShow === 'link'"
         />
 
-        <!-- <div v-if="formToShow === 'award'" class="mt-4">
-          <input
-            v-model="newAward"
-            class="border p-1"
-            placeholder="Nom de la récompense"
-          />
-          <button @click="addAward">OK</button>
-        </div> -->
-
-        <!--  <div v-if="formToShow === 'link'" class="mt-4">
-          <input
-            v-model="newLinkLabel"
-            class="border p-1"
-            placeholder="Label"
-          />
-          <input v-model="newLinkUrl" class="border p-1" placeholder="URL" />
-          <button @click="addExternalLink">OK</button>
-        </div> -->
-
-        <TrailerPlayer :youtubeUrl="film.trailerUrl" />
+        <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only" />
 
         <!-- Actions rapides -->
-        <div class="mt-3 flex gap-2 text-xs flex-wrap" v-if="role === 'ADMIN'">
-          <!--  <Button
-            icon="pi pi-refresh"
-            label="MAJ TMDB"
-            text
-            @click="refreshFilm"
-          /> -->
+        <div
+          class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
+          v-if="role === 'ADMIN'"
+        >
           <Button
             icon="pi pi-save"
             label="Sauvegarder"

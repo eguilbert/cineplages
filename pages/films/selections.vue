@@ -15,7 +15,7 @@
 
     <!-- Menu flottant catégories -->
     <div
-      class="fixed top-100 -left-2 bg-white shadow p-2 rounded z-10"
+      class="fixed top-100 -left-2 bg-white shadow p-2 rounded z-10 shadow-lg"
       v-if="selectedSelectionId"
     >
       <div v-for="cat in categories" :key="cat">
@@ -43,7 +43,7 @@
       </p>
 
       <!-- Changer affichage -->
-      <div class="mb-4" v-if="selectedSelectionId">
+      <div class="mb-4 flex gap-4 items-center" v-if="selectedSelectionId">
         <Button
           icon="pi pi-th-large"
           text
@@ -59,45 +59,53 @@
           optionLabel="label"
           optionValue="value"
           placeholder="Filtrer par date de sortie"
-          class="mb-4 w-full md:w-1/3"
+          class="w-full md:w-1/3 small"
         />
+        <button
+          @click="handlePrint"
+          class="print-button justify-self-end ml-auto"
+        >
+          🖨️ Imprimer la sélection
+        </button>
       </div>
-      <div
-        v-for="categorie in categories"
-        :key="categorie"
-        class="mb-6 flex flex-col"
-      >
-        <h3
-          :id="`cat-${categorie}`"
-          class="text-lg font-light mb-2 pb-1 p-1"
-          :style="{ color: getCategoryColor(categorie) }"
-        >
-          {{ categorie }} ({{ getFilteredFilms(categorie).length }})
-        </h3>
-
+      <div id="print-area">
         <div
-          v-if="layout === 'grid'"
-          class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          v-for="categorie in categories"
+          :key="categorie"
+          class="mb-6 flex flex-col"
         >
-          <FilmCard
-            v-for="film in getFilteredFilms(categorie)"
-            :key="film.tmdbId"
-            :film="film"
-            :displayMode="layout"
-            @update="handleFilmUpdate"
-            @remove="handleFilmRemove"
-          />
-        </div>
+          <h3
+            :id="`cat-${categorie}`"
+            class="text-lg font-light mb-2 pb-1 p-1"
+            :style="{ color: getCategoryColor(categorie) }"
+          >
+            {{ categorie }} ({{ getFilteredFilms(categorie).length }})
+          </h3>
 
-        <div v-else class="flex flex-col gap-4">
-          <FilmCard
-            v-for="film in getFilteredFilms(categorie)"
-            :key="film.tmdbId"
-            :film="film"
-            :displayMode="layout"
-            @update="handleFilmUpdate"
-            @remove="handleFilmRemove"
-          />
+          <div
+            v-if="layout === 'grid'"
+            class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          >
+            <FilmCard
+              v-for="film in getFilteredFilms(categorie)"
+              :key="film.tmdbId"
+              :film="film"
+              :displayMode="layout"
+              @update="handleFilmUpdate"
+              @remove="handleFilmRemove"
+            />
+          </div>
+
+          <div v-else class="flex flex-col gap-4">
+            <FilmCard
+              v-for="film in getFilteredFilms(categorie)"
+              :key="film.tmdbId"
+              :film="film"
+              :displayMode="layout"
+              @update="handleFilmUpdate"
+              @remove="handleFilmRemove"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -204,6 +212,173 @@ const scrollToCategory = (cat) => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
+const handlePrint = async () => {
+  layout.value = "row";
+
+  // attendre que le DOM se mette à jour
+  await nextTick();
+
+  // lancer l'impression après une légère pause
+  setTimeout(() => {
+    window.print();
+  }, 100);
+};
 </script>
 
-<style scoped></style>
+<style>
+.print-only {
+  display: none;
+}
+@media print {
+  .screen-only {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-family: Georgia, serif;
+    padding: 1cm;
+  }
+  body * {
+    visibility: hidden;
+  }
+
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  .film-card.printable {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 1rem;
+    margin-bottom: 1cm;
+    page-break-inside: avoid;
+  }
+
+  .film-card.printable h2 {
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .film-card.printable .synopsis {
+    font-style: italic;
+  }
+
+  /* Si tu veux une mise en page en deux colonnes */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  #print-area {
+    column-count: 2;
+    column-gap: 2cm;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1cm;
+  }
+
+  .print-button,
+  .navigation-bar,
+  .filters,
+  .menu-flottant {
+    display: none !important;
+  }
+
+  .film-card {
+    page-break-inside: avoid;
+  }
+}
+
+.no-print {
+  display: none !important;
+}
+</style>
+
+<!-- Pour impression
+
+4. Style @media print personnalisé dans le <style> de la page
+
+@media print {
+  body {
+    background: white;
+    color: black;
+    font-family: Georgia, serif;
+    padding: 1cm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  #print-area {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1cm;
+  }
+
+  .film-card.printable {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 1rem;
+    margin-bottom: 1cm;
+    page-break-inside: avoid;
+  }
+
+  .film-card.printable h2 {
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .film-card.printable .synopsis {
+    font-style: italic;
+  }
+
+  /* Si tu veux une mise en page en deux colonnes */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  #print-area {
+    column-count: 2;
+    column-gap: 2cm;
+  }
+
+  .film-card.printable {
+    break-inside: avoid-column;
+  }
+}
+🔄 Astuce : Version alternative des FilmCard uniquement à l'impression
+Si tes FilmCard sont très graphiques à l’écran mais tu veux une version texte pour l'impression, fais ceci :
+
+vue
+Copy
+Edit
+<div class="film-card screen-only">…</div>
+<div class="film-card printable print-only">…</div>
+Et dans le CSS :
+
+css
+Copy
+Edit
+.print-only { display: none; }
+@media print {
+  .screen-only { display: none !important; }
+  .print-only { display: block !important; }
+}
+-->

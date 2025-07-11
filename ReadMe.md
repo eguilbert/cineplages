@@ -1,16 +1,21 @@
 todo
 Import films
 
+!! Import Si film existe ne pas changer de categorie
+
+- possibilite de changer categorie en selection
+
 GENERAL
 
 - toast message when fetch, save etc.
 
 PRESELECTION
 
-- toute la case cliquable
-  ok - rajouter lien vers la page
-  ok - possiblite rajouter BA/trailer direct
+ok - rajouter lien vers la page
+ok - possiblite rajouter BA/trailer direct
+
 - rajouter qté films sélectionn.és dans chaque categ
+- toute la case cliquable
 
 VOTE
 ne pas confondre avec rating
@@ -22,22 +27,22 @@ par invité;
 
 SELECTION
 
-- enelver maj
-- gerer actions du bas: si vide ne pas afficher, et mettre un bouton + qui ouvre un menu d'actions pour ajouter:
-  tag, commentaire, lien, award
-- pouvoir chqnger cqtegorie
-  ok- compter films
-- sauvegarder awards, liens etc.
-
+ok - enlever maj
+ok - gerer actions du bas: si vide ne pas afficher, et mettre un bouton + qui ouvre un menu d'actions pour ajouter:
+tag, commentaire, lien, award
+ok - compter films
+ok - sauvegarder awards, liens etc.
 ok - modifier la page pour n'afficher qu'une selection a la fois
 ok - dans chaque case Film, ajout notes, tags
+ok - dans chaque case Film, awards + external links
+ok - faire une vue avec films dans la largeur
+ok - petit menu lateral pour naviguer d'une section a l'autre
+ok - Filtrer par date, categorie
 
-- dans chaque case Film, awards + external links
+- menu flottant retractable
+- pouvoir chqnger categorie
 - possibilite enlever films
 - save sélection
-  ok - faire une vue avec films dans la largeur
-  ok - petit menu lateral pour naviguer d'une section a l'autre
-  ok - Filtrer par date, categorie
 
 PERSONNALISATION
 
@@ -57,6 +62,7 @@ DONE - corriger selection/deselection
 ok - update Sel avec nvx films: comparer le PUT et le POST
 
 - donner possibilité d'importer un film precis pour l'ajouter a une selection par ex.
+- print
 
 - pouvoir changer les données d,unn film facilement: sa categorie, sa date de sortie par exemple. pouvoir mettre a jour date sortie et titre fr
 - films mettre nationalite en toutes lettres
@@ -64,7 +70,6 @@ ok - update Sel avec nvx films: comparer le PUT et le POST
 ok - import et films: mettre la bonne date de sortie en france
 
 - changer date fin automatiquement (une semaine apres)
-
 - dans sauvegarde Nom sel mettre par defaut date
 
 ok- page Mes selections: ne pas tout ouvrir mais mettre des liens ou boutons
