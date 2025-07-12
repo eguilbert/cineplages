@@ -20,6 +20,7 @@ export default defineNuxtConfig({
       supabaseKey: process.env.SUPABASE_ANON_KEY,
     },
   },
+
   app: {
     baseURL: "/",
     head: {
@@ -33,6 +34,12 @@ export default defineNuxtConfig({
     },
   },
   modules: ["@primevue/nuxt-module", "@pinia/nuxt", "@nuxtjs/supabase"],
+  supabase: {
+    redirect: {
+      login: "/login",
+      callback: "/auth/callback", // à adapter
+    },
+  },
   primevue: {
     options: {
       theme: {

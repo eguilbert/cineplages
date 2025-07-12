@@ -94,6 +94,11 @@
         </div>
 
         <div class="mt-2 screen-only">
+          <button @click="vote('NOT_INTERESTED')">❌ Pas intéressé</button>
+          <button @click="vote('CURIOUS')">🤔 Curieux</button>
+          <button @click="vote('MUST_SEE')">✅ Très envie</button>
+        </div>
+        <div class="mt-2 screen-only">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating v-model.number="localFilm.rating" :stars="10" />
         </div>
@@ -233,6 +238,14 @@ const badgeClass = (category) => {
     "": "bg-gray-100 text-gray-800",
   };
   return map[category] || "bg-gray-100 text-gray-800";
+};
+const vote = async () => {
+  const token = (await supabase.auth.getSession()).data.session?.access_token;
+  await $fetch("/api/interests", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: { filmId, value },
+  });
 };
 
 /* function refreshFilm() {

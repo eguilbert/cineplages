@@ -20,7 +20,12 @@
           v-if="role === 'ADMIN'"
           >Séances</NuxtLink
         >
-        <NuxtLink to="/programmation" class="hover:underline">Grille</NuxtLink>
+        <NuxtLink
+          to="/programmation"
+          class="hover:underline"
+          v-if="role === 'ADMIN'"
+          >Grille</NuxtLink
+        >
         <NuxtLink
           to="/films/films"
           class="hover:underline"
@@ -43,7 +48,7 @@
     <main class="container mx-auto py-8 px-4">
       <slot />
     </main>
-
+    Le site est en maintenance...
     <footer class="bg-[#08C5D1] text-white py-4 text-center mt-8">
       <p class="text-sm">© Cineplages {{ new Date().getFullYear() }}</p>
     </footer>
