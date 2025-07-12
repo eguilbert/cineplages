@@ -9,8 +9,9 @@
       optionLabel="name"
       optionValue="id"
       placeholder="Choisir une sélection"
-      class="mb-4 w-full md:w-1/3"
+      class="mb-4 w-full md:w-1/3 text-sm h-9 px-2 py-0"
       @change="loadSelection"
+      panelClass="text-sm"
     />
 
     <!-- Menu flottant catégories -->
@@ -18,6 +19,7 @@
       class="fixed top-100 -left-2 bg-white shadow p-2 rounded z-10 shadow-lg"
       v-if="selectedSelectionId"
     >
+      <hr />
       <div v-for="cat in categories" :key="cat">
         <a
           :href="`#cat-${cat}`"
@@ -32,11 +34,11 @@
 
     <!-- Affichage de la sélection choisie -->
     <div v-if="selection" class="mb-6">
-      <h2 class="text-xl font-light mb-2">
+      <h2 class="text-xl font-light mb-2 mt-4">
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
-      <p v-if="selection.id == 11" class="text-sm mb-4">
+      <p v-if="selection.id == 11" class="text-sm mb-8">
         Cette sélection comprend les films d'Art et Essai et Documentaires de
         début août jusqu'au 3 septembre, et les films Grand Public et Jeunesse
         de septembre.
@@ -90,6 +92,7 @@
               v-for="film in getFilteredFilms(categorie)"
               :key="film.tmdbId"
               :film="film"
+              :role="role"
               :displayMode="layout"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
@@ -123,7 +126,7 @@ import { getCategoryColor } from "@/utils/genreColors";
 const config = useRuntimeConfig();
 const selections = ref([]);
 const selection = ref(null);
-const selectedSelectionId = ref(null);
+const selectedSelectionId = ref(11);
 const selectedDate = ref(null);
 const layout = ref("grid");
 const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
@@ -147,8 +150,13 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
+  const { fetchRole } = useUserRole();
+  await fetchRole();
   const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
+  if (selectedSelectionId.value) {
+    await loadSelection();
+  }
 });
 
 watch(selectedSelectionId, async (newId) => {
@@ -228,6 +236,16 @@ const handlePrint = async () => {
 <style>
 .print-only {
   display: none;
+}
+body {
+  font-family: "Inter", sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Tiktok Sans", sans-serif;
+  /* font-family: "Playfair Display", serif; */
 }
 @media print {
   .screen-only {

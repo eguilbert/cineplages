@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 definePageMeta({
-  middleware: ["require-role"],
+  middleware: ["requireRole"],
   requiredRole: "ADMIN",
 });
 const form = reactive({

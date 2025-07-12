@@ -25,6 +25,10 @@ export default defineNuxtConfig({
     head: {
       link: [
         { rel: "icon", type: "image/x-icon", href: "/favicon_cinesplages.ico" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap",
+        },
       ],
     },
   },

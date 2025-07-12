@@ -176,21 +176,11 @@
 <script setup>
 import { reactive, watch } from "vue";
 
-import { useUserRole } from "@/composables/useUserRole";
-const { role, fetchRole, isLoggedIn } = useUserRole();
-
 import Rating from "primevue/rating";
 import Button from "primevue/button";
 import Chips from "primevue/chips";
 import TrailerPlayer from "./TrailerPlayer.vue";
-const loading = ref(true);
-onMounted(async () => {
-  if (isLoggedIn.value) {
-    await fetchRole();
-    navigateTo("/films/selections");
-  }
-  loading.value = false;
-});
+
 const emit = defineEmits(["update", "remove"]);
 
 const emitUpdate = () => {
@@ -198,6 +188,10 @@ const emitUpdate = () => {
 };
 const props = defineProps({
   film: Object,
+  role: {
+    type: String,
+    default: "USER",
+  },
   displayMode: {
     type: String,
     default: "grid",

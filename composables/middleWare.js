@@ -1,10 +1,17 @@
-const supabase = useSupabaseClient();
-const user = useSupabaseUser();
+export default defineNuxtRouteMiddleware(async (to, from) => {
+  const user = useSupabaseUser();
+  const { role, fetchRole } = useUserRole();
 
-const { data, error } = await supabase
-  .from("user_roles")
-  .select("role")
-  .eq("user_id", user.value?.id)
-  .single();
+  if (!user.value) {
+    return navigateTo("/login");
+  }
 
-const role = data?.role;
+  await fetchRole(); // charge le rôle et le cinemaId
+
+  const requiredRole = to.meta.requiredRole as string;
+
+  if (requiredRole && role.value !== requiredRole) {
+    console.warn("⛔ Accès refusé : rôle requis =", requiredRole);
+    return navigateTo("/unauthorized"); // ou page d’erreur personnalisée
+  }
+});

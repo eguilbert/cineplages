@@ -51,15 +51,15 @@
 </template>
 
 <script setup>
-const { role, fetchRole, isLoggedIn } = useUserRole();
 import { useUserRole } from "@/composables/useUserRole";
+
+const { role, fetchRole, isLoggedIn } = useUserRole();
 const loading = ref(true);
 
 onMounted(async () => {
   console.log("logged", isLoggedIn.value);
   if (isLoggedIn.value) {
     await fetchRole();
-    navigateTo("/films/selections");
     console.log("role", role.value);
   }
   loading.value = false;
