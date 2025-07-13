@@ -37,10 +37,6 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  middleware: ["requireRole"],
-  requiredRole: "ADMIN",
-});
 const form = reactive({
   email: "",
   password: "",

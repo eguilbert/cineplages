@@ -94,14 +94,16 @@
         </div>
 
         <div class="mt-2 screen-only">
-          <button @click="vote('NOT_INTERESTED')">❌ Pas intéressé</button>
-          <button @click="vote('CURIOUS')">🤔 Curieux</button>
-          <button @click="vote('MUST_SEE')">✅ Très envie</button>
+          <div class="interest-buttons">
+            <button @click="pick('NOT_INTERESTED')">❌ Pas intéressé</button>
+            <button @click="pick('CURIOUS')">🤔 Curieux</button>
+            <button @click="pick('MUST_SEE')">✅ Très envie</button>
+          </div>
         </div>
-        <div class="mt-2 screen-only">
+        <!-- <div class="mt-2 screen-only">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating v-model.number="localFilm.rating" :stars="10" />
-        </div>
+        </div> -->
 
         <!-- Bouton "+" -->
         <div
@@ -152,7 +154,11 @@
         />
 
         <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only" />
-
+        <div class="interest-bar">
+          <div v-for="(label, key) in labels" :key="key">
+            {{ label }} : {{ counts[key] ?? 0 }}
+          </div>
+        </div>
         <!-- Actions rapides -->
         <div
           class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
@@ -185,7 +191,7 @@ import Rating from "primevue/rating";
 import Button from "primevue/button";
 import Chips from "primevue/chips";
 import TrailerPlayer from "./TrailerPlayer.vue";
-
+import { useMyInterests } from "@/composables/useMyInterests";
 const emit = defineEmits(["update", "remove"]);
 
 const emitUpdate = () => {
@@ -201,6 +207,7 @@ const props = defineProps({
     type: String,
     default: "grid",
   },
+  filmId: Number,
 });
 const awards = ref([]);
 const externalLinks = ref([]);
@@ -239,14 +246,17 @@ const badgeClass = (category) => {
   };
   return map[category] || "bg-gray-100 text-gray-800";
 };
-const vote = async () => {
-  const token = (await supabase.auth.getSession()).data.session?.access_token;
+/* const vote = async () => {
+  const supabase = useSupabaseClient();
+  const session = await supabase.auth.getSession();
+  const token = session.data.session?.access_token;
+  // const token = (await supabase.auth.getSession()).data.session?.access_token;
   await $fetch("/api/interests", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: { filmId, value },
   });
-};
+}; */
 
 /* function refreshFilm() {
   console.log("🔁 Demande de mise à jour TMDB pour", props.film.title);
@@ -286,6 +296,10 @@ const newTag = ref("");
 const newAward = ref("");
 const newLinkLabel = ref("");
 const newLinkUrl = ref("");
+
+const { counts, labels } = await useInterestStats(props.filmId);
+const { updateInterest } = useMyInterests();
+const pick = (value) => updateInterest(props.film.id, value);
 
 // Ajout
 const addCommentaire = () => {

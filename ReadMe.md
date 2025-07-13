@@ -1,6 +1,11 @@
 todo
-Import films
 
+ADMIN
+
+- refaire l,Admin avec la creation de user, rajouter cinema
+- et donc que le userprofile soit créer dans la volée avec le cinema
+
+Import films
 !! Import Si film existe ne pas changer de categorie
 
 - possibilite de changer categorie en selection
