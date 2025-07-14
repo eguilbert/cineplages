@@ -30,6 +30,7 @@ const supabase = useSupabaseClient();
 const email = ref("");
 const password = ref("");
 const error = ref("");
+const router = useRouter();
 
 const onLogin = async () => {
   error.value = "";
@@ -43,7 +44,7 @@ const onLogin = async () => {
     return;
   }
 
-  return navigateTo("/");
+  router.push("/films/selections"); // ✅ redirection
 };
 
 const sendResetLink = async (email: string) => {

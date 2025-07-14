@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+/* import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -32,3 +32,4 @@ export const requireProfile = async (req, res, next) => {
     res.status(401).json({ error: "Token invalide ou expiré" });
   }
 };
+ */
