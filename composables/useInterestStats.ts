@@ -1,6 +1,6 @@
 export const useInterestStats = async (filmId: number) => {
   const config = useRuntimeConfig();
-  const { data, error } = await useFetch(
+  const { data, error } = await $fetch(
     `${config.public.apiBase}/interests/film/${filmId}`
   );
 

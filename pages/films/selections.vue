@@ -90,10 +90,12 @@
           >
             <FilmCard
               v-for="film in getFilteredFilms(categorie)"
-              :key="film.tmdbId"
+              :key="film.id"
               :film="film"
               :role="role"
               :displayMode="layout"
+              :interestCounts="interestStats?.[film.id] || null"
+              :initialInterest="interestMap[film.id] || null"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
             />
@@ -130,6 +132,11 @@ const selectedSelectionId = ref(11);
 const selectedDate = ref(null);
 const layout = ref("grid");
 const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
+const interestStats = ref({});
+const { role, fetchRole } = useUserRole();
+const { fetchInterests } = useMyInterests();
+const rawInterests = ref([]);
+const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
 
 const availableDates = computed(() => {
   if (!selection.value) return [];
@@ -150,7 +157,6 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
-  const { fetchRole } = useUserRole();
   await fetchRole();
   const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
@@ -174,6 +180,24 @@ const loadSelection = async () => {
     ...film,
     layout: undefined, // ou ne pas l'inclure
   }));
+  const filmIds = selection.value.films.map((film) => film.id);
+  const idsParam = filmIds.join(",");
+  const data = await $fetch(
+    `${config.public.apiBase}/interests/films?ids=${idsParam}`
+  );
+  interestStats.value = data || {};
+  console.log("Intérêts films", interestStats.value);
+
+  //Get MY interests
+  const myInterests = await fetchInterests();
+  rawInterests.value = data;
+
+  // Transformer la liste en map par film_id (si != "SANS_OPINION")
+  interestMap.value = Object.fromEntries(
+    myInterests
+      .filter((item) => item.value !== "SANS_OPINION")
+      .map((item) => [item.film_id, item.value])
+  );
 };
 
 const getFilteredFilms = (category) => {
@@ -325,78 +349,3 @@ h3 {
   display: none !important;
 }
 </style>
-
-<!-- Pour impression
-
-4. Style @media print personnalisé dans le <style> de la page
-
-@media print {
-  body {
-    background: white;
-    color: black;
-    font-family: Georgia, serif;
-    padding: 1cm;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  #print-area {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 1cm;
-  }
-
-  .film-card.printable {
-    width: 100%;
-    border: 1px solid #000;
-    padding: 1rem;
-    margin-bottom: 1cm;
-    page-break-inside: avoid;
-  }
-
-  .film-card.printable h2 {
-    font-size: 1.5em;
-    margin-bottom: 0.5em;
-  }
-
-  .film-card.printable .synopsis {
-    font-style: italic;
-  }
-
-  /* Si tu veux une mise en page en deux colonnes */
-  @page {
-    size: A4 portrait;
-    margin: 1cm;
-  }
-
-  #print-area {
-    column-count: 2;
-    column-gap: 2cm;
-  }
-
-  .film-card.printable {
-    break-inside: avoid-column;
-  }
-}
-🔄 Astuce : Version alternative des FilmCard uniquement à l'impression
-Si tes FilmCard sont très graphiques à l’écran mais tu veux une version texte pour l'impression, fais ceci :
-
-vue
-Copy
-Edit
-<div class="film-card screen-only">…</div>
-<div class="film-card printable print-only">…</div>
-Et dans le CSS :
-
-css
-Copy
-Edit
-.print-only { display: none; }
-@media print {
-  .screen-only { display: none !important; }
-  .print-only { display: block !important; }
-}
--->

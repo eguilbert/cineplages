@@ -1,5 +1,10 @@
 todo
 
+BEFORE meeting
+
+- tester vote
+- opt: faire marcher interests
+
 ADMIN
 
 - refaire l,Admin avec la creation de user, rajouter cinema

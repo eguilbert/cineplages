@@ -30,6 +30,7 @@
             class="text-blue-600 font-semibold hover:underline"
           >
             {{ film.title }} ({{ film.origin }})
+            {{ initialInterest }}
           </a>
           <br />
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
@@ -92,12 +93,17 @@
             </li>
           </ul>
         </div>
+        <div class="screen-only py-6">
+          <TrailerPlayer
+            :youtubeUrl="film.trailerUrl"
+            class="screen-only mb-2"
+          />
+        </div>
 
-        <div class="mt-2 screen-only">
-          <div class="interest-buttons">
-            <button @click="pick('NOT_INTERESTED')">❌ Pas intéressé</button>
-            <button @click="pick('CURIOUS')">🤔 Curieux</button>
-            <button @click="pick('MUST_SEE')">✅ Très envie</button>
+        <div class="mt-4 screen-only">
+          <Divider class="!hidden md:!flex"><b>MON AVIS</b></Divider>
+          <div class="interest-select mt-3">
+            <PickInterest v-model="interest" :film-id="filmId" />
           </div>
         </div>
         <!-- <div class="mt-2 screen-only">
@@ -153,11 +159,29 @@
           v-if="formToShow === 'link'"
         />
 
-        <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only" />
-        <div class="interest-bar">
-          <div v-for="(label, key) in labels" :key="key">
-            {{ label }} : {{ counts[key] ?? 0 }}
+        <div class="interest-bar screen-only">
+          <div class="text-xs font-bold mb-1">
+            Intérêts des programmateurs :
           </div>
+          <!--  <div v-for="(label, key) in labels" :key="key">
+            {{ label }} : {{ counts[key] ?? 0 }}
+          </div> -->
+
+          <p v-if="interestCounts">
+            <span v-if="interestCounts.SANS_OPINION > 0">
+              Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
+            </span>
+            <span v-if="interestCounts.CURIOUS > 0">
+              Curieux : {{ interestCounts.CURIOUS || 0 }}
+            </span>
+            <span v-if="interestCounts.NOT_INTERESTED > 0">
+              Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
+            </span>
+            <span v-if="interestCounts.MUST_SEE > 0">
+              Très envie : {{ interestCounts.MUST_SEE || 0 }}
+            </span>
+          </p>
+          <p v-else>Pas d'avis partagé pour l'instant</p>
         </div>
         <!-- Actions rapides -->
         <div
@@ -189,14 +213,17 @@ import { reactive, watch } from "vue";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
-import Chips from "primevue/chips";
 import TrailerPlayer from "./TrailerPlayer.vue";
 import { useMyInterests } from "@/composables/useMyInterests";
-const emit = defineEmits(["update", "remove"]);
+// const interest = ref("SANS_OPINION");
+const ready = ref(false); // ✅ on la déclare ici
+const { updateInterest } = useMyInterests();
 
+const emit = defineEmits(["update", "remove"]);
 const emitUpdate = () => {
   emit("update", toRaw(localFilm));
 };
+
 const props = defineProps({
   film: Object,
   role: {
@@ -208,7 +235,24 @@ const props = defineProps({
     default: "grid",
   },
   filmId: Number,
+  initialInterest: String,
+  interestCounts: Object,
 });
+const interest = ref(props.initialInterest);
+// si `initialInterest` change (ex: async), mettre à jour
+watch(
+  () => props.initialInterest,
+  (newVal) => {
+    interest.value = newVal;
+  }
+);
+
+//Update l'avis donné dans le Picker
+watch(interest, async (newValue) => {
+  console.log("New interest value:", newValue);
+  await updateInterest(props.film.id, newValue);
+});
+
 const awards = ref([]);
 const externalLinks = ref([]);
 const localFilm = reactive({
@@ -246,33 +290,6 @@ const badgeClass = (category) => {
   };
   return map[category] || "bg-gray-100 text-gray-800";
 };
-/* const vote = async () => {
-  const supabase = useSupabaseClient();
-  const session = await supabase.auth.getSession();
-  const token = session.data.session?.access_token;
-  // const token = (await supabase.auth.getSession()).data.session?.access_token;
-  await $fetch("/api/interests", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: { filmId, value },
-  });
-}; */
-
-/* function refreshFilm() {
-  console.log("🔁 Demande de mise à jour TMDB pour", props.film.title);
-  // TODO : appel API de refresh
-} */
-
-/* function saveChanges() {
-  emit("update", {
-    ...props.film,
-    commentaire: localFilm.commentaire,
-    rating: localFilm.rating,
-    tags: localFilm.tags,
-    awards: localFilm.awards,
-    externalLinks: localFilm.externalLinks,
-  });
-} */
 
 function removeFilm() {
   emit("remove", props.film);
@@ -293,13 +310,6 @@ const selectForm = (type) => {
 // Formulaires
 const newCommentaire = ref("");
 const newTag = ref("");
-const newAward = ref("");
-const newLinkLabel = ref("");
-const newLinkUrl = ref("");
-
-const { counts, labels } = await useInterestStats(props.filmId);
-const { updateInterest } = useMyInterests();
-const pick = (value) => updateInterest(props.film.id, value);
 
 // Ajout
 const addCommentaire = () => {
@@ -313,24 +323,6 @@ const addTags = () => {
   newTag.value = "";
   formToShow.value = null;
 };
-
-/* const addAward = () => {
-  if (!props.film.awards) props.film.awards = [];
-  props.film.awards.push(newAward.value);
-  newAward.value = "";
-  formToShow.value = null;
-};
-
-const addExternalLink = () => {
-  if (!props.film.externalLinks) props.film.externalLinks = [];
-  props.film.externalLinks.push({
-    label: newLinkLabel.value,
-    url: newLinkUrl.value,
-  });
-  newLinkLabel.value = "";
-  newLinkUrl.value = "";
-  formToShow.value = null;
-}; */
 </script>
 
 <style scoped>
