@@ -18,9 +18,8 @@ export default defineNuxtConfig({
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     public: {
-      apiBase: "http://localhost:3000/api",
-      /*       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3000/api",
-       */
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3000/api",
+
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_ANON_KEY,
     },
