@@ -30,7 +30,6 @@
             class="text-blue-600 font-semibold hover:underline"
           >
             {{ film.title }} ({{ film.origin }})
-            {{ initialInterest }}
           </a>
           <br />
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
