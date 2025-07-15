@@ -1,3 +1,8 @@
+CE qui manque
+
+- on n'a pas de suivi de ce qui est selectionné, sorti et si ça a marché
+- chaque film devrait portre la trace de ses sorties, nombre d eprojections et nb de spectateurs
+
 todo
 
 BEFORE meeting
@@ -14,6 +19,8 @@ Import films
 !! Import Si film existe ne pas changer de categorie
 
 - possibilite de changer categorie en selection
+
+Il faut que les vottes soient comptabilisés par cinema
 
 GENERAL
 

@@ -15,6 +15,20 @@
         <label class="block font-medium">Mot de passe</label>
         <input v-model="form.password" type="password" class="input" required />
       </div>
+      <div>
+        <label class="block font-medium">Nom d’usage</label>
+        <input v-model="form.username" type="text" class="input" required />
+      </div>
+
+      <div>
+        <label class="block font-medium">Cinéma (ID)</label>
+        <input
+          v-model.number="form.cinemaId"
+          type="number"
+          class="input"
+          required
+        />
+      </div>
 
       <div>
         <label class="block font-medium">Rôle</label>
@@ -36,13 +50,15 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 const form = reactive({
   email: "",
   password: "",
   role: "INVITE",
+  username: "",
+  cinemaId: null,
 });
-
+const config = useRuntimeConfig();
 const message = ref("");
 const error = ref("");
 
@@ -51,12 +67,14 @@ const createUser = async () => {
   error.value = "";
 
   try {
-    const res = await $fetch("/api/createUser", {
+    const res = await $fetch(`${config.public.apiBase}/createUser`, {
       method: "POST",
       body: {
         email: form.email,
         password: form.password,
         role: form.role,
+        username: form.username,
+        cinemaId: form.cinemaId,
       },
     });
 
@@ -68,7 +86,7 @@ const createUser = async () => {
       form.password = "";
       form.role = "INVITE";
     }
-  } catch (err: any) {
+  } catch (err) {
     error.value = err.message || "Erreur inconnue";
   }
 };

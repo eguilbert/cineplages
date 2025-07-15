@@ -105,11 +105,10 @@
             <PickInterest v-model="interest" :film-id="filmId" />
           </div>
         </div>
-        <!-- <div class="mt-2 screen-only">
+        <div class="mt-2 screen-only" v-if="role === 'ADMIN'">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating v-model.number="localFilm.rating" :stars="10" />
-        </div> -->
-
+        </div>
         <!-- Bouton "+" -->
         <div
           class="absolute bottom-4 right-2 screen-only"

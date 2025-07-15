@@ -182,9 +182,15 @@ const loadSelection = async () => {
   }));
   const filmIds = selection.value.films.map((film) => film.id);
   const idsParam = filmIds.join(",");
-  const data = await $fetch(
+  /*   const data = await $fetch(
     `${config.public.apiBase}/interests/films?ids=${idsParam}`
-  );
+  ); */
+  const data = await $fetch(`${config.public.apiBase}/interests/films`, {
+    method: "POST",
+    body: {
+      ids: filmIds, // liste d’IDs internes
+    },
+  });
   interestStats.value = data || {};
   console.log("Intérêts films", interestStats.value);
 

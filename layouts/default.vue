@@ -74,6 +74,8 @@ const logout = async () => {
   await supabase.auth.signOut();
   await navigateTo("/login");
 };
+console.log("API Base =", useRuntimeConfig().public.apiBase);
+console.log("process.env.NODE_ENV =", process.env.NODE_ENV);
 </script>
 
 <style scoped>
