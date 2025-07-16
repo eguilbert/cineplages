@@ -104,6 +104,26 @@
           <div class="interest-select mt-3">
             <PickInterest v-model="interest" :film-id="filmId" />
           </div>
+          <div class="interest-bar screen-only">
+            <div class="text-xs font-bold mb-1 mt-2">
+              Ce qu'en pensent les programmateurs :
+            </div>
+            <p v-if="interestCounts">
+              <span v-if="interestCounts.SANS_OPINION > 0">
+                Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
+              </span>
+              <span v-if="interestCounts.CURIOUS > 0">
+                Curieux : {{ interestCounts.CURIOUS || 0 }}
+              </span>
+              <span v-if="interestCounts.NOT_INTERESTED > 0">
+                Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
+              </span>
+              <span v-if="interestCounts.MUST_SEE > 0">
+                Très envie : {{ interestCounts.MUST_SEE || 0 }}
+              </span>
+            </p>
+            <p v-else>Pas d'avis partagé pour l'instant</p>
+          </div>
         </div>
         <div class="mt-2 screen-only" v-if="role === 'ADMIN'">
           <label class="block text-xs mb-1">Votes :</label>
@@ -157,30 +177,6 @@
           v-if="formToShow === 'link'"
         />
 
-        <div class="interest-bar screen-only">
-          <div class="text-xs font-bold mb-1">
-            Intérêts des programmateurs :
-          </div>
-          <!--  <div v-for="(label, key) in labels" :key="key">
-            {{ label }} : {{ counts[key] ?? 0 }}
-          </div> -->
-
-          <p v-if="interestCounts">
-            <span v-if="interestCounts.SANS_OPINION > 0">
-              Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
-            </span>
-            <span v-if="interestCounts.CURIOUS > 0">
-              Curieux : {{ interestCounts.CURIOUS || 0 }}
-            </span>
-            <span v-if="interestCounts.NOT_INTERESTED > 0">
-              Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
-            </span>
-            <span v-if="interestCounts.MUST_SEE > 0">
-              Très envie : {{ interestCounts.MUST_SEE || 0 }}
-            </span>
-          </p>
-          <p v-else>Pas d'avis partagé pour l'instant</p>
-        </div>
         <!-- Actions rapides -->
         <div
           class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
@@ -207,7 +203,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from "vue";
+import { onMounted, reactive, watch } from "vue";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
@@ -217,7 +213,7 @@ import { useMyInterests } from "@/composables/useMyInterests";
 const ready = ref(false); // ✅ on la déclare ici
 const { updateInterest } = useMyInterests();
 
-const emit = defineEmits(["update", "remove"]);
+const emit = defineEmits(["update", "remove", "update-interest-counts"]);
 const emitUpdate = () => {
   emit("update", toRaw(localFilm));
 };
@@ -246,8 +242,15 @@ watch(
 );
 
 //Update l'avis donné dans le Picker
-watch(interest, async (newValue) => {
+watch(interest, async (newValue, oldValue) => {
+  if (newValue === oldValue) return;
+
   console.log("New interest value:", newValue);
+  emit("update-interest-counts", {
+    filmId: props.film.id,
+    oldValue,
+    newValue,
+  });
   await updateInterest(props.film.id, newValue);
 });
 

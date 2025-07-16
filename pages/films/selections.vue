@@ -98,6 +98,7 @@
               :initialInterest="interestMap[film.id] || null"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
+              @update-interest-counts="handleInterestCounts"
             />
           </div>
 
@@ -250,6 +251,22 @@ const scrollToCategory = (cat) => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
+
+function handleInterestCounts({ filmId, oldValue, newValue }) {
+  const current = interestStats.value[filmId] || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    CURIOUS: 0,
+    MUST_SEE: 0,
+  };
+
+  // Met à jour proprement les comptes
+  interestStats.value[filmId] = {
+    ...current,
+    [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
+    [newValue]: (current[newValue] || 0) + 1,
+  };
+}
 const handlePrint = async () => {
   layout.value = "row";
 
