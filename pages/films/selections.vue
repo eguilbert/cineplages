@@ -63,6 +63,10 @@
           placeholder="Filtrer par date de sortie"
           class="w-full md:w-1/3 small"
         />
+        <label>
+          <input type="checkbox" v-model="sortByInterest" />
+          Trier par popularité
+        </label>
         <button
           @click="handlePrint"
           class="print-button justify-self-end ml-auto"
@@ -142,6 +146,7 @@ const { role, fetchRole } = useUserRole();
 const { fetchInterests } = useMyInterests();
 const rawInterests = ref([]);
 const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
+const sortByInterest = ref(false);
 
 const availableDates = computed(() => {
   if (!selection.value) return [];
@@ -211,7 +216,22 @@ const loadSelection = async () => {
   );
 };
 
-const getFilteredFilms = (category) => {
+const INTEREST_WEIGHTS = {
+  MUST_SEE: 3,
+  CURIOUS: 2,
+  SANS_OPINION: 1,
+  NOT_INTERESTED: 0,
+};
+
+function getInterestScore(counts = {}) {
+  return (
+    (counts.MUST_SEE || 0) * 3 +
+    (counts.CURIOUS || 0) * 2 +
+    (counts.SANS_OPINION || 0) * 1
+  );
+}
+
+/* const getFilteredFilms = (category) => {
   if (!selection.value) return [];
   return selection.value.films
     .filter((f) => f.category === category)
@@ -221,6 +241,37 @@ const getFilteredFilms = (category) => {
         new Date(a.releaseDate || "1900-01-01") -
         new Date(b.releaseDate || "1900-01-01")
     );
+}; */
+
+const getFilteredFilms = (category) => {
+  if (!selection.value) return [];
+
+  let filtered = selection.value.films
+    .filter((f) => f.category === category)
+    .filter(
+      (f) =>
+        !selectedDate.value ||
+        new Date(f.releaseDate).toISOString().slice(0, 10) ===
+          selectedDate.value
+    );
+
+  if (sortByInterest.value) {
+    // ✅ Tri par score d'intérêt
+    filtered = filtered.sort((a, b) => {
+      const aScore = getInterestScore(interestStats.value[a.id] || {});
+      const bScore = getInterestScore(interestStats.value[b.id] || {});
+      return bScore - aScore; // tri décroissant
+    });
+  } else {
+    // ✅ Tri par date (défaut)
+    filtered = filtered.sort((a, b) => {
+      return (
+        new Date(a.releaseDate || "1900-01-01") -
+        new Date(b.releaseDate || "1900-01-01")
+      );
+    });
+  }
+  return filtered;
 };
 
 const handleFilmUpdate = async (updatedFilm) => {

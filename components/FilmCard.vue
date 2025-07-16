@@ -8,7 +8,10 @@
     "
   >
     <div>
-      <small class="center"> {{ formatDate(film.releaseDate) }}</small>
+      <small class="center">
+        {{ formatDate(film.releaseDate) }}
+        <!-- 🇨🇦 {{ formatDate(film.releaseCanDate) }} -->
+      </small>
 
       <img
         v-if="film.poster"
