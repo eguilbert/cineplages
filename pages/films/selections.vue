@@ -105,11 +105,15 @@
           <div v-else class="flex flex-col gap-4">
             <FilmCard
               v-for="film in getFilteredFilms(categorie)"
-              :key="film.tmdbId"
+              :key="film.id"
               :film="film"
+              :role="role"
               :displayMode="layout"
+              :interestCounts="interestStats?.[film.id] || null"
+              :initialInterest="interestMap[film.id] || null"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
+              @update-interest-counts="handleInterestCounts"
             />
           </div>
         </div>
