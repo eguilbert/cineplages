@@ -1,9 +1,24 @@
 CE qui manque
 
 - on n'a pas de suivi de ce qui est selectionné, sorti et si ça a marché
-- chaque film devrait portre la trace de ses sorties, nombre d eprojections et nb de spectateurs
+- chaque film devrait portre la trace de ses sorties, nombre de projections et nb de spectateurs
 
 todo
+
+- capacite d'importer un seul film dans une categorie
+- - stats resultat des votes
+
+VOTES
+3 instruments pour comtabiliser l'interet:
+interets, vote, rating
+Interets et rating: personnels
+INterets et votes: propres au cinema
+Vote: realise en presence, une seule fois.
+
+utiliser table Vote: ajouter date + nombre de participants
+Vote ponctuel, ensuite fermé.
+On pourra utiliser le rating de façon personnelle (le rendre personnel) et compiler
+? comment compiler interets + votes
 
 BEFORE meeting
 
