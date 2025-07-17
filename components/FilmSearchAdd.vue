@@ -1,5 +1,6 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 my-4 bg-slate-200 p-4 rounded">
+    + <small>Rajouter un film à la sélection</small>
     <input
       v-model="query"
       @input="searchFilm"
@@ -8,6 +9,12 @@
     />
 
     <div v-if="results.length" class="space-y-2">
+      <Button
+        @click="resetSearch"
+        class="mt-2 text-sm text-gray-500 underline hover:text-black bg-red-100"
+      >
+        Fermer les résultats
+      </Button>
       <div
         v-for="film in results"
         :key="film.tmdbId"
@@ -49,35 +56,50 @@
 <script setup>
 import { ref } from "vue";
 import { useFetch } from "#app";
-import { useRuntimeConfig } from "#imports";
 
 const props = defineProps({
   selectionId: Number,
 });
+const searchQuery = ref("");
+const searchResults = ref([]);
+const isSearching = ref(false);
 
 const config = useRuntimeConfig();
 const query = ref("");
 const results = ref([]);
 const selectedCategories = ref({});
-
 const searchFilm = async () => {
   if (!query.value.trim()) return;
 
   // Recherche locale
   const local = await $fetch(
-    `/api/films/search?q=${encodeURIComponent(query.value)}`
+    `${config.public.apiBase}/films/search?q=${encodeURIComponent(query.value)}`
   );
   if (local.length) {
     results.value = local;
   } else {
     // Recherche TMDB
     const tmdb = await $fetch(
-      `/api/tmdb/search?q=${encodeURIComponent(query.value)}`
+      `${config.public.apiBase}/tmdb/search?q=${encodeURIComponent(
+        query.value
+      )}`
     );
     results.value = tmdb;
   }
 };
+watch(searchQuery, async (query) => {
+  if (!query) {
+    searchResults.value = [];
+    return;
+  }
 
+  isSearching.value = true;
+  const { data, error } = await useFetch(`/api/films/search?query=${query}`);
+  if (!error.value) {
+    searchResults.value = data.value;
+  }
+  isSearching.value = false;
+});
 const addFilmToSelection = async (film) => {
   const category = selectedCategories.value[film.tmdbId];
   if (!category) {
@@ -86,17 +108,26 @@ const addFilmToSelection = async (film) => {
   }
 
   try {
-    await $fetch(`/api/selections/${props.selectionId}/add-film`, {
-      method: "POST",
-      body: {
-        tmdbId: film.tmdbId,
-        category,
-      },
-    });
+    await $fetch(
+      `${config.public.apiBase}/selections/${props.selectionId}/add-film`,
+      {
+        method: "POST",
+        body: {
+          tmdbId: film.tmdbId,
+          category,
+        },
+      }
+    );
     alert(`Film "${film.title}" ajouté à la sélection.`);
   } catch (err) {
     console.error("Erreur ajout film:", err);
     alert("Erreur lors de l'ajout.");
   }
 };
+function resetSearch() {
+  searchQuery.value = "";
+  searchResults.value = [];
+  results.value = [];
+  isSearching.value = false;
+}
 </script>

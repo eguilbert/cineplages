@@ -1,7 +1,10 @@
 <template>
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Sélections</h1>
-    <!-- <FilmSearchAdd :selection-id="selectedSelectionId" /> -->
+    <FilmSearchAdd
+      :selection-id="selectedSelectionId"
+      v-if="role === 'ADMIN'"
+    />
 
     <!-- Sélecteur de sélection -->
     <Dropdown

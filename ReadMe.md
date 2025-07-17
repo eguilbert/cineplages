@@ -4,6 +4,8 @@ CE qui manque
 - chaque film devrait portre la trace de ses sorties, nombre de projections et nb de spectateurs
 
 todo
+FEEDBACk toast
+regler toutes les requetes qui echouent
 
 - capacite d'importer un seul film dans une categorie
 - - stats resultat des votes
