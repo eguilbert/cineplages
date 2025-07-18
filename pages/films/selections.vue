@@ -42,7 +42,7 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
-      <p v-if="selection.id == 15">
+      <p v-if="selection.id == 15" class="text-sm mb-8">
         La réunion de programmation aura lieu le 29 aout 2025. Veuillez voter
         avant cette date.
       </p>
@@ -109,6 +109,7 @@
               :displayMode="layout"
               :interestCounts="interestStats?.[film.id] || null"
               :initialInterest="interestMap[film.id] || null"
+              :vote="vote"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
               @update-interest-counts="handleInterestCounts"
@@ -156,6 +157,7 @@ const { fetchInterests } = useMyInterests();
 const rawInterests = ref([]);
 const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
 const sortByInterest = ref(false);
+const vote = ref(false);
 
 const availableDates = computed(() => {
   if (!selection.value) return [];
@@ -223,6 +225,11 @@ const loadSelection = async () => {
       .filter((item) => item.value !== "SANS_OPINION")
       .map((item) => [item.film_id, item.value])
   );
+  if (selectedSelectionId.value == 11) {
+    vote.value = true;
+  } else {
+    vote.value = false;
+  }
 };
 
 const INTEREST_WEIGHTS = {

@@ -104,9 +104,10 @@
 
         <div class="mt-4 screen-only">
           <Divider class="!hidden md:!flex"><b>MON AVIS</b></Divider>
-          <div class="interest-select mt-3">
+          <div class="interest-select mt-3" v-if="!vote">
             <PickInterest v-model="interest" :film-id="filmId" />
           </div>
+          <div v-else>Le vote est terminé.</div>
           <div class="interest-bar screen-only">
             <div class="text-xs font-bold mb-1 mt-2">
               Ce qu'en pensent les programmateurs :
@@ -206,7 +207,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, watch } from "vue";
+import { onMounted, reactive, vModelText, watch } from "vue";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
@@ -234,6 +235,10 @@ const props = defineProps({
   filmId: Number,
   initialInterest: String,
   interestCounts: Object,
+  vote: {
+    type: String,
+    default: true,
+  },
 });
 const interest = ref(props.initialInterest);
 // si `initialInterest` change (ex: async), mettre à jour
