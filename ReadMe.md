@@ -1,5 +1,92 @@
+plan
+
+1. bloquer la prog octobre avec resultats
+2. ouvrir commentaires etc.
+
 CE qui manque
 
+- dans la DB
+
+SELECTION
+desc? String ou Text
+date_vote? Date
+closed Booolean (default false)
+selectedFilms? [filmIds...]
+@Cinema
+()
+
+FILM
+statut enum picked,
+
+PROJECTION
+projetedFilms [filmIds...]
+(relation entre cinema et films)
+
+ENTREES
+Entree Int
+rel entre cinema et Film
+
+USER_PROFILE
+
+- Programmat
+  (ont le droit d'ajouter des commentaires, liens + awards )
+
+============
+
+PROG
+Identifier AGon pour creer liste pour Agon
+consequences:
+
+- cinema de la plage doit recouper 2 id en une vision
+- ou bien hauteville 1, agon 2
+- en commun: les selections, vues par les 2
+- les votes sont distingués, mais visibles pour les 2
+- je vois tous les Cinema > UserProfile > Interests
+- e fait chaque Selection appartient a un cinema (et n!est ue que par les benevoles du cinema )
+- change un peu tous les acces; chq selection n,est vue que par e
+
+\*\*trouver un systeme pour montrer films selectionner, ecarter les autres, documenter la quantité de films retenus,
+proposer
+
+Ajouter Cine Agon pour distinguer et creer une selection Agon
+
+Avoir réserve films pour Senor, british, rattrapages\*\*
+Pour la selection de la Prog,
+certains films ajoutés d'office (bcp de votes, evidence, unanime en reu)
+Cela crée une liste de films à programmer avec leur quantité (par categorie)
+Recommandation sortie nationale? pour indication à Stephane
+
+## Important une fois finie la prog, figer liste (plus de votes, interets, etc.) et conserver dans une liste Prog, en attendant de la completer par dates projections, chiffres entrées,
+
+Au fur et a mesure que la liste se complete, petitte liste (poster en taille vignette, titre et cate, date), en haut de page.
+
+Bouton APPROUVER LA PROGRAMMATION
+
+Ajouter commentaire pour tous les programmeurs
+DONC
+créer user type = Prorgammeur
+
+- Curieux ou A discuter ?
+
+- Ajouter Haut de la page dans le menu flottant
+
+Selection pouvoir en retirer (mauvaise date)
+
+IMPORTANT: pouvoir modifier une fiche: date, titre, pays, trailer
+
+case pour British et senior
+
+Ajout possibiite de filtrer Genres (Comedie)
+
+BUG why films sans director
+
+AMELIORATION
+PLUS DE FEEDBACK EN TOASTS
+requetes: verifier requetes qui échouent
+import tmdb a ameliorer
+
+- quand on vote, possibilte savoir les films qu'on retient
+  avec decompte ou bouton pour retenir automatiquement les films
 - on n'a pas de suivi de ce qui est selectionné, sorti et si ça a marché
 - chaque film devrait portre la trace de ses sorties, nombre de projections et nb de spectateurs
 
@@ -9,6 +96,10 @@ regler toutes les requetes qui echouent
 
 - capacite d'importer un seul film dans une categorie
 - - stats resultat des votes
+
+ACTUALISATION des films
+comment faire:
+invoquer seulement les plus courantes, importantes; date, titre, trailer
 
 VOTES
 3 instruments pour comtabiliser l'interet:

@@ -42,6 +42,11 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
+      <p v-if="selection.id == 15">
+        La réunion de programmation aura lieu le 29 aout 2025. Veuillez voter
+        avant cette date.
+      </p>
+
       <p v-if="selection.id == 11" class="text-sm mb-8">
         Cette sélection comprend les films d'Art et Essai et Documentaires de
         début août jusqu'au 3 septembre, et les films Grand Public et Jeunesse
@@ -303,7 +308,9 @@ const handleFilmRemove = (filmToRemove) => {
   selection.value.films = selection.value.films.filter(
     (f) => f.id !== filmToRemove.id
   );
+  //TODO delete film from selection
 };
+
 const scrollToCategory = (cat) => {
   const el = document.getElementById(`cat-${cat}`);
   if (el) {
