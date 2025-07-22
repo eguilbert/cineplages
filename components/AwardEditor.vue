@@ -20,7 +20,7 @@
     </div>
 
     <button @click="addAward" class="mt-2 text-sm text-blue-600 underline">
-      + Ajouter une récompense
+      + Ajouter un prix
     </button>
   </div>
 </template>

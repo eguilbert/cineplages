@@ -1,7 +1,24 @@
-plan
+COMMENTAIRES
+
+- verifier quand commentire d'un autre, comment il apparait
+- reactivite
+- pb suppression
+- design
+- commenaire uniquement dans Selections Prog?
+
+BUGS
+
+- enregistrement des Interests (doublés)
+- commentaire n'apparait pas
+  plan
+- requetes
+
+===========
 
 1. bloquer la prog octobre avec resultats
 2. ouvrir commentaires etc.
+
+1.dans DB modifier selection, films
 
 CE qui manque
 
@@ -14,6 +31,9 @@ closed Booolean (default false)
 selectedFilms? [filmIds...]
 @Cinema
 ()
+
+SELECTIONFILM
+selected Boolean
 
 FILM
 statut enum picked,
@@ -32,8 +52,16 @@ USER_PROFILE
   (ont le droit d'ajouter des commentaires, liens + awards )
 
 ============
+Id:
+prog du public du mois, sur un choix de 5 films
+idee de rassembler fideles qui ont 1 carte
+
+le login doit être associé à la carte
+
+============
 
 PROG
+
 Identifier AGon pour creer liste pour Agon
 consequences:
 

@@ -12,7 +12,7 @@ const emit = defineEmits(["update:modelValue"]);
 const options = ref([
   { label: "🕳 Sans opinion", value: "SANS_OPINION" },
   { label: "❌ Pas intéressé", value: "NOT_INTERESTED" },
-  { label: "🤔 Curieux", value: "CURIOUS" },
+  { label: "🤔 À discuter", value: "CURIOUS" },
   { label: "✅ Très envie", value: "MUST_SEE" },
 ]);
 

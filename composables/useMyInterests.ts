@@ -17,6 +17,8 @@ export const useMyInterests = () => {
   const updateInterest = async (filmId: number, value: string) => {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
 
+    console.log("Updating interest for filmId:", filmId, "with value:", value);
+
     await $fetch(`${config.public.apiBase}/interests`, {
       method: "POST",
       headers: {

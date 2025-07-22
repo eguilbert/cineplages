@@ -41,6 +41,9 @@
         <NuxtLink to="/admin" v-if="role === 'ADMIN'" class="hover:underline"
           >Admin</NuxtLink
         >
+        <NuxtLink to="/activity" v-if="role === 'ADMIN'" class="hover:underline"
+          >Logs</NuxtLink
+        >
         <button @click="logout" v-if="isLoggedIn">Se déconnecter</button>
       </div>
     </header>
@@ -48,6 +51,7 @@
     <main class="container mx-auto py-8 px-4">
       <slot />
     </main>
+    <Toast position="top-left" />
 
     <footer class="bg-[#08C5D1] text-white py-4 text-center mt-8">
       <p class="text-sm">© Cineplages {{ new Date().getFullYear() }}</p>
@@ -57,7 +61,8 @@
 
 <script setup>
 import { useUserRole } from "@/composables/useUserRole";
-
+import Toast from "primevue/toast";
+import Button from "primevue/button";
 const { role, fetchRole, isLoggedIn } = useUserRole();
 const loading = ref(true);
 

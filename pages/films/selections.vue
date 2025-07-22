@@ -1,6 +1,34 @@
 <template>
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Sélections</h1>
+
+    <!-- <div v-if="selectedFilms.length" class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">
+        Films sélectionnés ({{ selectedFilms.length }})
+      </h2>
+      <div class="flex gap-3 overflow-x-auto py-2">
+        <div
+          v-for="film in selectedFilms"
+          :key="film.id"
+          class="min-w-[120px] bg-white shadow-sm border p-2 rounded text-xs flex flex-col items-center"
+        >
+          <img
+            :src="film.poster || '/placeholder.png'"
+            alt="poster"
+            class="w-20 h-28 object-cover mb-1"
+          />
+          <div class="font-bold text-center truncate w-full">
+            {{ film.title }}
+          </div>
+          <div
+            class="text-[10px] px-2 py-1 rounded mt-1 text-white"
+            :style="{ backgroundColor: getCategoryColor(film.category) }"
+          >
+            {{ film.category }}
+          </div>
+        </div>
+      </div>
+    </div> -->
     <FilmSearchAdd
       :selection-id="selectedSelectionId"
       v-if="role === 'ADMIN'"
@@ -13,7 +41,7 @@
       optionLabel="name"
       optionValue="id"
       placeholder="Choisir une sélection"
-      class="mb-4 w-full md:w-1/3 text-sm h-9 px-2 py-0"
+      class="mb-4 md:w-1/3 text-sm h-9 px-2 py-0"
       @change="loadSelection"
       panelClass="text-sm"
     />
@@ -70,7 +98,7 @@
           optionLabel="label"
           optionValue="value"
           placeholder="Filtrer par date de sortie"
-          class="w-full md:w-1/3 small"
+          class="md:w-1/3 small"
         />
         <label>
           <input type="checkbox" v-model="sortByInterest" />
@@ -106,13 +134,18 @@
               :key="film.id"
               :film="film"
               :role="role"
+              :username="username"
+              :userId="userId"
               :displayMode="layout"
               :interestCounts="interestStats?.[film.id] || null"
               :initialInterest="interestMap[film.id] || null"
-              :vote="vote"
+              :voteOpen="voteMode"
+              @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
               @update-interest-counts="handleInterestCounts"
+              @toggle-selection="toggleFilmSelection"
+              class="col-12 md:col-2 lg:col-3"
             />
           </div>
 
@@ -122,16 +155,63 @@
               :key="film.id"
               :film="film"
               :role="role"
+              :username="username"
+              :userId="userId"
               :displayMode="layout"
               :interestCounts="interestStats?.[film.id] || null"
               :initialInterest="interestMap[film.id] || null"
+              :voteOpen="voteMode"
+              @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
               @update-interest-counts="handleInterestCounts"
+              @toggle-selection="toggleFilmSelection"
             />
           </div>
         </div>
       </div>
+    </div>
+    <!-- Barre de sélection fixe en bas -->
+    <transition name="slide-up" v-if="role === 'ADMIN'">
+      <div
+        v-show="isBarVisible"
+        class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold">
+            🎯 {{ selectedFilms.length }} film(s) sélectionné(s)
+          </h2>
+          <Button label="Approuver la sélection" @click="submitSelection" />
+        </div>
+        <div class="flex gap-3 mt-2 overflow-x-auto">
+          <div
+            v-for="film in selectedFilms"
+            :key="film.id"
+            class="min-w-[100px] bg-gray-50 border rounded p-2 text-xs text-center"
+          >
+            <img
+              :src="film.poster || '/placeholder.png'"
+              class="w-16 h-24 object-cover mx-auto mb-1"
+            />
+            <div class="truncate">{{ film.title }}</div>
+            <div
+              class="text-[10px] mt-1 text-white px-1 rounded"
+              :style="{ backgroundColor: getCategoryColor(film.category) }"
+            >
+              {{ film.category }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Onglet de toggle -->
+    <div
+      class="fixed bottom-0 right-0 bg-blue-600 text-white text-sm px-4 py-2 rounded-tl cursor-pointer z-50"
+      @click="isBarVisible = !isBarVisible"
+      v-if="role === 'ADMIN'"
+    >
+      🎯 {{ selectedFilms.length }}
     </div>
   </div>
 </template>
@@ -147,17 +227,30 @@ import { getCategoryColor } from "@/utils/genreColors";
 const config = useRuntimeConfig();
 const selections = ref([]);
 const selection = ref(null);
-const selectedSelectionId = ref(11);
+const selectedSelectionId = ref(15);
 const selectedDate = ref(null);
 const layout = ref("grid");
 const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
 const interestStats = ref({});
-const { role, fetchRole } = useUserRole();
+const { role, username, userId, fetchRole } = useUserRole();
 const { fetchInterests } = useMyInterests();
 const rawInterests = ref([]);
 const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
 const sortByInterest = ref(false);
-const vote = ref(false);
+const voteMode = ref(false);
+const selectedFilms = ref([]);
+const { updateInterest } = useMyInterests();
+
+const isBarVisible = ref(true);
+
+const toggleFilmSelection = (film) => {
+  const index = selectedFilms.value.findIndex((f) => f.id === film.id);
+  if (index === -1) {
+    selectedFilms.value.push(film);
+  } else {
+    selectedFilms.value.splice(index, 1);
+  }
+};
 
 const availableDates = computed(() => {
   if (!selection.value) return [];
@@ -179,6 +272,7 @@ const availableDates = computed(() => {
 
 onMounted(async () => {
   await fetchRole();
+  console.log("Rôle utilisateur :", role.value, username.value, userId.value);
   const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
   if (selectedSelectionId.value) {
@@ -226,9 +320,9 @@ const loadSelection = async () => {
       .map((item) => [item.film_id, item.value])
   );
   if (selectedSelectionId.value == 11) {
-    vote.value = true;
+    voteMode.value = true;
   } else {
-    vote.value = false;
+    voteMode.value = false;
   }
 };
 
@@ -278,6 +372,8 @@ const getFilteredFilms = (category) => {
       const bScore = getInterestScore(interestStats.value[b.id] || {});
       return bScore - aScore; // tri décroissant
     });
+    //ou par score computed
+    //filtered = filtered.sort((a, b) => computeScore(b) - computeScore(a));
   } else {
     // ✅ Tri par date (défaut)
     filtered = filtered.sort((a, b) => {
@@ -350,6 +446,62 @@ const handlePrint = async () => {
   setTimeout(() => {
     window.print();
   }, 100);
+};
+
+function computeScore(film) {
+  const votes = film.rating || 0; // ou autre metric
+  const interestScore = getInterestScore(interestStats.value[film.id] || {});
+  return votes * 2 + interestScore;
+}
+async function handleInterestChange({ filmId, oldValue, newValue }) {
+  // Update backend
+  await updateInterest(filmId, newValue);
+
+  // Met à jour les compteurs localement
+  const current = interestStats.value[filmId] || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    CURIOUS: 0,
+    MUST_SEE: 0,
+  };
+
+  interestStats.value[filmId] = {
+    ...current,
+    [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
+    [newValue]: (current[newValue] || 0) + 1,
+  };
+}
+
+const submitSelection = async () => {
+  if (!selectedSelectionId.value || selectedFilms.value.length === 0) {
+    alert("Aucune sélection à approuver.");
+    return;
+  }
+
+  const confirmed = confirm("Approuver cette sélection comme programmation ?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(
+      `${config.public.apiBase}/selections/${selectedSelectionId.value}/approve`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filmIds: selectedFilms.value.map((f) => f.id),
+        }),
+      }
+    );
+
+    if (!res.ok) throw new Error("Échec de l'approbation");
+
+    alert("Sélection approuvée !");
+    await loadSelection(); // recharge la sélection depuis l'API
+    selectedFilms.value = []; // reset
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'approbation.");
+  }
 };
 </script>
 
@@ -443,5 +595,13 @@ h3 {
 
 .no-print {
   display: none !important;
+}
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
 }
 </style>

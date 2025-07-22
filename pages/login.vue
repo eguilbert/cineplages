@@ -18,14 +18,21 @@
       </button>
 
       <p v-if="error" class="text-red-600 mt-4">{{ error }}</p>
-      <p class="text-red-600 mt-4" @click="sendResetLink(email)">
-        Mot de passe oublié?
-      </p>
+
+      <Button
+        class="text-red-600 mt-4"
+        @click="sendResetLink(email)"
+        severity="danger"
+        variant="text"
+        label="Mot de passe oublié ?"
+      >
+      </Button>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from "primevue/button";
 const supabase = useSupabaseClient();
 const email = ref("");
 const password = ref("");

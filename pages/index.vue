@@ -1,7 +1,11 @@
 <template>
-  <div class="p-6 max-w-7xl mx-auto"></div>
+  <div class="p-6 max-w-7xl mx-auto">
+    <Toast />
+  </div>
 </template>
 
 <script setup>
-import FilmPreparation from "@/components/FilmPreparation.vue";
+import Toast from "primevue/toast";
 </script>
+
+<style></style>

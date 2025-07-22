@@ -5,7 +5,7 @@ import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Checkbox from "primevue/checkbox";
 
-import "primevue/resources/primevue.min.css";
+//import "primevue/resources/primevue.min.css";
 import "primeicons/primeicons.css";
 
 export default defineNuxtPlugin((nuxtApp) => {

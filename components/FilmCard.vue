@@ -32,7 +32,8 @@
             target="_blank"
             class="text-blue-600 font-semibold hover:underline"
           >
-            {{ film.title }} ({{ film.origin }})
+            {{ film.title }}
+            <small> ({{ film.origin }})</small>
           </a>
           <br />
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
@@ -59,7 +60,6 @@
  -->
         {{ film.synopsis }}
       </small>
-
       <div class="text-sm text-gray-600 space-y-2">
         <div v-if="localFilm.commentaire">
           <p class="text-gray-700 italic">« {{ film.commentaire }} »</p>
@@ -70,6 +70,49 @@
           <p class="mt-2 text-sm text-blue-700">#{{ film.tags.join(" #") }}</p>
         </div>
 
+        <div class="mt-4">
+          <!-- Mon commentaire -->
+          <!-- <div class="mb-2">
+            <label for="comment" class="block text-sm font-semibold mb-1">
+              Mon commentaire
+            </label>
+            <textarea
+              id="comment"
+              v-model="myComment"
+              rows="3"
+              class="w-full text-sm p-2 border rounded"
+              placeholder="Ajouter un commentaire personnel..."
+            />
+            <Button
+              label="💾 Sauvegarder"
+              size="small"
+              class="mt-1"
+              @click="submitMyComment"
+            />
+          </div>
+ -->
+          <FilmCommentBox
+            :film-id="film.id"
+            :comments="film.comments"
+            :user-id="userId"
+            :username="username"
+          />
+          <!-- Commentaires des autres -->
+          <!--  <div v-if="film.comments?.length" class="mt-4 border-t pt-2">
+            <h4 class="text-sm font-semibold mb-1">Commentaires :</h4>
+            <ul class="space-y-1 text-sm">
+              <li
+                v-for="c in film.comments"
+                :key="c.user_id"
+                class="border-l-2 border-blue-500 pl-2"
+              >
+                <span class="font-semibold">{{ c.username || "Anonyme" }}</span>
+                :
+                {{ c.commentaire }}
+              </li>
+            </ul>
+          </div> -->
+        </div>
         <!-- Awards -->
         <div v-if="film.awards && film.awards.length">
           <ul class="mt-2 text-sm text-green-600">
@@ -103,8 +146,10 @@
         </div>
 
         <div class="mt-4 screen-only">
-          <Divider class="!hidden md:!flex"><b>MON AVIS</b></Divider>
-          <div class="interest-select mt-3" v-if="!vote">
+          <Divider layout="horizontal" class="!flex md:!hidden"
+            ><b>MON AVIS</b></Divider
+          >
+          <div class="interest-select mt-3" v-if="!voteOpen">
             <PickInterest v-model="interest" :film-id="filmId" />
           </div>
           <div v-else>Le vote est terminé.</div>
@@ -117,7 +162,7 @@
                 Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
               </span>
               <span v-if="interestCounts.CURIOUS > 0">
-                Curieux : {{ interestCounts.CURIOUS || 0 }}
+                A discuter : {{ interestCounts.CURIOUS || 0 }}
               </span>
               <span v-if="interestCounts.NOT_INTERESTED > 0">
                 Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
@@ -150,7 +195,9 @@
             class="absolute right-0 mt-2 bg-white border shadow z-10 p-2 space-y-2"
             style="width: 200px"
           >
-            <button @click="selectForm('commentaire')">Ajouter une note</button>
+            <button @click="selectForm('commentaire')">
+              Ajouter un commentaire
+            </button>
             <button @click="selectForm('tag')">Ajouter des tags</button>
             <button @click="selectForm('award')">Ajouter un prix</button>
             <button @click="selectForm('link')">Ajouter un lien externe</button>
@@ -158,14 +205,14 @@
         </div>
 
         <!-- Formulaires d'ajout -->
-        <div v-if="formToShow === 'commentaire'" class="mt-4">
+        <!--  <div v-if="formToShow === 'commentaire'" class="mt-4">
           <input
             v-model="newCommentaire"
             class="border p-1"
             placeholder="Votre commentaire"
           />
           <button @click="addCommentaire">OK</button>
-        </div>
+        </div> -->
 
         <div v-if="formToShow === 'tag'" class="mt-4">
           <input
@@ -200,6 +247,12 @@
             severity="danger"
             @click="removeFilm"
           />
+          <Button
+            size="small"
+            label="🎯 Ajouter à la sélection"
+            @click="$emit('toggle-selection', film)"
+            class="mt-2"
+          />
         </div>
       </div>
     </div>
@@ -211,22 +264,31 @@ import { onMounted, reactive, vModelText, watch } from "vue";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
+import Divider from "primevue/divider";
 import TrailerPlayer from "./TrailerPlayer.vue";
 import { useMyInterests } from "@/composables/useMyInterests";
-// const interest = ref("SANS_OPINION");
-const ready = ref(false); // ✅ on la déclare ici
+const config = useRuntimeConfig();
+const ready = ref(false);
 const { updateInterest } = useMyInterests();
 
 const emit = defineEmits(["update", "remove", "update-interest-counts"]);
 const emitUpdate = () => {
   emit("update", toRaw(localFilm));
 };
+const myComment = ref("");
 
 const props = defineProps({
   film: Object,
   role: {
     type: String,
     default: "USER",
+  },
+  username: {
+    type: String,
+    default: "anonyme",
+  },
+  userId: {
+    type: String,
   },
   displayMode: {
     type: String,
@@ -235,12 +297,23 @@ const props = defineProps({
   filmId: Number,
   initialInterest: String,
   interestCounts: Object,
-  vote: {
-    type: String,
+  voteOpen: {
+    type: Boolean,
     default: true,
   },
 });
 const interest = ref(props.initialInterest);
+
+/* onMounted(() => {
+  if (!props.username || !props.film.comments) return;
+
+  const mine = props.film.comments.find((c) => c.user_id === props.userId);
+
+  if (mine) {
+    myComment.value = mine.commentaire;
+  }
+}); */
+
 // si `initialInterest` change (ex: async), mettre à jour
 watch(
   () => props.initialInterest,
@@ -250,16 +323,25 @@ watch(
 );
 
 //Update l'avis donné dans le Picker
-watch(interest, async (newValue, oldValue) => {
+/* watch(interest, async (newValue, oldValue) => {
   if (newValue === oldValue) return;
-
   console.log("New interest value:", newValue);
   emit("update-interest-counts", {
     filmId: props.film.id,
     oldValue,
     newValue,
   });
+  console.log("Modified value:", oldValue, newValue);
   await updateInterest(props.film.id, newValue);
+}); */
+
+watch(interest, (newValue, oldValue) => {
+  if (newValue === oldValue) return;
+  emit("interest-change", {
+    filmId: props.film.id,
+    oldValue,
+    newValue,
+  });
 });
 
 const awards = ref([]);
@@ -322,7 +404,9 @@ const newTag = ref("");
 
 // Ajout
 const addCommentaire = () => {
+  console.log("Adding commentaire:", newCommentaire.value);
   props.film.commentaire = newCommentaire.value;
+  localFilm.commentaire = newCommentaire.value;
   newCommentaire.value = "";
   formToShow.value = null;
 };

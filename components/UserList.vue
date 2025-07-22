@@ -1,31 +1,55 @@
 <template>
-  <div class="mt-8">
-    <h2 class="text-xl font-bold mb-2">Utilisateurs</h2>
+  <div class="p-4 max-w-xl mx-auto">
+    <h2 class="text-xl font-bold mb-4">👥 Utilisateurs</h2>
 
-    <ul class="divide-y">
-      <li
+    <div v-if="loading">Chargement...</div>
+    <div v-else>
+      <div
         v-for="user in users"
         :key="user.user_id"
-        class="py-2 flex justify-between items-center"
+        class="border p-2 mb-2 rounded flex justify-between items-center"
       >
         <div>
-          <strong>{{ user.username || "–" }}</strong>
-          <br />
-          <small
-            >{{ user.role }} — Cinéma ID : {{ user.cinemaId ?? "—" }}</small
-          >
+          <div class="font-semibold">{{ user.username }}</div>
+          <div class="text-sm text-gray-500">{{ user.user_id }}</div>
         </div>
-      </li>
-    </ul>
+        <button
+          @click="deleteUser(user.user_id)"
+          class="text-red-600 hover:underline text-sm"
+        >
+          Supprimer
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-const users = ref([]);
-const config = useRuntimeConfig();
+import { ref, onMounted } from "vue";
 
-onMounted(async () => {
-  const data = await $fetch(`${config.public.apiBase}/users`);
-  users.value = data;
-});
+const config = useRuntimeConfig();
+const users = ref([]);
+const loading = ref(true);
+
+const fetchUsers = async () => {
+  loading.value = true;
+  users.value = await $fetch(`${config.public.apiBase}/users`);
+  loading.value = false;
+};
+
+const deleteUser = async (userId) => {
+  if (!confirm("Confirmer la suppression de cet utilisateur ?")) return;
+
+  try {
+    await $fetch(`${config.public.apiBase}/users/${userId}`, {
+      method: "DELETE",
+    });
+    users.value = users.value.filter((u) => u.user_id !== userId);
+  } catch (e) {
+    alert("Erreur lors de la suppression");
+    console.error(e);
+  }
+};
+
+onMounted(fetchUsers);
 </script>

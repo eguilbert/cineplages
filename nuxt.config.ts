@@ -1,8 +1,15 @@
-import Aura from "@primeuix/themes/aura";
-
 export default defineNuxtConfig({
   devServer: {
     port: 3001,
+  },
+  vite: {
+    //  cacheDir: ".vite-cache",
+    server: {
+      watch: {
+        usePolling: true, // 👉 contourne les erreurs de socket sur certains FS
+        interval: 100,
+      },
+    },
   },
   css: ["@/assets/css/tailwind.css", "primeicons/primeicons.css"],
   postcss: {
@@ -39,18 +46,11 @@ export default defineNuxtConfig({
       ],
     },
   },
-  modules: ["@primevue/nuxt-module", "@pinia/nuxt", "@nuxtjs/supabase"],
+  modules: ["@pinia/nuxt", "@nuxtjs/supabase"],
   supabase: {
     redirect: {
       login: "/login",
       callback: "/auth/callback", // à adapter
-    },
-  },
-  primevue: {
-    options: {
-      theme: {
-        preset: Aura,
-      },
     },
   },
 });
