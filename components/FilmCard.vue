@@ -107,7 +107,7 @@
               "
               ><i class="pi pi-comment mr-2"></i> commentaires
               <Badge
-                :value="film.comments.length"
+                :value="totalComments"
                 class="ml-auto mr-2"
                 style="background-color: rgba(0, 108, 143, 0.8)"
             /></AccordionHeader>
@@ -256,7 +256,7 @@ import { useMyInterests } from "@/composables/useMyInterests";
 const config = useRuntimeConfig();
 const ready = ref(false);
 const { updateInterest } = useMyInterests();
-
+const totalComments = ref(0);
 const emit = defineEmits(["update", "remove"]);
 const emitUpdate = () => {
   alert("Film mis à jour !");
@@ -291,16 +291,16 @@ const props = defineProps({
 });
 
 const totalInterest = computed(() => {
-  const counts = { ...props.interestCounts };
-  const myValue = interest.value;
+  const counts = props.interestCounts;
+  const myVal = interest.value;
 
-  if (myValue && counts[myValue]) {
-    counts[myValue]--; // on retire notre propre vote
-  }
+  if (!counts || typeof counts !== "object") return myVal ? 1 : 0;
 
-  return ["CURIOUS", "MUST_SEE", "NOT_INTERESTED", "SANS_OPINION"]
+  const baseTotal = ["CURIOUS", "MUST_SEE", "NOT_INTERESTED", "SANS_OPINION"]
     .map((key) => counts[key] ?? 0)
     .reduce((a, b) => a + b, 0);
+
+  return myVal ? baseTotal : baseTotal;
 });
 
 const interest = ref(props.initialInterest);
@@ -320,8 +320,8 @@ watch(interest, (newValue, oldValue) => {
     newValue,
   });
 });
-async function updateCommentCounts(interestCounts) {
-  alert("Mise à jour des commentaires !", interestCounts);
+async function updateCommentCounts(commentsCounts) {
+  totalComments.value = commentsCounts;
 }
 const awards = ref([]);
 const externalLinks = ref([]);

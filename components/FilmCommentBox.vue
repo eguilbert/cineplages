@@ -156,7 +156,7 @@ const handleSubmit = async () => {
     toast.add({
       severity: "success", // "info", "warn", "error"
       summary: "Commentaire enregistré",
-      detail: "Merci pour votre retour !",
+      detail: "Merci pour votre commentaire !",
       life: 3000,
     });
     console.log("nombre de commentaires", localComments.value.length);
@@ -189,6 +189,7 @@ const handleDelete = async () => {
     localComments.value = localComments.value.filter(
       (c) => c.user_id !== props.userId
     );
+    emit("update-comments-number", localComments.value.length);
 
     commentaire.value = "";
     showForm.value = false;
@@ -196,7 +197,7 @@ const handleDelete = async () => {
     toast.add({
       severity: "success", // "info", "warn", "error"
       summary: "Commentaire effacé",
-      detail: "Merci pour votre retour !",
+      detail: "",
       life: 3000,
     });
   } catch (e) {
