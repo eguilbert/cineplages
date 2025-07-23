@@ -159,7 +159,7 @@ const handleSubmit = async () => {
       detail: "Merci pour votre retour !",
       life: 3000,
     });
-    alert(localComments.value.length);
+    console.log("nombre de commentaires", localComments.value.length);
     emit("update-comments-number", localComments.value.length);
   } catch (e) {
     toast.add({
