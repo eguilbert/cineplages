@@ -56,124 +56,116 @@
         <div v-if="film.actors">Avec: {{ film.actors }}</div>
       </div>
       <small class="block border border-blue-100 p-2 mb-2">
-        <!--       <small class="line-clamp-2 block border border-blue-100 p-2 mb-2">
- -->
         {{ film.synopsis }}
       </small>
+      <div class="screen-only py-3">
+        <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only mb-2" />
+      </div>
       <div class="text-sm text-gray-600 space-y-2">
-        <div v-if="localFilm.commentaire">
-          <p class="text-gray-700 italic">« {{ film.commentaire }} »</p>
-        </div>
-
-        <!-- Tags -->
-        <div v-if="film.tags && film.tags.length">
-          <p class="mt-2 text-sm text-blue-700">#{{ film.tags.join(" #") }}</p>
-        </div>
-
-        <div class="mt-4">
-          <!-- Mon commentaire -->
-          <!-- <div class="mb-2">
-            <label for="comment" class="block text-sm font-semibold mb-1">
-              Mon commentaire
-            </label>
-            <textarea
-              id="comment"
-              v-model="myComment"
-              rows="3"
-              class="w-full text-sm p-2 border rounded"
-              placeholder="Ajouter un commentaire personnel..."
-            />
-            <Button
-              label="💾 Sauvegarder"
-              size="small"
-              class="mt-1"
-              @click="submitMyComment"
-            />
-          </div>
- -->
-          <FilmCommentBox
-            :film-id="film.id"
-            :comments="film.comments"
-            :user-id="userId"
-            :username="username"
-          />
-          <!-- Commentaires des autres -->
-          <!--  <div v-if="film.comments?.length" class="mt-4 border-t pt-2">
-            <h4 class="text-sm font-semibold mb-1">Commentaires :</h4>
-            <ul class="space-y-1 text-sm">
-              <li
-                v-for="c in film.comments"
-                :key="c.user_id"
-                class="border-l-2 border-blue-500 pl-2"
+        <!-- BONUS INFO -->
+        <Accordion multiple :value="['1', '2']">
+          <AccordionPanel value="0">
+            <AccordionHeader
+              style="
+                background-color: rgba(151, 234, 118, 0.8);
+                color: rgba(30, 80, 10, 0.8);
+                font-weight: 300;
+              "
+            >
+              <i class="pi pi-link mr-2"></i> articles
+              <Badge
+                :value="film.externalLinks.length"
+                class="ml-auto mr-2"
+                style="background-color: rgba(30, 80, 10, 0.8)"
+            /></AccordionHeader>
+            <AccordionContent>
+              <div
+                v-if="film.externalLinks && film.externalLinks.length"
+                class="screen-only"
               >
-                <span class="font-semibold">{{ c.username || "Anonyme" }}</span>
-                :
-                {{ c.commentaire }}
-              </li>
-            </ul>
-          </div> -->
-        </div>
-        <!-- Awards -->
-        <div v-if="film.awards && film.awards.length">
-          <ul class="mt-2 text-sm text-green-600">
-            <li v-for="(award, index) in film.awards" :key="index">
-              <span v-if="award.festival">
-                🏆 {{ award.festival }} - {{ award.prize }}
-              </span>
-            </li>
-          </ul>
-        </div>
+                <ul class="mt-2 text-sm text-blue-400">
+                  <li v-for="(link, index) in film.externalLinks" :key="index">
+                    <a
+                      :href="link.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <i class="pi pi-link" v-if="link.label"></i>
+                      {{ link.label }}</a
+                    >
+                  </li>
+                </ul>
+              </div>
+            </AccordionContent>
+          </AccordionPanel>
+          <AccordionPanel value="1">
+            <AccordionHeader
+              style="
+                background-color: rgba(151, 221, 243, 0.8);
+                color: rgba(0, 108, 143, 0.8);
+                font-weight: 300;
+              "
+              ><i class="pi pi-comment mr-2"></i> commentaires
+              <Badge
+                :value="film.comments.length"
+                class="ml-auto mr-2"
+                style="background-color: rgba(0, 108, 143, 0.8)"
+            /></AccordionHeader>
+            <AccordionContent>
+              <FilmCommentBox
+                :film-id="film.id"
+                :comments="film.comments"
+                :user-id="userId"
+                :username="username"
+                @update-comments-number="updateCommentCounts"
+              />
+            </AccordionContent>
+          </AccordionPanel>
+          <AccordionPanel value="2">
+            <AccordionHeader
+              style="
+                background-color: rgba(255, 237, 141, 0.91);
+                color: rgba(230, 55, 12, 0.91);
+                font-weight: 300;
+                text-align: left;
+              "
+            >
+              <i class="pi pi-user-edit mr-2"></i>vos avis
+              <Badge
+                :value="totalInterest"
+                class="ml-auto mr-2"
+                style="background-color: rgba(230, 55, 12, 0.91)"
+              />
+            </AccordionHeader>
+            <AccordionContent>
+              <div class="interest-select mt-3" v-if="!voteOpen">
+                <PickInterest v-model="interest" :film-id="filmId" />
+              </div>
+              <div v-else>Le vote est terminé.</div>
+              <div class="interest-bar screen-only">
+                <div class="text-xs font-bold mb-1 mt-2">
+                  Ce qu'en pensent les programmateurs :
+                </div>
+                <p v-if="interestCounts">
+                  <span v-if="interestCounts.SANS_OPINION > 0">
+                    Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
+                  </span>
+                  <span v-if="interestCounts.CURIOUS > 0">
+                    A discuter : {{ interestCounts.CURIOUS || 0 }}
+                  </span>
+                  <span v-if="interestCounts.NOT_INTERESTED > 0">
+                    Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
+                  </span>
+                  <span v-if="interestCounts.MUST_SEE > 0">
+                    Très envie : {{ interestCounts.MUST_SEE || 0 }}
+                  </span>
+                </p>
+                <p v-else>Pas d'avis partagé pour l'instant</p>
+              </div>
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
 
-        <!-- External Links -->
-        <div
-          v-if="film.externalLinks && film.externalLinks.length"
-          class="screen-only"
-        >
-          <ul class="mt-2 text-sm text-green-600">
-            <li v-for="(link, index) in film.externalLinks" :key="index">
-              <a :href="link.url" target="_blank" rel="noopener noreferrer">
-                <i class="pi pi-external-link" v-if="link.label"></i>
-                {{ link.label }}</a
-              >
-            </li>
-          </ul>
-        </div>
-        <div class="screen-only py-6">
-          <TrailerPlayer
-            :youtubeUrl="film.trailerUrl"
-            class="screen-only mb-2"
-          />
-        </div>
-
-        <div class="mt-4 screen-only">
-          <Divider layout="horizontal" class="!flex md:!hidden"
-            ><b>MON AVIS</b></Divider
-          >
-          <div class="interest-select mt-3" v-if="!voteOpen">
-            <PickInterest v-model="interest" :film-id="filmId" />
-          </div>
-          <div v-else>Le vote est terminé.</div>
-          <div class="interest-bar screen-only">
-            <div class="text-xs font-bold mb-1 mt-2">
-              Ce qu'en pensent les programmateurs :
-            </div>
-            <p v-if="interestCounts">
-              <span v-if="interestCounts.SANS_OPINION > 0">
-                Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
-              </span>
-              <span v-if="interestCounts.CURIOUS > 0">
-                A discuter : {{ interestCounts.CURIOUS || 0 }}
-              </span>
-              <span v-if="interestCounts.NOT_INTERESTED > 0">
-                Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
-              </span>
-              <span v-if="interestCounts.MUST_SEE > 0">
-                Très envie : {{ interestCounts.MUST_SEE || 0 }}
-              </span>
-            </p>
-            <p v-else>Pas d'avis partagé pour l'instant</p>
-          </div>
-        </div>
         <div class="mt-2 screen-only" v-if="role === 'ADMIN'">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating v-model.number="localFilm.rating" :stars="10" />
@@ -203,16 +195,6 @@
             <button @click="selectForm('link')">Ajouter un lien externe</button>
           </div>
         </div>
-
-        <!-- Formulaires d'ajout -->
-        <!--  <div v-if="formToShow === 'commentaire'" class="mt-4">
-          <input
-            v-model="newCommentaire"
-            class="border p-1"
-            placeholder="Votre commentaire"
-          />
-          <button @click="addCommentaire">OK</button>
-        </div> -->
 
         <div v-if="formToShow === 'tag'" class="mt-4">
           <input
@@ -264,15 +246,20 @@ import { onMounted, reactive, vModelText, watch } from "vue";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
-import Divider from "primevue/divider";
+import Accordion from "primevue/accordion";
+import AccordionPanel from "primevue/accordionpanel";
+import AccordionHeader from "primevue/accordionheader";
+import AccordionContent from "primevue/accordioncontent";
 import TrailerPlayer from "./TrailerPlayer.vue";
+import Badge from "primevue/badge";
 import { useMyInterests } from "@/composables/useMyInterests";
 const config = useRuntimeConfig();
 const ready = ref(false);
 const { updateInterest } = useMyInterests();
 
-const emit = defineEmits(["update", "remove", "update-interest-counts"]);
+const emit = defineEmits(["update", "remove"]);
 const emitUpdate = () => {
+  alert("Film mis à jour !");
   emit("update", toRaw(localFilm));
 };
 const myComment = ref("");
@@ -302,38 +289,28 @@ const props = defineProps({
     default: true,
   },
 });
+
+const totalInterest = computed(() => {
+  const counts = { ...props.interestCounts };
+  const myValue = interest.value;
+
+  if (myValue && counts[myValue]) {
+    counts[myValue]--; // on retire notre propre vote
+  }
+
+  return ["CURIOUS", "MUST_SEE", "NOT_INTERESTED", "SANS_OPINION"]
+    .map((key) => counts[key] ?? 0)
+    .reduce((a, b) => a + b, 0);
+});
+
 const interest = ref(props.initialInterest);
 
-/* onMounted(() => {
-  if (!props.username || !props.film.comments) return;
-
-  const mine = props.film.comments.find((c) => c.user_id === props.userId);
-
-  if (mine) {
-    myComment.value = mine.commentaire;
-  }
-}); */
-
-// si `initialInterest` change (ex: async), mettre à jour
 watch(
   () => props.initialInterest,
   (newVal) => {
     interest.value = newVal;
   }
 );
-
-//Update l'avis donné dans le Picker
-/* watch(interest, async (newValue, oldValue) => {
-  if (newValue === oldValue) return;
-  console.log("New interest value:", newValue);
-  emit("update-interest-counts", {
-    filmId: props.film.id,
-    oldValue,
-    newValue,
-  });
-  console.log("Modified value:", oldValue, newValue);
-  await updateInterest(props.film.id, newValue);
-}); */
 
 watch(interest, (newValue, oldValue) => {
   if (newValue === oldValue) return;
@@ -343,7 +320,9 @@ watch(interest, (newValue, oldValue) => {
     newValue,
   });
 });
-
+async function updateCommentCounts(interestCounts) {
+  alert("Mise à jour des commentaires !", interestCounts);
+}
 const awards = ref([]);
 const externalLinks = ref([]);
 const localFilm = reactive({

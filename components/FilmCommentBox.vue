@@ -1,8 +1,7 @@
 <template>
-  <div
-    class="p-2 rounded-md text-sm mt-4 border-t-2 border-b-2 border-green-100"
-  >
-    <small> Commentaires </small>
+  <div class="p-2 rounded-md text-sm">
+    <!--     <small> Commentaires </small>
+ -->
     <div class="flex justify-between items-center mb-2">
       <!--       <strong>Commentaires</strong>
  -->
@@ -50,10 +49,6 @@
           size="small"
           v-else
         />
-
-        <!-- {{ myComment ? "Mettre à jour" : "Envoyer" }} -->
-        <!--         </Button>
- -->
         <Button
           v-if="myComment"
           @click="handleDelete"
@@ -62,39 +57,25 @@
           icon="pi pi-trash"
           label="Supprimer"
         />
-
-        <!--         </Button>
- -->
       </div>
     </div>
     <!-- Bouton discret en rond -->
     <div v-if="!showForm" class="relative group inline-block">
-      <!-- <button
-        @click="showForm = true"
-        class="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center shadow hover:shadow-md"
-        title="Ajouter un commentaire"
-      >
-        <i class="pi pi-plus" />
-      </button> -->
       <Button
-        @click="showForm = true"
-        icon="pi pi-plus"
-        severity="warning"
-        rounded
-        outlined
-        aria-label="Notification"
-        v-tooltip.bottom="'Enter your username'"
+        severity="success"
+        variant="text"
+        raised
         size="small"
-      />
-
-      <!-- Info-bulle au survol -->
-      <div
-        class="absolute left-10 top-1/2 -translate-y-1/2 bg-green-500 text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
+        class="text-sm font-light color-blue-500"
+        @click="showForm = true"
       >
-        {{
-          myComment ? "Modifier votre commentaire" : "Ajouter un commentaire"
-        }}
-      </div>
+        <span v-if="!myComment">
+          <i class="pi pi-plus"></i> Ajouter un commentaire
+        </span>
+        <span v-else>
+          <i class="pi pi-pencil"></i> Modifier votre commentaire
+        </span>
+      </Button>
     </div>
   </div>
 </template>
@@ -112,7 +93,7 @@ const props = defineProps({
 });
 //const toast = useToast();
 
-const emit = defineEmits(["update-comments"]);
+const emit = defineEmits(["update-comments-number"]);
 
 const localComments = ref([...props.comments]);
 
@@ -178,7 +159,8 @@ const handleSubmit = async () => {
       detail: "Merci pour votre retour !",
       life: 3000,
     });
-    // emit("update-comments", localComments.value);
+    alert(localComments.value.length);
+    emit("update-comments-number", localComments.value.length);
   } catch (e) {
     toast.add({
       severity: "error",

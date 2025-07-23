@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import Dropdown from "primevue/dropdown";
+import Select from "primevue/select";
 
 const props = defineProps({
   modelValue: String, // pour v-model
@@ -35,7 +36,7 @@ watch(selected, (newVal) => {
 <template>
   <div class="interest-select">
     <!-- <label class="block mb-1 font-bold mr-2">Mon avis sur le film :</label> -->
-    <Dropdown
+    <Select
       v-model="selected"
       :options="options"
       optionLabel="label"

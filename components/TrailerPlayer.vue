@@ -3,9 +3,9 @@
     <div
       v-if="!visible && youtubeId"
       @click="visible = true"
-      class="cursor-pointer flex items-center gap-2 text-blue-600 hover:underline"
+      class="cursor-pointer flex items-center gap-2 text-gray-500 w-full bg-slate-200 rounded justify-center p-2 shadow hover:shadow-md transition-shadow"
     >
-      <i class="pi pi-play-circle text-xl"></i>
+      <i class="pi pi-play-circle text-l"></i>
       <span>Voir la bande-annonce</span>
     </div>
 

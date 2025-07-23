@@ -8,10 +8,10 @@ COMMENTAIRES
 
 BUGS
 
-- enregistrement des Interests (doublés)
-- commentaire n'apparait pas
-  plan
-- requetes
+!!- enregistrement des Interests (doublés)
+ex film 306 1 seul interet, 2 resultats
+!! comptabilte commentaire
+plan
 
 ===========
 
