@@ -7,6 +7,23 @@
         : 'flex flex-row gap-4 w-full items-start'
     "
   >
+    <!--   :value="localFilm.myScore"
+ -->
+    <Badge
+      :value="film.score"
+      class="ml-auto mr-2"
+      size="xlarge"
+      style="
+        position: absolute;
+        background-color: #2b7fff;
+        opacity: 0.8;
+        right: 0;
+        width: 70px;
+        height: 70px;
+        font-size: 22px;
+      "
+      :style="{ backgroundColor: getScoreColor(film.score) }"
+    />
     <div>
       <small class="center">
         {{ formatDate(film.releaseDate) }}
@@ -139,13 +156,18 @@
             </AccordionHeader>
             <AccordionContent>
               <div class="interest-select mt-3" v-if="!voteOpen">
-                <PickInterest v-model="interest" :film-id="filmId" />
+                <PickInterest
+                  v-model="interest"
+                  :film-id="filmId"
+                  @user-change="onUserInterestChange"
+                />
               </div>
               <div v-else>Le vote est terminé.</div>
               <div class="interest-bar screen-only">
                 <div class="text-xs font-bold mb-1 mt-2">
                   Ce qu'en pensent les programmateurs :
                 </div>
+
                 <p v-if="interestCounts">
                   <span v-if="interestCounts.SANS_OPINION > 0">
                     Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
@@ -168,7 +190,11 @@
 
         <div class="mt-2 screen-only" v-if="role === 'ADMIN'">
           <label class="block text-xs mb-1">Votes :</label>
-          <Rating v-model.number="localFilm.rating" :stars="10" />
+          <Rating
+            v-model.number="localFilm.rating"
+            :stars="10"
+            @change="alert($event.value)"
+          />
         </div>
         <!-- Bouton "+" -->
         <div
@@ -243,6 +269,7 @@
 
 <script setup>
 import { onMounted, reactive, vModelText, watch } from "vue";
+import { computeAggregateScore } from "@/utils/score";
 
 import Rating from "primevue/rating";
 import Button from "primevue/button";
@@ -257,7 +284,13 @@ const config = useRuntimeConfig();
 const ready = ref(false);
 const { updateInterest } = useMyInterests();
 const totalComments = ref(0);
-const emit = defineEmits(["update", "remove"]);
+const emit = defineEmits([
+  "update",
+  "remove",
+  "toggle-selection",
+  "interest-change",
+  "update-interest-counts",
+]);
 const emitUpdate = () => {
   alert("Film mis à jour !");
   emit("update", toRaw(localFilm));
@@ -266,6 +299,7 @@ const myComment = ref("");
 
 const props = defineProps({
   film: Object,
+  score: Number,
   role: {
     type: String,
     default: "USER",
@@ -304,34 +338,106 @@ const totalInterest = computed(() => {
 });
 
 const interest = ref(props.initialInterest);
-
+const formerInterest = ref(null);
+const initialized = ref(false);
 watch(
   () => props.initialInterest,
   (newVal) => {
+    console.log("FilmCard: initial interest set to", newVal);
     interest.value = newVal;
-  }
-);
+    formerInterest.value = newVal; // ✅ on initialise ici une seule fois
 
-watch(interest, (newValue, oldValue) => {
-  if (newValue === oldValue) return;
+    // 💡 Ne pas initialiser si null (pas encore d'intérêt connu)
+    if (newVal !== null && newVal !== undefined) {
+      initialized.value = true;
+      console.log("✅ Initialisation complétée");
+    }
+  },
+  { immediate: true }
+);
+function onUserInterestChange(newValue) {
+  console.log("🎯 Intérêt modifié :", formerInterest.value, "→", newValue);
+
+  if (newValue === formerInterest.value) {
+    console.log("⏳ Ignoré : pas de changement d'intérêt");
+    return;
+  }
+
+  console.log("formerInterest before change", formerInterest.value);
   emit("interest-change", {
     filmId: props.film.id,
-    oldValue,
+    oldValue: formerInterest.value,
     newValue,
   });
-});
+
+  // ✅ Met à jour l'ancien intérêt maintenant qu'on l'a utilisé
+  formerInterest.value = newValue;
+  console.log("formerInterest changed", formerInterest.value);
+}
+
+function getScoreColor(score) {
+  if (score >= 10) return "#ff3b3b"; // très chaud
+  if (score >= 7) return "#ff884d";
+  if (score >= 4) return "#ffd966";
+  if (score >= 1) return "#b0e57c";
+  return "#a0c4ff"; // froid
+}
+/* watch(interest, (newValue, oldValue) => {
+  console.log(initialized.value);
+
+  if (!initialized.value) {
+    // 💡 Premier vrai changement utilisateur
+    if (newValue !== null && newValue !== undefined) {
+      initialized.value = true;
+      console.log("✅ Initialisation retardée activée au premier vrai choix");
+    } else {
+      console.log("⏳ Ignoré : modification avant initialisation", {
+        oldValue,
+        newValue,
+      });
+      return;
+    }
+  }
+
+  if (newValue !== oldValue) {
+    console.log("💡 Emitting interest-change", { oldValue, newValue });
+    emit("interest-change", {
+      filmId: props.film.id,
+      oldValue,
+      newValue,
+    });
+    emit("update-interest-counts", {
+      filmId: props.film.id,
+      oldValue,
+      newValue,
+    });
+  }
+}); */
+
 async function updateCommentCounts(commentsCounts) {
   totalComments.value = commentsCounts;
 }
 const awards = ref([]);
 const externalLinks = ref([]);
+const myScore = computed(() => {
+  const interestCounts = props.interestCounts || {};
+  const avgRating = props.film.avgRating ?? props.film.rating ?? 0;
+  console.log("avgRating", props.film.title, avgRating);
+  return computeAggregateScore(interestCounts, avgRating);
+});
 const localFilm = reactive({
   id: props.film.id,
   commentaire: props.film.commentaire || "",
   rating: props.film.rating ?? null,
   tags: props.film.tags || [],
+  myScore: 0,
   awards: JSON.parse(JSON.stringify(props.film.awards || [])),
   externalLinks: JSON.parse(JSON.stringify(props.film.externalLinks || [])),
+});
+const note = computed(() => localFilm.rating); // ← ta note
+
+watch(myScore, (val) => {
+  localFilm.myScore = val;
 });
 
 watch(

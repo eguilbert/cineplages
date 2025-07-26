@@ -1,19 +1,30 @@
+BUGS a resoudre
+
+affichage Interests quand on ajoute (apres avoir change de selection)
+load nouvelle seletcion: requestes doublées
+Directors absents (verifier sur une nouvelle selection, et faire un update sur ancien avec rajout dns update du director)
+
+SCORE
+
 COMMENTAIRES
 
 - verifier quand commentire d'un autre, comment il apparait
 - reactivite
-- pb suppression
-- design
 - commenaire uniquement dans Selections Prog?
 
-BUGS
+NEW USER: no email received
 
 !!- enregistrement des Interests (doublés)
 ex film 306 1 seul interet, 2 resultats
-!! comptabilte commentaire
-plan
 
+++ ajouter coups de coeur sur les films (par user)
+--une page ou retrouver tous ceux du cinema
+(le coup de coeur de Maryvonne)
 ===========
+
+PROCHAINE ETAPE
+
+Programmation score, vote et transformation de la selection
 
 1. bloquer la prog octobre avec resultats
 2. ouvrir commentaires etc.

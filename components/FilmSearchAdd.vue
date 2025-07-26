@@ -57,6 +57,8 @@
 import { ref } from "vue";
 import { useFetch } from "#app";
 
+import { Button } from "primevue";
+
 const props = defineProps({
   selectionId: Number,
 });

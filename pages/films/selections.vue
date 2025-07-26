@@ -2,40 +2,13 @@
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Sélections</h1>
 
-    <!-- <div v-if="selectedFilms.length" class="mb-6">
-      <h2 class="text-lg font-semibold mb-2">
-        Films sélectionnés ({{ selectedFilms.length }})
-      </h2>
-      <div class="flex gap-3 overflow-x-auto py-2">
-        <div
-          v-for="film in selectedFilms"
-          :key="film.id"
-          class="min-w-[120px] bg-white shadow-sm border p-2 rounded text-xs flex flex-col items-center"
-        >
-          <img
-            :src="film.poster || '/placeholder.png'"
-            alt="poster"
-            class="w-20 h-28 object-cover mb-1"
-          />
-          <div class="font-bold text-center truncate w-full">
-            {{ film.title }}
-          </div>
-          <div
-            class="text-[10px] px-2 py-1 rounded mt-1 text-white"
-            :style="{ backgroundColor: getCategoryColor(film.category) }"
-          >
-            {{ film.category }}
-          </div>
-        </div>
-      </div>
-    </div> -->
     <FilmSearchAdd
       :selection-id="selectedSelectionId"
       v-if="role === 'ADMIN'"
     />
 
     <!-- Sélecteur de sélection -->
-    <Dropdown
+    <Select
       v-model="selectedSelectionId"
       :options="selections"
       optionLabel="name"
@@ -91,7 +64,7 @@
         />
         <Button icon="pi pi-bars" text @click="layout = 'row'" v-else />
         <!-- Filtre par date -->
-        <Dropdown
+        <Select
           v-if="selectedSelectionId"
           v-model="selectedDate"
           :options="availableDates"
@@ -102,8 +75,15 @@
         />
         <label>
           <input type="checkbox" v-model="sortByInterest" />
-          Trier par popularité
+          Trier par score
         </label>
+        <Button
+          label="Démarrer le vote"
+          v-if="role === 'ADMIN'"
+          @click="startVote"
+          size="small"
+          class="mb-4"
+        />
         <button
           @click="handlePrint"
           class="print-button justify-self-end ml-auto"
@@ -143,7 +123,6 @@
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
-              @update-interest-counts="handleInterestCounts"
               @toggle-selection="toggleFilmSelection"
               class="col-12 md:col-2 lg:col-3"
             />
@@ -219,11 +198,13 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import Button from "primevue/button";
-import Dropdown from "primevue/dropdown";
+import Select from "primevue/select";
 import FilmCard from "~/components/FilmCard.vue";
 import { watch } from "vue";
 import { getCategoryColor } from "@/utils/genreColors";
+import { useToast } from "primevue/usetoast";
 
+const toast = useToast();
 const config = useRuntimeConfig();
 const selections = ref([]);
 const selection = ref(null);
@@ -240,8 +221,8 @@ const sortByInterest = ref(false);
 const voteMode = ref(false);
 const selectedFilms = ref([]);
 const { updateInterest } = useMyInterests();
-
-const isBarVisible = ref(true);
+const scoreFilm = ref(0);
+const isBarVisible = ref(false);
 
 const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
@@ -251,6 +232,19 @@ const toggleFilmSelection = (film) => {
     selectedFilms.value.splice(index, 1);
   }
 };
+function openVote() {
+  isBarVisible.value = true;
+  voteMode.value = true;
+
+  // Facultatif : calcul dynamique du rating moyen
+  /*   selectedSelection.value.films.forEach((film) => {
+    const votes = film.votes || [];
+    if (votes.length > 0) {
+      film.rating = votes.reduce((acc, v) => acc + v.note, 0) / votes.length;
+    }
+  });
+ */
+}
 
 const availableDates = computed(() => {
   if (!selection.value) return [];
@@ -297,9 +291,7 @@ const loadSelection = async () => {
   }));
   const filmIds = selection.value.films.map((film) => film.id);
   const idsParam = filmIds.join(",");
-  /*   const data = await $fetch(
-    `${config.public.apiBase}/interests/films?ids=${idsParam}`
-  ); */
+
   const data = await $fetch(`${config.public.apiBase}/interests/films`, {
     method: "POST",
     body: {
@@ -327,19 +319,11 @@ const loadSelection = async () => {
 };
 
 const INTEREST_WEIGHTS = {
-  MUST_SEE: 3,
-  CURIOUS: 2,
-  SANS_OPINION: 1,
+  MUST_SEE: 2,
+  CURIOUS: 1,
+  SANS_OPINION: 0,
   NOT_INTERESTED: 0,
 };
-
-function getInterestScore(counts = {}) {
-  return (
-    (counts.MUST_SEE || 0) * 3 +
-    (counts.CURIOUS || 0) * 2 +
-    (counts.SANS_OPINION || 0) * 1
-  );
-}
 
 /* const getFilteredFilms = (category) => {
   if (!selection.value) return [];
@@ -352,7 +336,14 @@ function getInterestScore(counts = {}) {
         new Date(b.releaseDate || "1900-01-01")
     );
 }; */
-
+function getInterestScore(counts = {}) {
+  return (
+    (counts.MUST_SEE || 0) * 2 +
+    (counts.CURIOUS || 0) * 1 +
+    (counts.NOT_INTERESTED || 0) * -1 +
+    (counts.SANS_OPINION || 0) * 0
+  );
+}
 const getFilteredFilms = (category) => {
   if (!selection.value) return [];
 
@@ -367,12 +358,14 @@ const getFilteredFilms = (category) => {
 
   if (sortByInterest.value) {
     // ✅ Tri par score d'intérêt
-    filtered = filtered.sort((a, b) => {
+    /*  filtered = filtered.sort((a, b) => {
       const aScore = getInterestScore(interestStats.value[a.id] || {});
       const bScore = getInterestScore(interestStats.value[b.id] || {});
       return bScore - aScore; // tri décroissant
-    });
+    }); */
     //ou par score computed
+    filtered = filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
     //filtered = filtered.sort((a, b) => computeScore(b) - computeScore(a));
   } else {
     // ✅ Tri par date (défaut)
@@ -420,21 +413,64 @@ const scrollToCategory = (cat) => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
+const startVote = async () => {
+  const input = prompt("Combien de votants pour ce vote ?");
+  const nbVotants = parseInt(input);
+
+  if (isNaN(nbVotants) || nbVotants <= 0) {
+    toast.add({
+      severity: "error",
+      summary: "Entrée invalide",
+      detail: "Veuillez entrer un nombre valide de votants",
+      life: 3000,
+    });
+    return;
+  }
+
+  // ⚙️ Mise à jour du rating pour chaque film sélectionné
+  selectedFilms.forEach((film) => {
+    if (!film.votes || film.votes.length === 0) return;
+    const somme = film.votes.reduce((acc, v) => acc + v.note, 0);
+    film.rating = Math.round((somme / nbVotants) * 10) / 10; // ✅ format 1 chiffre après virgule
+    film.score = computeScore(film); // si tu l'as défini globalement
+  });
+
+  toast.add({
+    severity: "success",
+    summary: "Vote démarré",
+    detail: `${nbVotants} votants pris en compte.`,
+    life: 4000,
+  });
+
+  isBarVisible.value = true;
+  voteMode.value = true;
+};
 
 function handleInterestCounts({ filmId, oldValue, newValue }) {
+  console.log("handleInterestCounts:", filmId, oldValue, "→", newValue);
   const current = interestStats.value[filmId] || {
     SANS_OPINION: 0,
     NOT_INTERESTED: 0,
     CURIOUS: 0,
     MUST_SEE: 0,
   };
-
+  if (oldValue === newValue) {
+    console.log("Aucun changement d'intérêt détecté, rien à faire.");
+    return;
+  }
+  console.log("current interest stats:", current);
   // Met à jour proprement les comptes
   interestStats.value[filmId] = {
     ...current,
     [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
     [newValue]: (current[newValue] || 0) + 1,
   };
+  console.log(
+    "Calcul Updated interest stats:",
+    current[oldValue],
+    current[newValue]
+  );
+  console.log("Updated interest stats:", interestStats.value[filmId]);
 }
 const handlePrint = async () => {
   layout.value = "row";
@@ -449,11 +485,41 @@ const handlePrint = async () => {
 };
 
 function computeScore(film) {
+  console.log("computeScore for film", film.title, film.id);
   const votes = film.rating || 0; // ou autre metric
   const interestScore = getInterestScore(interestStats.value[film.id] || {});
+  console.log("computeScore for film", votes * 2 + interestScore);
   return votes * 2 + interestScore;
 }
+const updateFilmScore = async (filmId) => {
+  const res = await $fetch(`${config.public.apiBase}/films/${filmId}/score`);
+  const newScore = res?.score ?? null;
+  console.log("newScore", newScore);
+  // 🎯 Mets à jour le film dans selection.value
+  const film = selection.value.films.find((f) => f.id === filmId);
+  if (film && newScore !== null) {
+    film.score = newScore;
+  }
+};
+/* const onInterestChange = async ({ filmId, formerInterest, newValue }) => {
+  await $fetch(`${config.public.apiBase}/interests`, {
+    method: "POST",
+    body: { film_id: filmId, value: newValue },
+  });
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
+}; */
+
+const onVoteChange = async ({ filmId, note }) => {
+  await $fetch(`${config.public.apiBase}/votes`, {
+    method: "POST",
+    body: { filmId, note },
+  });
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
+};
+
 async function handleInterestChange({ filmId, oldValue, newValue }) {
+  console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
+
   // Update backend
   await updateInterest(filmId, newValue);
 
@@ -464,12 +530,18 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
     CURIOUS: 0,
     MUST_SEE: 0,
   };
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
 
   interestStats.value[filmId] = {
     ...current,
     [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
     [newValue]: (current[newValue] || 0) + 1,
   };
+  /*   await $fetch(`${config.public.apiBase}/interests`, {
+    method: "POST",
+    body: { film_id: filmId, value: newValue },
+  }); */
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
 }
 
 const submitSelection = async () => {

@@ -32,6 +32,7 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_ANON_KEY,
     },
+    ADMIN_SECRET_TOKEN: process.env.ADMIN_SECRET_TOKEN, // secret privé
   },
 
   app: {
