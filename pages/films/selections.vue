@@ -47,6 +47,9 @@
         La réunion de programmation aura lieu le 29 aout 2025. Veuillez voter
         avant cette date.
       </p>
+      <p>
+        {{ selection.description }}
+      </p>
 
       <p v-if="selection.id == 11" class="text-sm mb-8">
         Cette sélection comprend les films d'Art et Essai et Documentaires de

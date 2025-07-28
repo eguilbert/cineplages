@@ -1,75 +1,127 @@
 <template>
-  <div class="p-8 max-w-md mx-auto">
-    <h1 class="text-2xl font-bold mb-6">Connexion</h1>
+  <div class="max-w-md mx-auto p-6">
+    <h1 class="text-xl font-bold mb-4">Connexion</h1>
 
-    <form @submit.prevent="onLogin" class="space-y-4">
-      <div>
-        <label class="block font-medium">Email</label>
-        <input v-model="email" type="email" class="input" required />
-      </div>
+    <form @submit.prevent="handleLogin">
+      <input
+        v-model="email"
+        type="email"
+        placeholder="Email"
+        class="border p-2 w-full mb-2"
+        required
+      />
 
-      <div>
-        <label class="block font-medium">Mot de passe</label>
-        <input v-model="password" type="password" class="input" required />
-      </div>
+      <input
+        v-model="password"
+        type="password"
+        placeholder="Mot de passe"
+        class="border p-2 w-full mb-2"
+        required
+      />
 
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded w-full"
+      >
         Se connecter
       </button>
-
-      <p v-if="error" class="text-red-600 mt-4">{{ error }}</p>
-
-      <Button
-        class="text-red-600 mt-4"
-        @click="sendResetLink(email)"
-        severity="danger"
-        variant="text"
-        label="Mot de passe oublié ?"
-      >
-      </Button>
     </form>
-    <!--     <NuxtLink to="/register" class="text-blue-500 underline text-sm">
-      Pas encore de compte ? Créer un compte
-    </NuxtLink> -->
+
+    <div class="text-sm mt-4 text-right">
+      <button class="text-blue-600 hover:underline" @click="showReset = true">
+        Mot de passe oublié ?
+      </button>
+    </div>
+
+    <!-- Bloc de reset password -->
+    <div v-if="showReset" class="mt-4 border-t pt-4">
+      <p class="mb-2">
+        Entrez votre adresse email pour recevoir un lien de réinitialisation.
+      </p>
+
+      <input
+        v-model="resetEmail"
+        type="email"
+        placeholder="Email"
+        class="border p-2 w-full mb-2"
+      />
+
+      <button
+        @click="sendCustomReset"
+        class="bg-gray-800 text-white px-4 py-2 rounded w-full"
+      >
+        Envoyer le lien de réinitialisation
+      </button>
+
+      <p v-if="resetMessage" class="text-green-600 mt-2">{{ resetMessage }}</p>
+      <p v-if="resetError" class="text-red-600 mt-2">{{ resetError }}</p>
+    </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import Button from "primevue/button";
+<script setup>
 const supabase = useSupabaseClient();
+
 const email = ref("");
 const password = ref("");
-const error = ref("");
-const router = useRouter();
 
-const onLogin = async () => {
-  error.value = "";
-  const { error: loginError } = await supabase.auth.signInWithPassword({
+const showReset = ref(false);
+const resetEmail = ref("");
+const resetMessage = ref("");
+const resetError = ref("");
+
+const handleLogin = async () => {
+  const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,
   });
 
-  if (loginError) {
-    error.value = loginError.message;
+  if (error) {
+    alert("Connexion échouée : " + error.message);
+  } else {
+    // Redirection automatique
+    navigateTo("/");
+  }
+};
+const sendCustomReset = async () => {
+  const res = await fetch(
+    "https://ylyugnwmbodngbjuiwff.functions.supabase.co/send-recovery-link",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.value }),
+    }
+  );
+
+  const data = await res.json();
+  if (res.ok) {
+    message.value = "Lien envoyé ! Vérifiez votre boîte mail.";
+  } else {
+    error.value = data.error || "Une erreur est survenue.";
+  }
+};
+const sendResetLink = async () => {
+  resetMessage.value = "";
+  resetError.value = "";
+
+  if (!resetEmail.value) {
+    resetError.value = "Veuillez entrer une adresse email.";
     return;
   }
 
-  router.push("/films/selections"); // ✅ redirection
-};
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    resetEmail.value,
+    {
+      redirectTo: "https://cineplages.vercel.app/reset-password", // ou localhost en dev
+    }
+  );
 
-const sendResetLink = async (email: string) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://cineplages.vercel.app/reset-password",
-  });
-  if (error) console.error("Erreur reset password:", error.message);
+  if (error) {
+    resetError.value = error.message;
+  } else {
+    resetMessage.value =
+      "Lien de réinitialisation envoyé. Vérifiez votre boîte mail.";
+    resetEmail.value = "";
+  }
 };
 </script>
-
-<style scoped>
-.input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 0.375rem;
-}
-</style>
