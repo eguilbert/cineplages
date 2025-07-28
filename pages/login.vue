@@ -69,7 +69,25 @@ const showReset = ref(false);
 const resetEmail = ref("");
 const resetMessage = ref("");
 const resetError = ref("");
+const route = useRoute();
+onMounted(() => {
+  const hash = route.hash;
 
+  if (hash.includes("error=access_denied")) {
+    const params = new URLSearchParams(hash.replace("#", ""));
+    const code = params.get("error_code");
+    if (code === "otp_expired") {
+      error.value = "Le lien est expiré. Merci de redemander un nouveau lien.";
+    } else {
+      error.value = "Erreur : lien invalide ou déjà utilisé.";
+    }
+  }
+  if (hash.includes("type=recovery") && hash.includes("access_token")) {
+    // Forcer redirection vers /reset-password avec le même hash
+    const redirect = "/reset-password" + hash;
+    window.location.replace(redirect);
+  }
+});
 const handleLogin = async () => {
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
