@@ -36,9 +36,17 @@ const message = ref("");
 const error = ref("");
 
 onMounted(async () => {
+  // ⚠️ Important : attendre la session avant d'accéder à user
   const hash = route.fullPath.split("#")[1];
-  if (!user.value && hash) {
-    await supabase.auth.getSessionFromUrl({ storeSession: true });
+
+  if (hash && !user.value) {
+    const { data, error } = await supabase.auth.getSessionFromUrl({
+      storeSession: true,
+    });
+
+    if (error) {
+      console.error("Erreur lors du traitement du token:", error.message);
+    }
   }
 });
 
