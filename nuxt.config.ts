@@ -48,10 +48,4 @@ export default defineNuxtConfig({
     },
   },
   modules: ["@pinia/nuxt", "@nuxtjs/supabase"],
-  supabase: {
-    redirect: {
-      login: "/login",
-      callback: "/auth/callback", // à adapter
-    },
-  },
 });

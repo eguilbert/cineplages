@@ -1,3 +1,21 @@
+AVANT OUVERTURE
+
+regler probleme mdp
+
+- simplifier
+- regler: mdp perdu?
+
+Nationalites films
+
+Division Agon/Coutainville (dans les resultats)
+
+Ameliorer INterets:
+
+- Pas interessé
+- Pourquoi pas
+- Très Intéressé
+- Indispensable
+
 BUGS a resoudre
 
 affichage Interests quand on ajoute (apres avoir change de selection)
