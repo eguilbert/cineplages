@@ -11,10 +11,10 @@
         <input v-model="form.email" type="email" class="input" required />
       </div>
 
-      <div>
+      <!--       <div>
         <label class="block font-medium">Mot de passe</label>
         <input v-model="form.password" type="password" class="input" required />
-      </div>
+      </div> -->
 
       <div>
         <label class="block font-medium">Nom d’usage</label>
@@ -123,10 +123,13 @@
 <script setup>
 import { format } from "date-fns";
 const config = useRuntimeConfig();
-
+const token = config.public.adminToken;
+/* const { data: authData } = await supabase.auth.getSession();
+const accessToken = authData?.session?.access_token;
+ */
+console.log("🔗 API Base URL utilisée :", config.public.apiBase);
 const form = reactive({
   email: "",
-  password: "",
   role: "INVITE",
   username: "",
   cinemaId: null,
@@ -135,13 +138,16 @@ const message = ref("");
 const error = ref("");
 
 const createUser = async () => {
+  console.log("🔐 Admin token (Nuxt)", token);
   message.value = "";
   error.value = "";
   try {
     const res = await $fetch(`${config.public.apiBase}/createUser`, {
       method: "POST",
       headers: {
-        "X-Admin-Token": config.ADMIN_SECRET_TOKEN,
+        "Content-Type": "application/json",
+        /*         Authorization: `Bearer ${accessToken}`,
+         */
       },
       body: { ...form },
     });
@@ -152,7 +158,6 @@ const createUser = async () => {
       message.value = "Utilisateur créé avec succès.";
       Object.assign(form, {
         email: "",
-        password: "",
         role: "INVITE",
         username: "",
         cinemaId: null,
@@ -174,7 +179,7 @@ const filters = reactive({
 });
 
 const loadLogs = async () => {
-  logs.value = await $fetch(`${config.public.apiBase}/activity-logs`);
+  logs.value = await $fetch(`${config.public.apiBase}/activity`);
 };
 const loadUsers = async () => {
   users.value = await $fetch(`${config.public.apiBase}/users`);

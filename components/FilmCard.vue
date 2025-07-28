@@ -51,6 +51,9 @@
           >
             {{ film.title }}
             <small> ({{ film.origin }})</small>
+            <span v-if="role === 'ADMIN'" style="font-size: 10px">
+              [{{ film.id }}]</span
+            >
           </a>
           <br />
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
@@ -167,19 +170,18 @@
                 <div class="text-xs font-bold mb-1 mt-2">
                   Ce qu'en pensent les programmateurs :
                 </div>
-
                 <p v-if="interestCounts">
                   <span v-if="interestCounts.SANS_OPINION > 0">
-                    Sans opinion : {{ interestCounts.SANS_OPINION || 0 }}
-                  </span>
-                  <span v-if="interestCounts.CURIOUS > 0">
-                    A discuter : {{ interestCounts.CURIOUS || 0 }}
+                    🕳 : {{ interestCounts.SANS_OPINION || 0 }}
                   </span>
                   <span v-if="interestCounts.NOT_INTERESTED > 0">
-                    Pas intéressé : {{ interestCounts.NOT_INTERESTED || 0 }}
+                    ❌ : {{ interestCounts.NOT_INTERESTED || 0 }}
+                  </span>
+                  <span v-if="interestCounts.CURIOUS > 0">
+                    🤔 : {{ interestCounts.CURIOUS || 0 }}
                   </span>
                   <span v-if="interestCounts.MUST_SEE > 0">
-                    Très envie : {{ interestCounts.MUST_SEE || 0 }}
+                    ✅ : {{ interestCounts.MUST_SEE || 0 }}
                   </span>
                 </p>
                 <p v-else>Pas d'avis partagé pour l'instant</p>

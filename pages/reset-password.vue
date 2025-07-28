@@ -1,49 +1,57 @@
 <template>
-  <div class="p-8 max-w-md mx-auto">
-    <h1 class="text-2xl font-bold mb-4">Réinitialisation du mot de passe</h1>
+  <div class="p-6 max-w-md mx-auto mt-10 space-y-4">
+    <h1 class="text-2xl font-bold mb-4">🔑 Réinitialiser votre mot de passe</h1>
 
-    <form @submit.prevent="resetPassword" v-if="!done" class="space-y-4">
-      <div>
-        <label class="block font-medium">Nouveau mot de passe</label>
-        <input v-model="password" type="password" class="input" required />
-      </div>
-
-      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
-        Mettre à jour le mot de passe
+    <div v-if="!isComplete" class="space-y-4">
+      <input
+        type="password"
+        v-model="newPassword"
+        placeholder="Nouveau mot de passe"
+        class="input"
+      />
+      <button @click="updatePassword" class="btn">
+        Changer le mot de passe
       </button>
-    </form>
+    </div>
 
-    <p v-if="done" class="text-green-600">
-      Mot de passe mis à jour. <NuxtLink to="/login">Connectez-vous</NuxtLink>.
-    </p>
-    <p v-if="error" class="text-red-600 mt-4">{{ error }}</p>
+    <p v-if="message" class="text-green-600">{{ message }}</p>
+    <p v-if="error" class="text-red-600">{{ error }}</p>
   </div>
 </template>
 
-<script setup lang="ts">
-const supabase = useSupabaseClient();
-const password = ref("");
-const error = ref("");
-const done = ref(false);
+<script setup>
+const client = useSupabaseClient();
+const route = useRoute();
 
-const resetPassword = async () => {
+const newPassword = ref("");
+const message = ref("");
+const error = ref("");
+const isComplete = ref(false);
+
+// Supabase gère automatiquement le token envoyé par l’email
+// Tu n’as pas besoin de le récupérer manuellement dans l’URL
+const updatePassword = async () => {
+  message.value = "";
   error.value = "";
-  const { error: updateError } = await supabase.auth.updateUser({
-    password: password.value,
+
+  const { error: err } = await client.auth.updateUser({
+    password: newPassword.value,
   });
-  if (updateError) {
-    error.value = updateError.message;
+
+  if (err) {
+    error.value = err.message;
   } else {
-    done.value = true;
+    message.value = "✅ Mot de passe mis à jour. Vous pouvez vous reconnecter.";
+    isComplete.value = true;
   }
 };
 </script>
 
 <style scoped>
 .input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 0.375rem;
+  @apply w-full border border-gray-300 rounded px-3 py-2;
+}
+.btn {
+  @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700;
 }
 </style>

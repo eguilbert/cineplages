@@ -28,9 +28,9 @@
       >
       </Button>
     </form>
-    <NuxtLink to="/register" class="text-blue-500 underline text-sm">
+    <!--     <NuxtLink to="/register" class="text-blue-500 underline text-sm">
       Pas encore de compte ? Créer un compte
-    </NuxtLink>
+    </NuxtLink> -->
   </div>
 </template>
 
