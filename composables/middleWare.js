@@ -1,7 +1,10 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const user = useSupabaseUser();
   const { role, fetchRole } = useUserRole();
-
+  const publicRoutes = ["/login", "/welcome", "/reset-password", "/auth/callback"];
+if (publicRoutes.includes(to.path)) {
+    return; // laisser passer
+  }
   if (!user.value) {
     return navigateTo("/login");
   }
