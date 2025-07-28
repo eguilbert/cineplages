@@ -85,11 +85,14 @@ const handleLogin = async () => {
 };
 const sendCustomReset = async () => {
   const res = await fetch(
-    "https://ylyugnwmbodngbjuiwff.functions.supabase.co/send-recovery-link",
+    "https://ylyugnwmbodngbjuiwff.functions.supabase.co/send-link",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.value }),
+      body: JSON.stringify({
+        email: resetEmail.value,
+        type: "recovery", // ou "recovery" ou "invite"
+      }),
     }
   );
 
@@ -97,7 +100,7 @@ const sendCustomReset = async () => {
   if (res.ok) {
     message.value = "Lien envoyé ! Vérifiez votre boîte mail.";
   } else {
-    error.value = data.error || "Une erreur est survenue.";
+    resetError.value = data.error || "Une erreur est survenue.";
   }
 };
 const sendResetLink = async () => {
