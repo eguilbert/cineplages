@@ -59,7 +59,7 @@ const onLogin = async () => {
 
 const sendResetLink = async (email: string) => {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "http://localhost:4000/reset-password",
+    redirectTo: "https://cineplages.vercel.app/reset-password",
   });
   if (error) console.error("Erreur reset password:", error.message);
 };
