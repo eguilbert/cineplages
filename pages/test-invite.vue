@@ -32,7 +32,9 @@ const sendInvitation = async () => {
       "https://ylyugnwmbodngbjuiwff.functions.supabase.co/send-invitation",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email: email.value }),
       }
     );

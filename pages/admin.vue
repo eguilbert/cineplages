@@ -121,6 +121,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import { format } from "date-fns";
 const config = useRuntimeConfig();
 const token = config.public.adminToken;

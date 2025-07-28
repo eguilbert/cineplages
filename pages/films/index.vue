@@ -229,6 +229,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import { ref, onMounted } from "vue";
 import dayjs from "dayjs";
 import InputText from "primevue/inputtext";

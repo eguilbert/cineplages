@@ -48,6 +48,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import { ref, computed, onMounted } from "vue";
 import InputText from "primevue/inputtext";
 import Dropdown from "primevue/dropdown";

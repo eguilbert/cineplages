@@ -6,6 +6,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import FilmPreparation from "~/components/FilmPreparation.vue";
 import { useImportStore } from "~/stores/import";
 

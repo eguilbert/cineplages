@@ -78,6 +78,9 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import { ref, computed, onMounted } from "vue";
 
 const config = useRuntimeConfig();

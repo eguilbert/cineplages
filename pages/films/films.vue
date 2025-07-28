@@ -50,6 +50,9 @@
   </div>
 </template>
 <script setup>
+definePageMeta({
+  middleware: ["authenticated"],
+});
 import { ref } from "vue";
 import TagEditor from "~/components/TagEditor.vue";
 import AwardEditor from "@/components/AwardEditor.vue";
