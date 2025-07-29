@@ -1,13 +1,10 @@
-export default defineNuxtRouteMiddleware(async (to, from) => {
+export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser();
   const { role, fetchRole } = useUserRole();
-  const publicRoutes = [
-    "/login",
-    "/welcome",
-    "/reset-password",
-    "/auth/callback",
-  ];
 
+  const publicRoutes = ["/login", "/welcome", "/auth/callback"];
+
+  // ✅ Laisser passer la page de reset-password si recovery token présent
   if (
     to.path === "/reset-password" &&
     to.hash?.includes("access_token") &&
@@ -17,19 +14,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   if (publicRoutes.includes(to.path)) {
-    return; // laisser passer
+    return;
   }
-  // Sinon, comportement normal
+
   if (!user.value) {
     return navigateTo("/login");
   }
 
-  await fetchRole(); // charge le rôle et le cinemaId
+  await fetchRole();
 
   const requiredRole = to.meta.requiredRole;
-
   if (requiredRole && role.value !== requiredRole) {
-    console.warn("⛔ Accès refusé : rôle requis =", requiredRole);
-    return navigateTo("/unauthorized"); // ou page d’erreur personnalisée
+    return navigateTo("/unauthorized");
   }
 });
