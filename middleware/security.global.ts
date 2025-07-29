@@ -6,9 +6,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // ✅ Laisser passer la page de reset-password si recovery token présent
   if (
-    to.path === "/reset-password" &&
-    to.hash?.includes("access_token") &&
-    to.hash?.includes("type=recovery")
+    to.fullPath.includes("/reset-password") &&
+    to.fullPath.includes("type=recovery")
   ) {
     return;
   }
