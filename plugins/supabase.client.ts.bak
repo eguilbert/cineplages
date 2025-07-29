@@ -1,0 +1,27 @@
+// plugins/supabase.client.ts
+import { createClient } from "@supabase/supabase-js";
+import { useRuntimeConfig } from "nuxt/app";
+
+export default defineNuxtPlugin(() => {
+  const config = useRuntimeConfig();
+
+  const supabase = createClient(
+    config.public.supabaseUrl as string,
+    config.public.supabaseKey as string,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: "pkce",
+        redirectTo: undefined, // 🔒 désactive les redirections automatiques
+      },
+    }
+  );
+
+  return {
+    provide: {
+      supabase,
+    },
+  };
+});
