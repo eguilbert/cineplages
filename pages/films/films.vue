@@ -51,7 +51,7 @@
 </template>
 <script setup>
 definePageMeta({
-  middleware: ["authenticated"],
+  requiredRole: "ADMIN",
 });
 import { ref } from "vue";
 import TagEditor from "~/components/TagEditor.vue";

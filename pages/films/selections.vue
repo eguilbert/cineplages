@@ -199,9 +199,6 @@
 </template>
 
 <script setup>
-definePageMeta({
-  middleware: ["authenticated"],
-});
 import { ref, onMounted, computed } from "vue";
 import Button from "primevue/button";
 import Select from "primevue/select";

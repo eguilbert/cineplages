@@ -71,9 +71,6 @@
 </template>
 
 <script setup>
-definePageMeta({
-  middleware: ["authenticated"],
-});
 import { reactive, ref, computed, onMounted } from "vue";
 import { useGrilleStore } from "@/stores/grille";
 

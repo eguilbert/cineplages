@@ -122,7 +122,7 @@
 
 <script setup>
 definePageMeta({
-  middleware: ["authenticated"],
+  requiredRole: "ADMIN",
 });
 import { format } from "date-fns";
 const config = useRuntimeConfig();

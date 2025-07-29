@@ -5,7 +5,7 @@
 
 <script setup>
 definePageMeta({
-  middleware: ["authenticated"],
+  requiredRole: "ADMIN",
 });
 import SelectionViewer from "@/components/PreferenceEditor";
 </script>

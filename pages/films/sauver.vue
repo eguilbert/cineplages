@@ -49,7 +49,7 @@
 
 <script setup>
 definePageMeta({
-  middleware: ["authenticated"],
+  requiredRole: "ADMIN",
 });
 import { ref, computed, onMounted } from "vue";
 import InputText from "primevue/inputtext";

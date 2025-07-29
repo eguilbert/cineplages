@@ -7,7 +7,7 @@
 
 <script setup>
 definePageMeta({
-  middleware: ["authenticated"],
+  requiredRole: "ADMIN",
 });
 import FilmPreparation from "~/components/FilmPreparation.vue";
 import { useImportStore } from "~/stores/import";
