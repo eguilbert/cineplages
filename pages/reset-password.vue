@@ -46,7 +46,8 @@ const error = ref("");
 const loading = ref(true);
 
 onMounted(async () => {
-  const { error: sessionError, data } = await supabase.auth.getSessionFromUrl();
+  const { error: sessionError, data } =
+    await supabase.auth.exchangeCodeForSession();
 
   if (sessionError) {
     error.value = sessionError.message;

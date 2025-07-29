@@ -62,7 +62,7 @@ const loading = ref(false);
 onMounted(async () => {
   const hash = route.fullPath.split("#")[1];
   if (!user.value && hash) {
-    await supabase.auth.getSessionFromUrl({ storeSession: true });
+    await supabase.auth.exchangeCodeForSession({ storeSession: true });
   }
 });
 
