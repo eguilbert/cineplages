@@ -1,32 +1,31 @@
 <script setup>
 const supabase = useSupabaseClient();
-const user = useSupabaseUser();
-const route = useRoute();
-
 const password = ref("");
 const success = ref(false);
-const error = ref("");
+const errorMessage = ref("");
 const loading = ref(true);
+const session = useSupabaseUser(); // ✅ sera mis à jour automatiquement
 
-// ⏳ Attendre la récupération de session via l'URL
 onMounted(async () => {
-  const { data, error } = await supabase.auth.getSessionFromUrl({
+  const { error } = await supabase.auth.getSessionFromUrl({
     storeSession: true,
   });
 
   if (error) {
+    console.error("Erreur getSessionFromUrl:", error.message);
     errorMessage.value = "Lien invalide ou expiré.";
-    return;
   }
+
+  loading.value = false;
 });
 
 const resetPassword = async () => {
-  const { error: updateError } = await supabase.auth.updateUser({
+  const { error } = await supabase.auth.updateUser({
     password: password.value,
   });
 
-  if (updateError) {
-    error.value = updateError.message;
+  if (error) {
+    errorMessage.value = error.message;
   } else {
     success.value = true;
     setTimeout(() => navigateTo("/login"), 3000);
@@ -40,8 +39,8 @@ const resetPassword = async () => {
 
     <div v-if="loading">Chargement...</div>
 
-    <div v-else-if="!user">
-      <p class="text-red-600">Lien invalide ou expiré.</p>
+    <div v-else-if="errorMessage">
+      <p class="text-red-600">{{ errorMessage }}</p>
     </div>
 
     <div v-else>
@@ -51,12 +50,13 @@ const resetPassword = async () => {
           v-model="password"
           placeholder="Nouveau mot de passe"
           class="border px-4 py-2 w-full rounded"
+          required
         />
         <button class="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
           Réinitialiser
         </button>
 
-        <p v-if="error" class="text-red-500">{{ error }}</p>
+        <p v-if="errorMessage" class="text-red-500">{{ errorMessage }}</p>
         <p v-if="success" class="text-green-500">Mot de passe mis à jour !</p>
       </form>
     </div>
