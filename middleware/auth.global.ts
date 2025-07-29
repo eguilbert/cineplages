@@ -1,38 +1,23 @@
-export default defineNuxtRouteMiddleware(async (to) => {
+export default defineNuxtRouteMiddleware((to) => {
   const user = useSupabaseUser();
-  const { role, fetchRole } = useUserRole();
-
   const publicRoutes = [
-    /* "/login", */
+    "/login",
     "/welcome",
     "/auth/callback",
-    "/reset-password", // ✅ autorise l'accès sans session
+    "/reset-password",
   ];
 
-  // 🔥 Autorise les liens avec access_token
-  /* if (
+  if (
     to.path === "/reset-password" &&
-    to.fullPath.includes("access_token") &&
-    to.fullPath.includes("type=recovery")
+    to.hash?.includes("access_token") &&
+    to.hash?.includes("type=recovery")
   ) {
-    console.log(
-      "⏳ Lien de récupération détecté, accès autorisé à /reset-password"
-    );
-    return;
-  } */
-
-  if (publicRoutes.includes(to.path)) {
-    return;
+    return; // ✅ Laisse passer
   }
 
-  // if (!user.value) {
-  //   return navigateTo("/login");
-  // }
+  if (publicRoutes.includes(to.path)) return;
 
-  await fetchRole();
-
-  const requiredRole = to.meta.requiredRole;
-  if (requiredRole && role.value !== requiredRole) {
-    return navigateTo("/unauthorized");
+  if (!user.value) {
+    return navigateTo("/login");
   }
 });

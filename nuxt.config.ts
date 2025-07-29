@@ -47,5 +47,20 @@ export default defineNuxtConfig({
       ],
     },
   },
-  modules: ["@pinia/nuxt", "@nuxtjs/supabase"],
+  modules: [
+    "@pinia/nuxt",
+    [
+      "@nuxtjs/supabase",
+      {
+        redirect: false, // ❌ Désactive les redirections auto (vers /login)
+        clientOptions: {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+          },
+        },
+      },
+    ],
+  ],
 });
