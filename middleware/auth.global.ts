@@ -2,13 +2,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const user = useSupabaseUser();
   const { role, fetchRole } = useUserRole();
 
-  const publicRoutes = ["/login", "/welcome", "/auth/callback"];
+  const publicRoutes = [
+    "/login",
+    "/welcome",
+    "/auth/callback",
+    "/reset-password", // ✅ autorise l'accès sans session
+  ];
 
-  // ✅ Laisser passer la page de reset-password si recovery token présent
+  // 🔥 Autorise les liens avec access_token
   if (
-    to.fullPath.includes("/reset-password") &&
+    to.path === "/reset-password" &&
+    to.fullPath.includes("access_token") &&
     to.fullPath.includes("type=recovery")
   ) {
+    console.log(
+      "⏳ Lien de récupération détecté, accès autorisé à /reset-password"
+    );
     return;
   }
 
