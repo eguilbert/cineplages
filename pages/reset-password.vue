@@ -27,7 +27,7 @@
       </form>
 
       <p v-if="success" class="text-green-600 mt-4">
-        Mot de passe modifié. Redirection...
+        ✅ Mot de passe modifié. Redirection dans 2 secondes...
       </p>
       <p v-if="error" class="text-red-600 mt-4">{{ error }}</p>
     </div>
@@ -35,10 +35,10 @@
 </template>
 
 <script setup>
+import { useRouter, useRoute } from "#app";
+
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
-const route = useRoute();
-const router = useRouter();
 
 const newPassword = ref("");
 const success = ref(false);
@@ -46,23 +46,25 @@ const error = ref("");
 const loading = ref(true);
 
 onMounted(async () => {
-  const { error: sessionError, data } =
-    await supabase.auth.exchangeCodeForSession();
+  try {
+    console.log("➡️ Tentative de récupérer la session via l'URL...");
 
-  if (sessionError) {
-    error.value = sessionError.message;
-    loading.value = false;
-    return;
-  }
+    const { data, error: sessionError } =
+      await supabase.auth.exchangeCodeForSession();
 
-  if (data?.session) {
-    // ✅ Session restaurée
-    loading.value = false;
-  } else {
-    error.value = "Session introuvable.";
+    console.log("🔐 Résultat exchangeCodeForSession", { data, sessionError });
+
+    if (sessionError) {
+      error.value = "Lien invalide ou expiré.";
+    }
+  } catch (e) {
+    error.value = "Erreur inattendue.";
+  } finally {
     loading.value = false;
   }
 });
+
+const router = useRouter();
 
 const handleReset = async () => {
   error.value = "";
@@ -76,7 +78,9 @@ const handleReset = async () => {
     error.value = updateError.message;
   } else {
     success.value = true;
-    setTimeout(() => router.push("/login"), 2000);
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
   }
 };
 </script>
