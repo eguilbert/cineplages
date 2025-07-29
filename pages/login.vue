@@ -77,9 +77,10 @@ onMounted(() => {
     const params = new URLSearchParams(hash.replace("#", ""));
     const code = params.get("error_code");
     if (code === "otp_expired") {
-      error.value = "Le lien est expiré. Merci de redemander un nouveau lien.";
+      resetError.value =
+        "Le lien est expiré. Merci de redemander un nouveau lien.";
     } else {
-      error.value = "Erreur : lien invalide ou déjà utilisé.";
+      resetError.value = "Erreur : lien invalide ou déjà utilisé.";
     }
   }
 });
