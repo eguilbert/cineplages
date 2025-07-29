@@ -64,8 +64,10 @@ import Toast from "primevue/toast";
 
 const { role, fetchRole, isLoggedIn } = useUserRole();
 const loading = ref(true);
+const route = useRoute();
 
 onMounted(async () => {
+  console.log("🎯 ROUTE", route.fullPath);
   console.log("logged", isLoggedIn.value);
   if (isLoggedIn.value) {
     await fetchRole();
@@ -73,10 +75,13 @@ onMounted(async () => {
   }
   loading.value = false;
 });
+
 const supabase = useSupabaseClient();
+const user = useSupabaseUser();
 const logout = async () => {
   await supabase.auth.signOut();
-  await navigateTo("/login");
+  /*   await navigateTo("/login");
+   */
 };
 console.log("API Base =", useRuntimeConfig().public.apiBase);
 console.log("process.env.NODE_ENV =", process.env.NODE_ENV);
