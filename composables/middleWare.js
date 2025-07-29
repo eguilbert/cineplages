@@ -2,9 +2,20 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const user = useSupabaseUser();
   const { role, fetchRole } = useUserRole();
   const publicRoutes = ["/login", "/welcome", "/reset-password", "/auth/callback"];
-if (publicRoutes.includes(to.path)) {
+
+  if (
+  to.path === "/reset-password" &&
+  to.hash?.includes("access_token") &&
+  to.hash?.includes("type=recovery")
+) {
+  console.log("Bypass an go to reset")
+  return; // On laisse Supabase finir la connexion
+}
+  if (publicRoutes.includes(to.path)) {
     return; // laisser passer
   }
+
+
   if (!user.value) {
     return navigateTo("/login");
   }

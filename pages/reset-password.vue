@@ -47,7 +47,18 @@ const loading = ref(true);
 
 // 🔐 Extraire et restaurer la session depuis le token dans l'URL
 onMounted(async () => {
-  const hash = route.fullPath.split("#")[1];
+  const { data, error } = await supabase.auth.getSessionFromUrl();
+
+  if (error) {
+    errorMsg.value = "Lien invalide ou expiré.";
+    return;
+  }
+
+  if (data?.session) {
+    // ✅ Utilisateur connecté avec succès
+    await navigateTo("/selections");
+  }
+  /*   const hash = route.fullPath.split("#")[1];
   if (hash) {
     const { error: sessionError } = await supabase.auth.getSessionFromUrl({
       storeSession: true,
@@ -56,7 +67,7 @@ onMounted(async () => {
       error.value = sessionError.message;
     }
   }
-  loading.value = false;
+ */ loading.value = false;
 });
 
 const handleReset = async () => {
