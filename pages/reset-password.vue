@@ -18,7 +18,7 @@ onMounted(async () => {
     errorMessage.value = "Lien invalide ou expiré.";
     return;
   }
-
+});
 
 const resetPassword = async () => {
   const { error: updateError } = await supabase.auth.updateUser({
