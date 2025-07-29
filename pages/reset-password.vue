@@ -49,25 +49,17 @@ const loading = ref(true);
 onMounted(async () => {
   const { data, error } = await supabase.auth.getSessionFromUrl();
 
-  if (error) {
-    errorMsg.value = "Lien invalide ou expiré.";
+  if (sessionError) {
+    error.value = "Lien invalide ou expiré.";
+    loading.value = false;
     return;
   }
 
   if (data?.session) {
-    // ✅ Utilisateur connecté avec succès
-    await navigateTo("/selections");
+    // Session restaurée correctement
+    loading.value = false;
   }
-  /*   const hash = route.fullPath.split("#")[1];
-  if (hash) {
-    const { error: sessionError } = await supabase.auth.getSessionFromUrl({
-      storeSession: true,
-    });
-    if (sessionError) {
-      error.value = sessionError.message;
-    }
-  }
- */ loading.value = false;
+  loading.value = false;
 });
 
 const handleReset = async () => {

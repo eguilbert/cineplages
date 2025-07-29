@@ -82,11 +82,6 @@ onMounted(() => {
       error.value = "Erreur : lien invalide ou déjà utilisé.";
     }
   }
-  if (hash.includes("type=recovery") && hash.includes("access_token")) {
-    // Forcer redirection vers /reset-password avec le même hash
-    const redirect = "/reset-password" + hash;
-    window.location.replace(redirect);
-  }
 });
 const handleLogin = async () => {
   const { error } = await supabase.auth.signInWithPassword({
@@ -116,33 +111,33 @@ const sendCustomReset = async () => {
 
   const data = await res.json();
   if (res.ok) {
-    message.value = "Lien envoyé ! Vérifiez votre boîte mail.";
+    resetMessage.value = "Lien envoyé ! Vérifiez votre boîte mail.";
   } else {
     resetError.value = data.error || "Une erreur est survenue.";
   }
 };
-const sendResetLink = async () => {
-  resetMessage.value = "";
-  resetError.value = "";
+// const sendResetLink = async () => {
+//   resetMessage.value = "";
+//   resetError.value = "";
 
-  if (!resetEmail.value) {
-    resetError.value = "Veuillez entrer une adresse email.";
-    return;
-  }
+//   if (!resetEmail.value) {
+//     resetError.value = "Veuillez entrer une adresse email.";
+//     return;
+//   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    resetEmail.value,
-    {
-      redirectTo: "https://cineplages.vercel.app/reset-password", // ou localhost en dev
-    }
-  );
+//   const { error } = await supabase.auth.resetPasswordForEmail(
+//     resetEmail.value,
+//     {
+//       redirectTo: "https://cineplages.vercel.app/reset-password", // ou localhost en dev
+//     }
+//   );
 
-  if (error) {
-    resetError.value = error.message;
-  } else {
-    resetMessage.value =
-      "Lien de réinitialisation envoyé. Vérifiez votre boîte mail.";
-    resetEmail.value = "";
-  }
-};
+//   if (error) {
+//     resetError.value = error.message;
+//   } else {
+//     resetMessage.value =
+//       "Lien de réinitialisation envoyé. Vérifiez votre boîte mail.";
+//     resetEmail.value = "";
+//   }
+// };
 </script>
