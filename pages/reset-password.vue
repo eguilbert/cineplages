@@ -45,21 +45,22 @@ const success = ref(false);
 const error = ref("");
 const loading = ref(true);
 
-// 🔐 Extraire et restaurer la session depuis le token dans l'URL
 onMounted(async () => {
-  const { data, error } = await supabase.auth.getSessionFromUrl();
+  const { error: sessionError, data } = await supabase.auth.getSessionFromUrl();
 
   if (sessionError) {
-    error.value = "Lien invalide ou expiré.";
+    error.value = sessionError.message;
     loading.value = false;
     return;
   }
 
   if (data?.session) {
-    // Session restaurée correctement
+    // ✅ Session restaurée
+    loading.value = false;
+  } else {
+    error.value = "Session introuvable.";
     loading.value = false;
   }
-  loading.value = false;
 });
 
 const handleReset = async () => {
@@ -74,7 +75,7 @@ const handleReset = async () => {
     error.value = updateError.message;
   } else {
     success.value = true;
-    setTimeout(() => router.push("/"), 2000);
+    setTimeout(() => router.push("/login"), 2000);
   }
 };
 </script>
