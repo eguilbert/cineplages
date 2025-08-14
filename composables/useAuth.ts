@@ -27,6 +27,7 @@ export const useAuth = () => {
 
     return await $fetch<T>(url, {
       credentials: "include",
+      server: false,
       headers,
       ...opts,
     });

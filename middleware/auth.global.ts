@@ -1,3 +1,4 @@
+// middleware/auth.global.ts
 export default defineNuxtRouteMiddleware(async (to) => {
   const publicRoutes = [
     "/login",
@@ -7,24 +8,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   ];
   if (publicRoutes.includes(to.path)) return;
 
-  const me = useState("me", () => null);
-  if (me.value !== null) return;
+  // 🚫 Skip SSR: le cookie Railway n'est pas accessible côté serveur Vercel
+  if (process.server) return;
 
-  const config = useRuntimeConfig();
-  const headers = process.server
-    ? useRequestHeaders(["cookie", "authorization"])
-    : undefined;
+  const { ensureUserLoaded, isAuthenticated } = useAuth();
 
-  try {
-    const data = await $fetch(`${config.public.apiBase}/api/auth/me`, {
-      headers,
-      credentials: "include",
-    });
+  await ensureUserLoaded();
 
-    me.value = data?.user || null;
-
-    if (!me.value) throw new Error("no user");
-  } catch {
+  if (!isAuthenticated.value) {
     return navigateTo("/login?next=" + encodeURIComponent(to.fullPath));
   }
 });

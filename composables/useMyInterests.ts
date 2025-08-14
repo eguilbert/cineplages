@@ -19,6 +19,7 @@ export const useMyInterests = () => {
     try {
       const data = await $fetch(`${config.public.apiBase}/interests/my`, {
         credentials: "include", // cookie de session Lucia
+        server: false,
       });
       interests.value = Array.isArray(data) ? data : [];
       loaded.value = true;
@@ -76,6 +77,7 @@ export const useMyInterests = () => {
         method: "POST",
         credentials: "include",
         body: { filmId, value },
+        server: false,
       });
 
       // resync pour récupérer l’enregistrement exact depuis l’API

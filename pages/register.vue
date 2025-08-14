@@ -36,18 +36,7 @@ const error = ref("");
 const message = ref("");
 const config = useRuntimeConfig();
 
-onMounted(async () => {
-  /*   await $fetch("/auth/register", {
-    baseURL: config.public.apiBase,
-    method: "POST",
-    body: {
-      email: "tt@example.com",
-      password: "nosecret",
-      username: "tt",
-    },
-    credentials: "include", // indispensable pour les cookies
-  }); */
-});
+onMounted(async () => {});
 
 // remplace cette URL par celle de ton site en prod
 const redirectUrl = "http://localhost:3000/confirmation";
@@ -56,16 +45,6 @@ const onRegister = async () => {
   error.value = "";
   message.value = "";
 
-  /* const { error: signupError } = await supabase.auth.signUp(
-    {
-      email: email.value,
-      password: password.value,
-    },
-    {
-      redirectTo: redirectUrl,
-    }
-  );
- */
   await $fetch("/auth/register", {
     baseURL: config.public.apiBase,
     method: "POST",
@@ -75,11 +54,8 @@ const onRegister = async () => {
       username: username.value,
     },
     credentials: "include", // indispensable pour les cookies
+    server: false,
   });
-  /* if (signupError) {
-    error.value = signupError.message;
-    return;
-  } */
 
   message.value =
     "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.";

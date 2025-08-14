@@ -136,6 +136,7 @@ const handleSubmit = async () => {
           commentaire: commentaire.value,
         },
         credentials: "include",
+        server: false,
       }
     );
 
@@ -184,6 +185,7 @@ const handleDelete = async () => {
       {
         method: "DELETE",
         credentials: "include",
+        server: false,
       }
     );
 
