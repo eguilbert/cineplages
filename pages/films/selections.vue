@@ -294,10 +294,7 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
-  /* await fetchRole(); */
-  /*   console.log("Rôle utilisateur :", role.value, username.value, userId.value);
-   */ const res = await apiFetch(`/selections`);
-  selections.value = await res.json();
+  selections.value = await apiFetch(`/selections`); // ✅ données directes
   if (selectedSelectionId.value) {
     await loadSelection();
   }
@@ -430,14 +427,13 @@ const handleFilmUpdate = async (updatedFilm) => {
   try {
     await apiFetch(`/films/${updatedFilm.id}/details`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: {
         commentaire: updatedFilm.commentaire,
         rating: updatedFilm.rating,
         tags: updatedFilm.tags,
         awards: updatedFilm.awards,
         externalLinks: updatedFilm.externalLinks,
-      }),
+      },
     });
   } catch (error) {
     console.error("Erreur mise à jour film", error);
@@ -592,22 +588,14 @@ const submitSelection = async () => {
   if (!confirmed) return;
 
   try {
-    const res = await apiFetch(
-      `/selections/${selectedSelectionId.value}/approve`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filmIds: selectedFilms.value.map((f) => f.id),
-        }),
-      }
-    );
-
-    if (!res.ok) throw new Error("Échec de l'approbation");
+    await apiFetch(`/selections/${selectedSelectionId.value}/approve`, {
+      method: "POST",
+      body: { filmIds: selectedFilms.value.map((f) => f.id) }, // ✅ $fetch sérialise
+    });
 
     alert("Sélection approuvée !");
-    await loadSelection(); // recharge la sélection depuis l'API
-    selectedFilms.value = []; // reset
+    await loadSelection();
+    selectedFilms.value = [];
   } catch (err) {
     console.error(err);
     alert("Erreur lors de l'approbation.");
