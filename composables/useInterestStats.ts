@@ -3,57 +3,86 @@ import { EMPTY_COUNTS, type InterestValue } from "@/lib/interests";
 
 type Counts = Record<InterestValue, number>;
 
-/**
- * Stats d'intérêts (agrégats). Supporte:
- *  - fetchStatsForFilms(ids[]) -> { [filmId]: Counts }
- *  - fetchStatsForFilm(id)     -> Counts
- */
 export const useInterestStats = () => {
-  const config = useRuntimeConfig();
+  const { apiFetch } = useApi();
+
   const stats = useState<Record<number, Counts>>("interest:stats", () => ({}));
-  const loading = useState("interest:loading", () => false);
+  const loading = useState<boolean>("interest:loading", () => false);
   const error = useState<string | null>("interest:error", () => null);
 
-  async function fetchStatsForFilms(filmIds: number[]) {
-    if (!Array.isArray(filmIds) || filmIds.length === 0) return {};
+  const normalize = (partial?: Partial<Counts>): Counts =>
+    ({ ...EMPTY_COUNTS, ...(partial || {}) } as Counts);
+
+  /**
+   * Charge les stats pour plusieurs films.
+   * Accepte: [1,2,3] | ["1","2"] | "1,2,3"
+   */
+  async function fetchStatsForFilms(ids: number[] | string[] | string) {
+    // → normalise en tableau de nombres valides
+    const arr = Array.isArray(ids)
+      ? ids
+      : String(ids)
+          .split(",")
+          .map((s) => s.trim());
+    const filmIds = arr
+      .map((n) => Number(n))
+      .filter((n) => Number.isFinite(n) && n >= 0);
+
+    if (filmIds.length === 0) return {};
+
     loading.value = true;
     error.value = null;
+
     try {
-      const data = await $fetch<Record<number, Partial<Counts>>>(
-        `${config.public.apiBase}/interests/films`,
+      // API doit renvoyer un objet { [filmId]: Partial<Counts> }
+      const data = await apiFetch<Record<number, Partial<Counts>>>(
+        "/interests/films",
         { method: "POST", body: { ids: filmIds } }
       );
-      // normalise + complète avec EMPTY_COUNTS
+
       const result: Record<number, Counts> = {};
       for (const id of filmIds) {
-        result[id] = { ...EMPTY_COUNTS, ...(data?.[id] ?? {}) } as Counts;
+        result[id] = normalize(data?.[id]);
       }
+
+      // merge réactif
       stats.value = { ...stats.value, ...result };
       return result;
     } catch (e: any) {
-      error.value =
-        e?.response?._data?.error || e?.data?.error || e?.message || "Erreur";
+      error.value = e?.data?.error || e?.message || "Erreur";
       return {};
     } finally {
       loading.value = false;
     }
   }
 
-  async function fetchStatsForFilm(filmId: number) {
+  /**
+   * Charge les stats pour un seul film.
+   * Supporte payload { counts } ou { interests } côté API.
+   */
+  async function fetchStatsForFilm(filmId: number | string) {
+    const id = Number(filmId);
+    if (!Number.isFinite(id)) return normalize();
+
     loading.value = true;
     error.value = null;
+
     try {
-      const data = await $fetch<{ filmId: number; interests: Partial<Counts> }>(
-        `${config.public.apiBase}/interests/film/${filmId}`
-      );
-      const c = { ...EMPTY_COUNTS, ...(data?.interests ?? {}) } as Counts;
-      stats.value[filmId] = c;
-      console.log("fetchStatsForFilm", filmId, stats.value[filmId]);
+      const data = await apiFetch<{
+        filmId: number;
+        counts?: Partial<Counts>;
+        interests?: Partial<Counts>;
+      }>(`/interests/film/${id}`);
+
+      const payload = (data as any).counts ?? (data as any).interests;
+      const c = normalize(payload);
+
+      // écriture réactive clé par clé
+      stats.value = { ...stats.value, [id]: c };
       return c;
     } catch (e: any) {
-      error.value =
-        e?.response?._data?.error || e?.data?.error || e?.message || "Erreur";
-      return { ...EMPTY_COUNTS } as Counts;
+      error.value = e?.data?.error || e?.message || "Erreur";
+      return normalize();
     } finally {
       loading.value = false;
     }

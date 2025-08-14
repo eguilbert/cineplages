@@ -313,8 +313,7 @@ const loadSelection = async () => {
     layout: undefined, // ou ne pas l'inclure
   }));
   const filmIds = selection.value.films.map((film) => film.id);
-  const idsParam = filmIds.join(",");
-  await fetchStatsForFilms(idsParam);
+  await fetchStatsForFilms(filmIds); // ✅ passe un array, pas une string
   interestStats.value = stats.value;
 
   console.log("Intérêts films", interestStats.value);
