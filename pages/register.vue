@@ -4,6 +4,10 @@
 
     <form @submit.prevent="onRegister" class="space-y-4">
       <div>
+        <label class="block font-medium">Nom d'usager</label>
+        <input v-model="username" type="text" class="input" required />
+      </div>
+      <div>
         <label class="block font-medium">Email</label>
         <input v-model="email" type="email" class="input" required />
       </div>
@@ -23,12 +27,27 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 const supabase = useSupabaseClient();
 const email = ref("");
+const username = ref("");
 const password = ref("");
 const error = ref("");
 const message = ref("");
+const config = useRuntimeConfig();
+
+onMounted(async () => {
+  /*   await $fetch("/auth/register", {
+    baseURL: config.public.apiBase,
+    method: "POST",
+    body: {
+      email: "tt@example.com",
+      password: "nosecret",
+      username: "tt",
+    },
+    credentials: "include", // indispensable pour les cookies
+  }); */
+});
 
 // remplace cette URL par celle de ton site en prod
 const redirectUrl = "http://localhost:3000/confirmation";
@@ -37,7 +56,7 @@ const onRegister = async () => {
   error.value = "";
   message.value = "";
 
-  const { error: signupError } = await supabase.auth.signUp(
+  /* const { error: signupError } = await supabase.auth.signUp(
     {
       email: email.value,
       password: password.value,
@@ -46,11 +65,21 @@ const onRegister = async () => {
       redirectTo: redirectUrl,
     }
   );
-
-  if (signupError) {
+ */
+  await $fetch("/auth/register", {
+    baseURL: config.public.apiBase,
+    method: "POST",
+    body: {
+      email: email.value,
+      password: password.value,
+      username: username.value,
+    },
+    credentials: "include", // indispensable pour les cookies
+  });
+  /* if (signupError) {
     error.value = signupError.message;
     return;
-  }
+  } */
 
   message.value =
     "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.";
