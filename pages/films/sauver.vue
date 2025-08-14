@@ -68,9 +68,9 @@ const config = useRuntimeConfig();
 const canSave = computed(() => {
   return filmsToSave.length && (selectionName.value || existingSelection.value);
 });
-
+const { apiFetch } = useApi();
 onMounted(async () => {
-  const res = await fetch(`${config.public.apiBase}/selections`);
+  const res = await apiFetch(`/selections`);
   selections.value = await res.json();
   console.log(selections.value);
 });
@@ -84,14 +84,11 @@ const saveSelection = async () => {
     console.log(payload);
     console.log(existingSelection.value?.id);
 
-    const res = await fetch(
-      `${config.public.apiBase}/selections/${existingSelection.value?.id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+    const res = await apiFetch(`/selections/${existingSelection.value?.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
     if (res.ok) {
       navigateTo("/films/selections");
@@ -103,7 +100,7 @@ const saveSelection = async () => {
       name: existingSelection.value?.name || selectionName.value,
       films: filmsToSave,
     };
-    const res = await fetch(`${config.public.apiBase}/selections`, {
+    const res = await apiFetch(`/selections`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

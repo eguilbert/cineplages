@@ -12,7 +12,7 @@
 <script setup>
 import { ref } from "vue";
 const config = useRuntimeConfig();
-
+const { apiFetch } = useApi();
 const props = defineProps({
   film: Object,
   onUpdated: Function, // callback pour mettre à jour l'affichage
@@ -24,12 +24,9 @@ const refreshFilm = async () => {
   console.log(props.film.tmdbId);
   loading.value = true;
   try {
-    const updated = await $fetch(
-      `${config.public.apiBase}/films/${props.film.tmdbId}/refresh`,
-      {
-        method: "POST",
-      }
-    );
+    const updated = await apiFetch(`/films/${props.film.tmdbId}/refresh`, {
+      method: "POST",
+    });
 
     if (props.onUpdated) {
       props.onUpdated(updated);

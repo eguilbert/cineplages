@@ -103,9 +103,9 @@ const selections = ref([]);
 const selectedId = ref(null);
 const films = ref([]);
 const commentaireFiltre = ref("");
-
+const { apiFetch } = useApi();
 onMounted(async () => {
-  const res = await fetch(`${useRuntimeConfig().public.apiBase}/selections`);
+  const res = await apiFetch(`/selections`);
   selections.value = await res.json();
 });
 const formatDate = (dateStr) =>
@@ -116,9 +116,7 @@ const formatDate = (dateStr) =>
   });
 watch(selectedId, async () => {
   if (!selectedId.value) return;
-  const res = await fetch(
-    `${useRuntimeConfig().public.apiBase}/selections/${selectedId.value}`
-  );
+  const res = await apiFetch(`/selections/${selectedId.value}`);
   const selection = await res.json();
   console.log(selection);
   films.value = selection.films || [];
@@ -149,14 +147,11 @@ const filteredFilms = computed(() => {
 async function saveSelection() {
   if (!selectedId.value) return;
   try {
-    await fetch(
-      `${useRuntimeConfig().public.apiBase}/selections/${selectedId.value}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selectedId.value, films: films.value }),
-      }
-    );
+    await apiFetch(`/selections/${selectedId.value}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selectedId.value, films: films.value }),
+    });
     alert("Sélection mise à jour avec succès");
   } catch (e) {
     console.error("Erreur sauvegarde sélection", e);

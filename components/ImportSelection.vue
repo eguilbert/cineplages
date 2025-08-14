@@ -43,7 +43,7 @@ import Calendar from "primevue/calendar";
 import ProgressSpinner from "primevue/progressspinner";
 import FilmPreparation from "~/components/FilmPreparation.vue";
 import { useImportStore } from "~/stores/import";
-
+const { apiFetch } = useApi();
 const startDate = ref(new Date());
 const endDate = ref(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000));
 const films = ref([]);
@@ -59,14 +59,8 @@ const importFilms = async () => {
     if (startDate.value) params.append("start", formatDate(startDate).value);
     if (endDate.value) params.append("end", formatDate(endDate.value));
 
-    const res = await fetch(
-      `${config.public.apiBase}/import/tmdb?${params.toString()}`
-    );
-    /*  const res = await fetch(
-      `http:/localhost:4000/api/import/tmdb?startDate=${
-        startDate.value.toISOString().split("T")[0]
-      }&endDate=${endDate.value.toISOString().split("T")[0]}`
-    ); */
+    const res = await apiFetch(`/import/tmdb?${params.toString()}`);
+
     const data = await res.json();
     films.value = data;
   } catch (err) {

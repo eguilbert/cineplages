@@ -142,7 +142,7 @@ import { PieChart } from "vue-chart-3";
 import { Chart, registerables } from "chart.js";
 Chart.register(...registerables);
 import { reactive, ref, computed } from "vue";
-
+const { apiFetch } = useApi();
 const config = useRuntimeConfig();
 
 const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -159,7 +159,7 @@ const films = reactive([]);
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${config.public.apiBase}/films`);
+    const res = await apiFetch(`/films`);
     const data = await res.json();
     data.forEach((film, i) => {
       films.push({ ...film, remaining: film.remaining ?? 3, id: i + 100 });

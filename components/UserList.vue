@@ -30,10 +30,10 @@ import { ref, onMounted } from "vue";
 const config = useRuntimeConfig();
 const users = ref([]);
 const loading = ref(true);
-
+const { apiFetch } = useApi();
 const fetchUsers = async () => {
   loading.value = true;
-  users.value = await $fetch(`${config.public.apiBase}/users`);
+  users.value = await apiFetch(`/users`);
   loading.value = false;
 };
 
@@ -41,7 +41,7 @@ const deleteUser = async (userId) => {
   if (!confirm("Confirmer la suppression de cet utilisateur ?")) return;
 
   try {
-    await $fetch(`${config.public.apiBase}/users/${userId}`, {
+    await apiFetch(`/users/${userId}`, {
       method: "DELETE",
     });
     users.value = users.value.filter((u) => u.user_id !== userId);

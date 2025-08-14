@@ -29,8 +29,9 @@ export default defineNuxtConfig({
         process.env.NODE_ENV === "development"
           ? process.env.NUXT_PUBLIC_API_BASE || "http://localhost:3000/api"
           : process.env.NUXT_PUBLIC_API_BASE,
-      supabaseUrl: process.env.SUPABASE_URL,
+      /*       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
+ */
     },
     ADMIN_SECRET_TOKEN: process.env.ADMIN_SECRET_TOKEN, // secret privé
   },

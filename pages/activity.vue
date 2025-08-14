@@ -90,7 +90,7 @@ const selectedAction = ref("");
 const selectedDate = ref("");
 const perPage = ref(10);
 const currentPage = ref(1);
-
+const { apiFetch } = useApi();
 const paginatedActivity = computed(() => {
   const start = (currentPage.value - 1) * perPage.value;
   return filteredActivity.value.slice(start, start + perPage.value);
@@ -133,7 +133,7 @@ const filteredActivity = computed(() =>
 
 const fetchLogs = async () => {
   loading.value = true;
-  activity.value = await $fetch(`${config.public.apiBase}/activity`);
+  activity.value = await apiFetch(`/activity`);
   loading.value = false;
 };
 

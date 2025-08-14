@@ -58,6 +58,7 @@ import { ref } from "vue";
 import { useFetch } from "#app";
 
 import { Button } from "primevue";
+const { apiFetch } = useApi();
 
 const props = defineProps({
   selectionId: Number,
@@ -74,17 +75,15 @@ const searchFilm = async () => {
   if (!query.value.trim()) return;
 
   // Recherche locale
-  const local = await $fetch(
-    `${config.public.apiBase}/films/search?q=${encodeURIComponent(query.value)}`
+  const local = await apiFetch(
+    `/films/search?q=${encodeURIComponent(query.value)}`
   );
   if (local.length) {
     results.value = local;
   } else {
     // Recherche TMDB
-    const tmdb = await $fetch(
-      `${config.public.apiBase}/tmdb/search?q=${encodeURIComponent(
-        query.value
-      )}`
+    const tmdb = await apiFetch(
+      `/tmdb/search?q=${encodeURIComponent(query.value)}`
     );
     results.value = tmdb;
   }
@@ -96,7 +95,7 @@ watch(searchQuery, async (query) => {
   }
 
   isSearching.value = true;
-  const { data, error } = await useFetch(`/api/films/search?query=${query}`);
+  const { data, error } = await apiFetch(`/films/search?query=${query}`);
   if (!error.value) {
     searchResults.value = data.value;
   }
@@ -110,16 +109,13 @@ const addFilmToSelection = async (film) => {
   }
 
   try {
-    await $fetch(
-      `${config.public.apiBase}/selections/${props.selectionId}/add-film`,
-      {
-        method: "POST",
-        body: {
-          tmdbId: film.tmdbId,
-          category,
-        },
-      }
-    );
+    await apiFetch(`/selections/${props.selectionId}/add-film`, {
+      method: "POST",
+      body: {
+        tmdbId: film.tmdbId,
+        category,
+      },
+    });
     alert(`Film "${film.title}" ajouté à la sélection.`);
   } catch (err) {
     console.error("Erreur ajout film:", err);

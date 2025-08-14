@@ -75,7 +75,7 @@ const handleLogin = async () => {
   try {
     await login(email.value, password.value); // ← appelle Railway via apiBase
     await getUser();
-    await navigateTo(route.query.next || "/films/selections");
+    await navigateTo(route.query.next || "api/films/selections");
   } catch (error) {
     const msg =
       error?.response?._data?.error ||

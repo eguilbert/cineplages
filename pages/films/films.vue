@@ -60,7 +60,7 @@ import ExternalLinksEditor from "@/components/ExternalLinksEditor.vue";
 const films = ref([]);
 const query = ref("");
 const config = useRuntimeConfig();
-
+const { apiFetch } = useApi();
 const categoryOptions = [
   "Art et Essai",
   "Documentaire",
@@ -68,7 +68,7 @@ const categoryOptions = [
   "Grand Public",
 ];
 const fetchFilms = async () => {
-  films.value = await $fetch(`${config.public.apiBase}/films`, {
+  films.value = await apiFetch(`/films`, {
     params: { query: query.value },
   });
 };
@@ -80,7 +80,7 @@ watch(query, async (val) => {
 const saveFilm = async (film) => {
   const filmId = film.id;
   console.log(film, filmId);
-  await $fetch(`${config.public.apiBase}/films/${filmId}/meta`, {
+  await apiFetch(`/films/${filmId}/meta`, {
     method: "PUT",
     body: {
       awards: film.awards,

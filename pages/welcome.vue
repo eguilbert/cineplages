@@ -58,7 +58,7 @@ const usernameTaken = ref(false);
 const message = ref("");
 const error = ref("");
 const loading = ref(false);
-
+const { apiFetch } = useApi();
 onMounted(async () => {
   const hash = route.fullPath.split("#")[1];
   if (!user.value && hash) {
@@ -70,13 +70,10 @@ watch(
   () => form.username,
   async (newUsername) => {
     if (!newUsername) return;
-    const { exists } = await $fetch(
-      `${config.public.apiBase}/profile/username-exists`,
-      {
-        method: "POST",
-        body: { username: newUsername },
-      }
-    );
+    const { exists } = await apiFetch(`/profile/username-exists`, {
+      method: "POST",
+      body: { username: newUsername },
+    });
     usernameTaken.value = exists;
   }
 );
@@ -100,16 +97,13 @@ const handleSubmit = async () => {
     if (pwError) throw new Error(pwError.message);
 
     // 2. Crée le profil utilisateur (cinemaId = 1 par défaut)
-    const { error: profileError } = await $fetch(
-      `${config.public.apiBase}/profile`,
-      {
-        method: "POST",
-        body: {
-          user_id: user.value.id,
-          username: form.username,
-        },
-      }
-    );
+    const { error: profileError } = await apiFetch(`/profile`, {
+      method: "POST",
+      body: {
+        user_id: user.value.id,
+        username: form.username,
+      },
+    });
     if (profileError) throw new Error(profileError.message);
 
     // 3. Redirige

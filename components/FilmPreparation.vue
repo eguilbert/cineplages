@@ -113,6 +113,8 @@ import Checkbox from "primevue/checkbox";
 import Button from "primevue/button";
 import { getCategoryColor } from "@/utils/genreColors";
 const config = useRuntimeConfig();
+const { apiFetch } = useApi();
+
 const props = defineProps({
   films: Array,
 });
@@ -129,7 +131,7 @@ const preparedFilms = ref([]);
 const updateCategory = async (film) => {
   // alert("change category", film.id);
   try {
-    await $fetch(`${config.public.apiBase}/films/${film.id}/category`, {
+    await apiFetch(`/films/${film.id}/category`, {
       method: "PUT",
       body: { category: film.category },
     });

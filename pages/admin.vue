@@ -125,6 +125,7 @@ definePageMeta({
   requiredRole: "ADMIN",
 });
 import { format } from "date-fns";
+const { apiFetch } = useApi();
 const config = useRuntimeConfig();
 const token = config.public.adminToken;
 /* const { data: authData } = await supabase.auth.getSession();
@@ -145,7 +146,7 @@ const createUser = async () => {
   message.value = "";
   error.value = "";
   try {
-    const res = await $fetch(`${config.public.apiBase}/createUser`, {
+    const res = await apiFetch(`/createUser`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -182,10 +183,10 @@ const filters = reactive({
 });
 
 const loadLogs = async () => {
-  logs.value = await $fetch(`${config.public.apiBase}/activity`);
+  logs.value = await apiFetch(`/activity`);
 };
 const loadUsers = async () => {
-  users.value = await $fetch(`${config.public.apiBase}/users`);
+  users.value = await apiFetch(`/users`);
 };
 
 const filteredLogs = computed(() => {

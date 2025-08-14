@@ -273,6 +273,7 @@ import TrailerPlayer from "./TrailerPlayer.vue";
 import Badge from "primevue/badge";
 const config = useRuntimeConfig();
 const ready = ref(false);
+const { apiFetch } = useApi();
 
 import { useMyInterests } from "@/composables/useMyInterests";
 import { useInterestStats } from "@/composables/useInterestStats";
@@ -333,57 +334,7 @@ const myInterest = computed({
       "SANS_OPINION"
     );
   },
-  /* async set(newValue) {
-    const prev = myInterestFor(filmId.value) || "SANS_OPINION";
-    if (newValue === prev) return;
 
-    // 1) TRÈS IMPORTANT: refléter immédiatement la sélection dans l’UI
-    optimisticInterest.value = newValue;
-
-    // 2) MAJ optimiste des décomptes (−1 ancien, +1 nouveau)
-    const before = { ...counts.value };
-    const next = { ...before };
-    if (next[prev] > 0) next[prev] -= 1;
-    next[newValue] = (next[newValue] || 0) + 1;
-    counts.value = next;
-
-    // 3) score local immédiat
-    const localScore = computeAggregateScore(
-      counts.value,
-      props.film.rating ?? 0
-    );
-    console.log("localScore", localScore, counts.value);
-    emit("score-changed", { filmId: filmId.value, score: localScore });
-
-    try {
-      // 4) push serveur (ton composable peut lui-même faire de l’optimiste côté store)
-      await updateInterest(filmId.value, newValue);
-
-      // 5) score serveur (source de vérité)
-      const { score } = await $fetch(
-        `${config.public.apiBase}/films/${filmId.value}/score`
-      );
-      emit("score-changed", {
-        filmId: filmId.value,
-        score: score ?? localScore,
-      });
-    } catch (e) {
-      // rollback visuel + score
-      counts.value = before;
-      const rolledBack = computeAggregateScore(
-        counts.value,
-        props.film.rating ?? 0
-      );
-      emit("score-changed", { filmId: filmId.value, score: rolledBack });
-      // garder l’ancien affiché
-      optimisticInterest.value = prev;
-      console.error("update interest failed", e);
-    } finally {
-      // une fois que le store a été resync par updateInterest, on lâche l’override
-      // (si ton updateInterest est optimiste côté store, tu peux clear tout de suite)
-      optimisticInterest.value = null;
-    }
-  }, */
   async set(newValue) {
     const prev = myInterestFor(filmId.value) || "SANS_OPINION";
     if (newValue === prev) return;
@@ -412,7 +363,7 @@ const myInterest = computed({
 
     try {
       await updateInterest(filmId.value, newValue);
-      const { score } = await $fetch(`/api/films/${filmId.value}/score`);
+      const { score } = await apiFetch(`/films/${filmId.value}/score`);
       emit("score-changed", {
         filmId: filmId.value,
         score: score ?? localScore,

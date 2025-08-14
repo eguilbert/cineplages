@@ -231,7 +231,7 @@ const { updateInterest } = useMyInterests();
 const scoreFilm = ref(0);
 const isBarVisible = ref(false);
 const { stats, fetchStatsForFilms } = useInterestStats();
-
+const { apiFetch } = useApi();
 const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
   if (index === -1) {
@@ -296,7 +296,7 @@ const availableDates = computed(() => {
 onMounted(async () => {
   /* await fetchRole(); */
   /*   console.log("Rôle utilisateur :", role.value, username.value, userId.value);
-   */ const res = await fetch(`${config.public.apiBase}/selections`);
+   */ const res = await apiFetch(`/selections`);
   selections.value = await res.json();
   if (selectedSelectionId.value) {
     await loadSelection();
@@ -310,9 +310,7 @@ watch(selectedSelectionId, async (newId) => {
 });
 
 const loadSelection = async () => {
-  const res = await fetch(
-    `${config.public.apiBase}/selections/${selectedSelectionId.value}`
-  );
+  const res = await apiFetch(`/selections/${selectedSelectionId.value}`);
   selection.value = await res.json();
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
@@ -322,13 +320,7 @@ const loadSelection = async () => {
   const idsParam = filmIds.join(",");
   await fetchStatsForFilms(idsParam);
   interestStats.value = stats.value;
-  /*   const data = await $fetch(`${config.public.apiBase}/interests/films`, {
-    method: "POST",
-    body: {
-      ids: filmIds, // liste d’IDs internes
-    },
-  });
-  interestStats.value = data || {}; */
+
   console.log("Intérêts films", interestStats.value);
 
   //Get MY interests
@@ -437,7 +429,7 @@ const handleFilmUpdate = async (updatedFilm) => {
   alert(JSON.stringify(updatedFilm, null, 2));
   console.log("Mise à jour film", updatedFilm, updatedFilm.externalLinks);
   try {
-    await fetch(`${config.public.apiBase}/films/${updatedFilm.id}/details`, {
+    await apiFetch(`/films/${updatedFilm.id}/details`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -548,7 +540,7 @@ function computeScore(film) {
 }
 const updateFilmScore = async (filmId) => {
   alert("update films score SHOULDNT be");
-  const res = await $fetch(`${config.public.apiBase}/films/${filmId}/score`);
+  const res = await apiFetch(`/films/${filmId}/score`);
   const newScore = res?.score ?? null;
   console.log("newScore", newScore);
   // 🎯 Mets à jour le film dans selection.value
@@ -557,16 +549,9 @@ const updateFilmScore = async (filmId) => {
     film.score = newScore;
   }
 };
-/* const onInterestChange = async ({ filmId, formerInterest, newValue }) => {
-  await $fetch(`${config.public.apiBase}/interests`, {
-    method: "POST",
-    body: { film_id: filmId, value: newValue },
-  });
-  await updateFilmScore(filmId); // 🔁 met à jour localement le score
-}; */
 
 const onVoteChange = async ({ filmId, note }) => {
-  await $fetch(`${config.public.apiBase}/votes`, {
+  await apiFetch(`/votes`, {
     method: "POST",
     body: { filmId, note },
   });
@@ -594,10 +579,7 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
     [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
     [newValue]: (current[newValue] || 0) + 1,
   };
-  /*   await $fetch(`${config.public.apiBase}/interests`, {
-    method: "POST",
-    body: { film_id: filmId, value: newValue },
-  }); */
+
   await updateFilmScore(filmId); // 🔁 met à jour localement le score
 }
 
@@ -611,8 +593,8 @@ const submitSelection = async () => {
   if (!confirmed) return;
 
   try {
-    const res = await fetch(
-      `${config.public.apiBase}/selections/${selectedSelectionId.value}/approve`,
+    const res = await apiFetch(
+      `/selections/${selectedSelectionId.value}/approve`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

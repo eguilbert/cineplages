@@ -238,7 +238,7 @@ import ProgressSpinner from "primevue/progressspinner";
 
 import { getGenreColor, genreList } from "@/utils/genreColors";
 import { Badge } from "primevue";
-
+const { apiFetch } = useApi();
 const films = ref([]);
 const importedFilms = ref([]);
 const tmdbFilms = ref([]);
@@ -315,9 +315,7 @@ const importFromTMDB = async () => {
   if (startDate.value) params.append("start", startDate.value);
   if (endDate.value) params.append("end", endDate.value);
 
-  const res = await fetch(
-    `${config.public.apiBase}/import/tmdb?${params.toString()}`
-  );
+  const res = await apiFetch(`/import/tmdb?${params.toString()}`);
 
   const data = await res.json();
   tmdbFilms.value = data.map((f) => ({
@@ -347,7 +345,7 @@ const validerTmdbSelection = async () => {
   const selection = tmdbFilms.value.filter((f) => f.selected);
 
   for (const film of selection) {
-    await fetch(`${config.public.apiBase}/films`, {
+    await apiFetch(`/films`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -359,7 +357,7 @@ const validerTmdbSelection = async () => {
 
   tmdbFilms.value = [];
 
-  const r = await fetch(`${config.public.apiBase}/films`);
+  const r = await apiFetch(`/films`);
   films.value = await r.json();
 
   alert("Films TMDb ajoutés avec succès !");
@@ -370,7 +368,7 @@ onMounted(async () => {
 });
 
 const importToGrille = async () => {
-  const res = await fetch(`${config.public.apiBase}/import/premiere`);
+  const res = await apiFetch(`/import/premiere`);
   const data = await res.json();
   importedFilms.value = data.map((f) => ({ ...f, selected: false }));
 };
@@ -379,7 +377,7 @@ const validerSelection = async () => {
   const selection = importedFilms.value.filter((f) => f.selected);
 
   for (const film of selection) {
-    await fetch(`${config.public.apiBase}/films`, {
+    await apiFetch(`/films`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -391,7 +389,7 @@ const validerSelection = async () => {
 
   importedFilms.value = [];
 
-  const r = await fetch(`${config.public.apiBase}/films`);
+  const r = await apiFetch(`/films`);
   films.value = await r.json();
 
   alert("Importation réussie !");

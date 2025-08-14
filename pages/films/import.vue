@@ -50,14 +50,14 @@ const films = ref([]);
 const loading = ref(false);
 
 const importStore = useImportStore();
-
+const { apiFetch } = useApi();
 const importFilms = async () => {
   loading.value = true;
   try {
-    const res = await fetch(
-      `${config.public.apiBase}/import/tmdb?start=${
-        startDate.value.toISOString().split("T")[0]
-      }&end=${endDate.value.toISOString().split("T")[0]}`
+    const res = await apiFetch(
+      `/import/tmdb?start=${startDate.value.toISOString().split("T")[0]}&end=${
+        endDate.value.toISOString().split("T")[0]
+      }`
     );
     const data = await res.json();
     films.value = data;

@@ -86,7 +86,7 @@ import GenreCategories from "@/components/GenreCategories.vue";
 import { useFilms } from "@/composables/useFilms";
 import { getGenreColor, genreList } from "@/utils/genreColors";
 const config = useRuntimeConfig();
-
+const { apiFetch } = useApi();
 const days = ["Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const hours = ["14:00", "17:00", "20:00"];
 const rooms = ["Salle 1", "Salle 2"];
@@ -111,16 +111,14 @@ const genreCategories = reactive({
 const genreColors = getGenreColor();
 
 onMounted(async () => {
-  const res = await $fetch(`${config.public.apiBase}/selections`);
+  const res = await apiFetch(`/selections`);
   selections.value = res;
 });
 
 async function importerSelection() {
   console.log("importerSelection", selectedId.value);
   if (!selectedId.value) return;
-  const selection = await $fetch(
-    `${config.public.apiBase}/selections/${selectedId.value}`
-  );
+  const selection = await apiFetch(`/selections/${selectedId.value}`);
   console.log("selection", selection);
   // console.log("films", selection[0]["films"]);
   grilleStore.loadFromSelection(selection["films"]);
@@ -276,26 +274,4 @@ const categoryDistribution = computed(() => {
 });
 
 const unplacedFilms = computed(() => films.filter((f) => f.remaining > 0));
-
-/* const importToGrille = async () => {
-  const res = await fetch("http://localhost:4000/api/import/premiere");
-  const imported = await res.json();
-
-  for (const film of imported) {
-    await fetch("http://localhost:3000/api/films", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...film,
-        remaining: 3, // par défaut 3 séances disponibles
-      }),
-    });
-  }
-
-  // recharge les films visibles
-  const r = await fetch("http://localhost:4000/api/films");
-  films.value = await r.json();
-
-  alert("Importation réussie ! Les films ont été ajoutés.");
-}; */
 </script>

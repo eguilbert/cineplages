@@ -84,6 +84,7 @@ import { ref, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import Button from "primevue/button";
 const config = useRuntimeConfig();
+const { apiFetch } = useApi();
 
 const props = defineProps({
   filmId: Number,
@@ -127,18 +128,15 @@ const handleSubmit = async () => {
   if (!commentaire.value.trim()) return;
   loading.value = true;
   try {
-    const updated = await $fetch(
-      `${config.public.apiBase}/films/${props.filmId}/comment`,
-      {
-        method: "POST",
-        body: {
-          user_id: props.userId,
-          commentaire: commentaire.value,
-        },
-        credentials: "include",
-        server: false,
-      }
-    );
+    const updated = await apiFetch(`/films/${props.filmId}/comment`, {
+      method: "POST",
+      body: {
+        user_id: props.userId,
+        commentaire: commentaire.value,
+      },
+      credentials: "include",
+      server: false,
+    });
 
     const index = localComments.value.findIndex(
       (c) => c.user_id === props.userId
@@ -180,14 +178,11 @@ const handleDelete = async () => {
   if (!confirm("Supprimer votre commentaire ?")) return;
   console.log("filmId", props.filmId);
   try {
-    await $fetch(
-      `${config.public.apiBase}/films/${props.filmId}/comment/${props.userId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-        server: false,
-      }
-    );
+    await apiFetch(`/films/${props.filmId}/comment/${props.userId}`, {
+      method: "DELETE",
+      credentials: "include",
+      server: false,
+    });
 
     // ⚡️ Retirer le commentaire localement
     localComments.value = localComments.value.filter(

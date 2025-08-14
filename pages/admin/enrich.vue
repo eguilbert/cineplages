@@ -22,12 +22,12 @@ import Button from "primevue/button";
 const loading = ref(false);
 const log = ref("");
 const config = useRuntimeConfig();
-
+const { apiFetch } = useApi();
 const enrichFilms = async () => {
   loading.value = true;
   log.value = "Lancement...\n";
 
-  const res = await $fetch(`${config.public.apiBase}/tools/enrich`, {
+  const res = await apiFetch(`/tools/enrich`, {
     method: "POST",
   });
 

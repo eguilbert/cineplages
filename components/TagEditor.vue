@@ -43,7 +43,7 @@ import { ref, watch } from "vue";
 import AutoComplete from "primevue/autocomplete";
 import Chip from "primevue/chip";
 import Button from "primevue/button";
-
+const { apiFetch } = useApi();
 const props = defineProps({
   filmId: Number,
   initialTags: Array,
@@ -57,7 +57,7 @@ const config = useRuntimeConfig();
 
 const searchTags = async (e) => {
   if (!e.query || e.query.length < 2) return;
-  const results = await $fetch(`${config.public.apiBase}/tags/search`, {
+  const results = await apiFetch(`/tags/search`, {
     params: { q: e.query },
   });
   suggestions.value = results.map((t) => t.label);
@@ -76,7 +76,7 @@ const removeTag = (tag) => {
 };
 
 const saveTags = async () => {
-  await $fetch(`${config.public.apiBase}/films/${props.filmId}/tags`, {
+  await apiFetch(`/films/${props.filmId}/tags`, {
     method: "PUT",
     body: {
       tags: selectedTags.value,
