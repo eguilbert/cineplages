@@ -366,11 +366,6 @@ const validerTmdbSelection = async () => {
 };
 
 onMounted(async () => {
-  /*   const res = await fetchMovies();
-   */ // const res = await fetch("http://localhost:4000/api/films");
-  /*   films.value = await res.json();
-   */
-
   importFromTMDB();
 });
 

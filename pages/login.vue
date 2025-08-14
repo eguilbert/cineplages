@@ -181,7 +181,7 @@ const { getUser } = useAuth();
 
 const handleLogin = async () => {
   try {
-    await $fetch(`/api/auth/login`, {
+    await $fetch(`${config.public.apiBase}/api/auth/login`, {
       // ← SLASH ajouté + proxy
       method: "POST",
       body: { email: email.value, password: password.value },
