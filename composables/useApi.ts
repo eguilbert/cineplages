@@ -1,9 +1,11 @@
-// composables/useApi.ts (JS/TS)
+// composables/useApi.ts
 export const useApi = () => {
-  const config = useRuntimeConfig();
-  const base = (config.public.apiBase || "").replace(/\/+$/, "");
+  const {
+    public: { apiBase },
+  } = useRuntimeConfig();
+  const base = (apiBase || "").replace(/\/+$/, "");
 
-  const apiFetch = (path, opts = {}) => {
+  const apiFetch = <T = any>(path: string, opts: any = {}) => {
     const normalized = path.startsWith("/api/")
       ? path
       : path.startsWith("/")
@@ -13,21 +15,12 @@ export const useApi = () => {
     const headers = process.server
       ? useRequestHeaders(["cookie", "authorization"])
       : undefined;
-
-    // ⬇️ retourne directement les données
-    return $fetch(`${base}${normalized}`, {
+    return $fetch<T>(`${base}${normalized}`, {
       credentials: "include",
       headers,
       ...opts,
     });
   };
 
-  // Option si tu as parfois besoin du statut:
-  const apiFetchRaw = (path, opts = {}) =>
-    $fetch.raw(`${base}${path.startsWith("/") ? path : `/${path}`}`, {
-      credentials: "include",
-      ...opts,
-    });
-
-  return { apiFetch, apiFetchRaw };
+  return { apiFetch };
 };

@@ -310,8 +310,7 @@ watch(selectedSelectionId, async (newId) => {
 });
 
 const loadSelection = async () => {
-  const res = await apiFetch(`/selections/${selectedSelectionId.value}`);
-  selection.value = await res.json();
+  selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
     layout: undefined, // ou ne pas l'inclure
