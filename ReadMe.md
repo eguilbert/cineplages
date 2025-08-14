@@ -1,5 +1,20 @@
 AVANT OUVERTURE
 
+IMPORTANT
+
+= tester Interests (update vue, enregistrement correct avec nouveau user)
+
+SCORES!!
+Commenaire: delete + proprio
+
+- post commentaire
+- MAJ films
+- MAJ interets labels
+- role (cinema, ce qu'on voit comme invite)
+- inscription
+- transposer votes
+
+============
 regler probleme mdp
 
 - simplifier

@@ -1,62 +1,44 @@
+<template>
+  <Select
+    v-model="localValue"
+    :options="options"
+    optionLabel="label"
+    optionValue="value"
+    placeholder="Votre intérêt"
+    class="w-full md:w-56"
+    @change="emit('update:modelValue', $event.value)"
+  />
+</template>
+
 <script setup>
 import { ref, watch } from "vue";
 import Select from "primevue/select";
-import { onMounted } from "vue";
 
 const props = defineProps({
-  modelValue: String, // pour v-model
-  filmId: Number, // film concerné
+  modelValue: { type: String, default: "SANS_OPINION" },
 });
+const emit = defineEmits(["update:modelValue"]);
 
-const emit = defineEmits(["update:modelValue", "user-change"]);
+const options = [
+  { label: "Sans opinion", value: "SANS_OPINION" },
+  { label: "Pas intéressé", value: "NOT_INTERESTED" },
+  { label: "Pourquoi pas", value: "CURIOUS" },
+  { label: "Intéressé", value: "VERY_INTERESTED" },
+  { label: "Incontournable", value: "MUST_SEE" },
+];
 
-const options = ref([
-  { label: "🕳 Sans opinion", value: "SANS_OPINION" },
-  { label: "❌ Pas intéressé", value: "NOT_INTERESTED" },
-  { label: "🤔 À discuter", value: "CURIOUS" },
-  { label: "✅ Très envie", value: "MUST_SEE" },
-]);
-
-// 🧠 Crée une copie locale modifiable
-const selected = ref(props.modelValue);
-
-// 🔁 Mets à jour la copie locale si la prop change
+const localValue = ref(props.modelValue);
 watch(
   () => props.modelValue,
-  (newVal) => {
-    console.log("watch from PickI: newVal", newVal);
-    selected.value = newVal;
+  (v) => {
+    localValue.value = v;
   }
 );
-onMounted(() => {
-  selected.value = props.modelValue;
-});
-/* watch(selected, (newVal, oldVal) => {
-  console.log("PickInterest: selected changed:", newVal, oldVal);
-  if (newVal !== oldVal) {
-    emit("update:modelValue", newVal);
-  }
-}); */
 
-// Lors d’un vrai changement utilisateur (depuis l'UI)
-function onUserChange(newVal) {
-  emit("update:modelValue", newVal); // ← pour mettre à jour le modèle
-  console.log("onUserChange(newVal)", newVal);
-  emit("user-change", newVal); // ← déclenche explicitement l’intérêt modifié
+function emitChange() {
+  // pas d'async ici : le parent gère l’API (évite les boucles)
+  if (localValue.value !== undefined && localValue.value !== null) {
+    emit("update:modelValue", localValue.value);
+  }
 }
 </script>
-
-<template>
-  <div class="interest-select">
-    <!-- <label class="block mb-1 font-bold mr-2">Mon avis sur le film :</label> -->
-    <Select
-      v-model="selected"
-      :options="options"
-      optionLabel="label"
-      optionValue="value"
-      class="w-full"
-      placeholder="Donnez votre avis"
-      @change="onUserChange($event.value)"
-    />
-  </div>
-</template>

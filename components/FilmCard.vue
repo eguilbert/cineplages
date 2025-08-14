@@ -7,8 +7,6 @@
         : 'flex flex-row gap-4 w-full items-start'
     "
   >
-    <!--   :value="localFilm.myScore"
- -->
     <Badge
       :value="film.score"
       class="ml-auto mr-2"
@@ -51,9 +49,7 @@
           >
             {{ film.title }}
             <small> ({{ film.origin }})</small>
-            <span v-if="role === 'ADMIN'" style="font-size: 10px">
-              [{{ film.id }}]</span
-            >
+            <span v-if="isAdmin" style="font-size: 10px"> [{{ film.id }}]</span>
           </a>
           <br />
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
@@ -127,7 +123,7 @@
               "
               ><i class="pi pi-comment mr-2"></i> commentaires
               <Badge
-                :value="totalComments"
+                :value="film.comments.length"
                 class="ml-auto mr-2"
                 style="background-color: rgba(0, 108, 143, 0.8)"
             /></AccordionHeader>
@@ -152,36 +148,33 @@
             >
               <i class="pi pi-user-edit mr-2"></i>vos avis
               <Badge
-                :value="totalInterest"
                 class="ml-auto mr-2"
+                :value="totalInterests"
                 style="background-color: rgba(230, 55, 12, 0.91)"
               />
             </AccordionHeader>
             <AccordionContent>
-              <div class="interest-select mt-3" v-if="!voteOpen">
+              <div class="interest-select mt-3">
                 <PickInterest
-                  v-model="interest"
+                  v-model="myInterest"
                   :film-id="filmId"
-                  @user-change="onUserInterestChange"
+                  @user-change="onChangeInterest"
                 />
+                <!-- @user-change="onChangeInterest" -->
               </div>
-              <div v-else>Le vote est terminé.</div>
+              <!-- <div v-else>Le vote est terminé.</div> -->
               <div class="interest-bar screen-only">
                 <div class="text-xs font-bold mb-1 mt-2">
-                  Ce qu'en pensent les programmateurs :
+                  Avis des programmateurs :
                 </div>
-                <p v-if="interestCounts">
-                  <span v-if="interestCounts.SANS_OPINION > 0">
-                    🕳 : {{ interestCounts.SANS_OPINION || 0 }}
-                  </span>
-                  <span v-if="interestCounts.NOT_INTERESTED > 0">
-                    ❌ : {{ interestCounts.NOT_INTERESTED || 0 }}
-                  </span>
-                  <span v-if="interestCounts.CURIOUS > 0">
-                    🤔 : {{ interestCounts.CURIOUS || 0 }}
-                  </span>
-                  <span v-if="interestCounts.MUST_SEE > 0">
-                    ✅ : {{ interestCounts.MUST_SEE || 0 }}
+                <p v-if="counts">
+                  <span
+                    v-for="(n, key) in counts"
+                    :key="key"
+                    v-show="n > 0"
+                    class="mr-2"
+                  >
+                    {{ INTEREST_LABEL[key] }} : {{ n }}<br />
                   </span>
                 </p>
                 <p v-else>Pas d'avis partagé pour l'instant</p>
@@ -190,7 +183,7 @@
           </AccordionPanel>
         </Accordion>
 
-        <div class="mt-2 screen-only" v-if="role === 'ADMIN'">
+        <div class="mt-2 screen-only" v-if="isAdmin">
           <label class="block text-xs mb-1">Votes :</label>
           <Rating
             v-model.number="localFilm.rating"
@@ -199,10 +192,7 @@
           />
         </div>
         <!-- Bouton "+" -->
-        <div
-          class="absolute bottom-4 right-2 screen-only"
-          v-if="role === 'ADMIN'"
-        >
+        <div class="absolute bottom-4 right-2 screen-only" v-if="isAdmin">
           <button
             @click="toggleMenu"
             class="bg-gray-200 rounded-full p-1 hover:bg-gray-300"
@@ -241,7 +231,7 @@
         <!-- Actions rapides -->
         <div
           class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
-          v-if="role === 'ADMIN'"
+          v-if="isAdmin"
         >
           <Button
             icon="pi pi-save"
@@ -270,9 +260,9 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, vModelText, watch } from "vue";
-import { computeAggregateScore } from "@/utils/score";
+import { ref, computed, onMounted, reactive, watch, toRaw } from "vue";
 
+import { getInterestCount, computeAggregateScore } from "@/utils/score";
 import Rating from "primevue/rating";
 import Button from "primevue/button";
 import Accordion from "primevue/accordion";
@@ -281,26 +271,31 @@ import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import TrailerPlayer from "./TrailerPlayer.vue";
 import Badge from "primevue/badge";
-import { useMyInterests } from "@/composables/useMyInterests";
 const config = useRuntimeConfig();
 const ready = ref(false);
-const { updateInterest } = useMyInterests();
+
+import { useMyInterests } from "@/composables/useMyInterests";
+import { useInterestStats } from "@/composables/useInterestStats";
+import { EMPTY_COUNTS, INTEREST_LABEL } from "@/lib/interests";
+
 const totalComments = ref(0);
 const emit = defineEmits([
   "update",
   "remove",
   "toggle-selection",
   "interest-change",
-  "update-interest-counts",
+  "score-changed",
 ]);
 const emitUpdate = () => {
   alert("Film mis à jour !");
   emit("update", toRaw(localFilm));
 };
+const countOfInterests = getInterestCount();
 const myComment = ref("");
+const filmId = computed(() => props.film.id);
 
 const props = defineProps({
-  film: Object,
+  film: { type: Object, required: true },
   score: Number,
   role: {
     type: String,
@@ -317,65 +312,157 @@ const props = defineProps({
     type: String,
     default: "grid",
   },
-  filmId: Number,
-  initialInterest: String,
-  interestCounts: Object,
-  voteOpen: {
-    type: Boolean,
-    default: true,
+  initialInterestCounts: { type: Object, default: null },
+  voteOpen: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
+  interestCounts: { type: Object },
+});
+
+// Intérêts (moi + agrégats)
+const { fetchInterests, myInterestFor, updateInterest } = useMyInterests();
+const { fetchStatsForFilm } = useInterestStats();
+
+// 1) computed en v-model direct (pas de ref local)
+const optimisticInterest = ref(null); // <-- nouveau
+
+const myInterest = computed({
+  get() {
+    // si on vient de choisir une valeur, on l'affiche tout de suite
+    return (
+      (optimisticInterest.value ?? myInterestFor(filmId.value)) ||
+      "SANS_OPINION"
+    );
   },
-});
+  /* async set(newValue) {
+    const prev = myInterestFor(filmId.value) || "SANS_OPINION";
+    if (newValue === prev) return;
 
-const totalInterest = computed(() => {
-  const counts = props.interestCounts;
-  const myVal = interest.value;
+    // 1) TRÈS IMPORTANT: refléter immédiatement la sélection dans l’UI
+    optimisticInterest.value = newValue;
 
-  if (!counts || typeof counts !== "object") return myVal ? 1 : 0;
+    // 2) MAJ optimiste des décomptes (−1 ancien, +1 nouveau)
+    const before = { ...counts.value };
+    const next = { ...before };
+    if (next[prev] > 0) next[prev] -= 1;
+    next[newValue] = (next[newValue] || 0) + 1;
+    counts.value = next;
 
-  const baseTotal = ["CURIOUS", "MUST_SEE", "NOT_INTERESTED", "SANS_OPINION"]
-    .map((key) => counts[key] ?? 0)
-    .reduce((a, b) => a + b, 0);
+    // 3) score local immédiat
+    const localScore = computeAggregateScore(
+      counts.value,
+      props.film.rating ?? 0
+    );
+    console.log("localScore", localScore, counts.value);
+    emit("score-changed", { filmId: filmId.value, score: localScore });
 
-  return myVal ? baseTotal : baseTotal;
-});
+    try {
+      // 4) push serveur (ton composable peut lui-même faire de l’optimiste côté store)
+      await updateInterest(filmId.value, newValue);
 
-const interest = ref(props.initialInterest);
-const formerInterest = ref(null);
-const initialized = ref(false);
-watch(
-  () => props.initialInterest,
-  (newVal) => {
-    console.log("FilmCard: initial interest set to", newVal);
-    interest.value = newVal;
-    formerInterest.value = newVal; // ✅ on initialise ici une seule fois
+      // 5) score serveur (source de vérité)
+      const { score } = await $fetch(
+        `${config.public.apiBase}/films/${filmId.value}/score`
+      );
+      emit("score-changed", {
+        filmId: filmId.value,
+        score: score ?? localScore,
+      });
+    } catch (e) {
+      // rollback visuel + score
+      counts.value = before;
+      const rolledBack = computeAggregateScore(
+        counts.value,
+        props.film.rating ?? 0
+      );
+      emit("score-changed", { filmId: filmId.value, score: rolledBack });
+      // garder l’ancien affiché
+      optimisticInterest.value = prev;
+      console.error("update interest failed", e);
+    } finally {
+      // une fois que le store a été resync par updateInterest, on lâche l’override
+      // (si ton updateInterest est optimiste côté store, tu peux clear tout de suite)
+      optimisticInterest.value = null;
+    }
+  }, */
+  async set(newValue) {
+    const prev = myInterestFor(filmId.value) || "SANS_OPINION";
+    if (newValue === prev) return;
 
-    // 💡 Ne pas initialiser si null (pas encore d'intérêt connu)
-    if (newVal !== null && newVal !== undefined) {
-      initialized.value = true;
-      console.log("✅ Initialisation complétée");
+    optimisticInterest.value = newValue;
+
+    const toNum = (v) => (Number.isFinite(+v) ? +v : 0);
+    const before = { ...counts.value };
+    const next = {
+      SANS_OPINION: 0,
+      NOT_INTERESTED: 0,
+      CURIOUS: 0,
+      VERY_INTERESTED: 0,
+      MUST_SEE: 0,
+      ...Object.fromEntries(
+        Object.entries(before).map(([k, v]) => [k, toNum(v)])
+      ),
+    };
+
+    if (next[prev] > 0) next[prev] -= 1;
+    next[newValue] = toNum(next[newValue]) + 1;
+    counts.value = next;
+
+    const localScore = computePopularityScore(next);
+    emit("score-changed", { filmId: filmId.value, score: localScore });
+
+    try {
+      await updateInterest(filmId.value, newValue);
+      const { score } = await $fetch(`/api/films/${filmId.value}/score`);
+      emit("score-changed", {
+        filmId: filmId.value,
+        score: score ?? localScore,
+      });
+    } catch (e) {
+      counts.value = before;
+      const rolledBack = computeAggregateScore(before, props.film.rating ?? 0);
+      emit("score-changed", { filmId: filmId.value, score: rolledBack });
+      optimisticInterest.value = prev;
+      console.error("update interest failed", e);
+    } finally {
+      optimisticInterest.value = null;
     }
   },
-  { immediate: true }
-);
-function onUserInterestChange(newValue) {
-  console.log("🎯 Intérêt modifié :", formerInterest.value, "→", newValue);
+});
 
-  if (newValue === formerInterest.value) {
-    console.log("⏳ Ignoré : pas de changement d'intérêt");
-    return;
+const counts = ref(
+  props.initialInterestCounts || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    CURIOUS: 0,
+    VERY_INTERESTED: 0,
+    MUST_SEE: 0,
   }
+);
+const saving = ref(false);
 
-  console.log("formerInterest before change", formerInterest.value);
-  emit("interest-change", {
-    filmId: props.film.id,
-    oldValue: formerInterest.value,
-    newValue,
-  });
-
-  // ✅ Met à jour l'ancien intérêt maintenant qu'on l'a utilisé
-  formerInterest.value = newValue;
-  console.log("formerInterest changed", formerInterest.value);
+function initCounts(obj) {
+  counts.value = {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    CURIOUS: 0,
+    VERY_INTERESTED: 0,
+    MUST_SEE: 0,
+    ...(obj || {}),
+  };
 }
+
+onMounted(async () => {
+  // Mes intérêts (chargés une fois au global par le 1er appel)
+  await fetchInterests({ force: false }); // force:true si tu veux forcer le refresh
+
+  // 2) init des agrégats
+  if (props.initialInterestCounts) {
+    initCounts(props.initialInterestCounts);
+  } else {
+    const one = await fetchStatsForFilm(filmId.value);
+    initCounts(one);
+  }
+});
 
 function getScoreColor(score) {
   if (score >= 10) return "#ff3b3b"; // très chaud
@@ -384,49 +471,21 @@ function getScoreColor(score) {
   if (score >= 1) return "#b0e57c";
   return "#a0c4ff"; // froid
 }
-/* watch(interest, (newValue, oldValue) => {
-  console.log(initialized.value);
-
-  if (!initialized.value) {
-    // 💡 Premier vrai changement utilisateur
-    if (newValue !== null && newValue !== undefined) {
-      initialized.value = true;
-      console.log("✅ Initialisation retardée activée au premier vrai choix");
-    } else {
-      console.log("⏳ Ignoré : modification avant initialisation", {
-        oldValue,
-        newValue,
-      });
-      return;
-    }
-  }
-
-  if (newValue !== oldValue) {
-    console.log("💡 Emitting interest-change", { oldValue, newValue });
-    emit("interest-change", {
-      filmId: props.film.id,
-      oldValue,
-      newValue,
-    });
-    emit("update-interest-counts", {
-      filmId: props.film.id,
-      oldValue,
-      newValue,
-    });
-  }
-}); */
+const totalInterests = computed(() => {
+  return Object.values(counts.value).reduce((sum, n) => sum + (n || 0), 0);
+});
 
 async function updateCommentCounts(commentsCounts) {
   totalComments.value = commentsCounts;
 }
 const awards = ref([]);
 const externalLinks = ref([]);
+
 const myScore = computed(() => {
-  const interestCounts = props.interestCounts || {};
   const avgRating = props.film.avgRating ?? props.film.rating ?? 0;
-  console.log("avgRating", props.film.title, avgRating);
-  return computeAggregateScore(interestCounts, avgRating);
+  return computeAggregateScore(counts.value, avgRating);
 });
+
 const localFilm = reactive({
   id: props.film.id,
   commentaire: props.film.commentaire || "",

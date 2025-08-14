@@ -1,4 +1,4 @@
-// server/api/auth/callback.ts
+/* // server/api/auth/callback.ts
 import { createClient } from "@supabase/supabase-js";
 import { defineEventHandler, getQuery, sendRedirect } from "h3";
 
@@ -45,3 +45,4 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, "/login?error=exception", 302);
   }
 });
+ */

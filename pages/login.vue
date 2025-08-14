@@ -59,18 +59,22 @@
   </div>
 </template>
 
-<script setup>
-const supabase = useSupabaseClient();
+<!-- <script setup>
+import { navigateTo } from "nuxt/app";
+
+/* const supabase = useSupabaseClient(); */
 
 const email = ref("");
 const password = ref("");
-
+const config = useRuntimeConfig();
 const showReset = ref(false);
 const resetEmail = ref("");
 const resetMessage = ref("");
 const resetError = ref("");
 const route = useRoute();
-onMounted(() => {
+const router = useRouter();
+const { getUser } = useAuth();
+onMounted(async () => {
   const hash = route.hash;
 
   if (hash.includes("error=access_denied")) {
@@ -83,22 +87,42 @@ onMounted(() => {
       resetError.value = "Erreur : lien invalide ou déjà utilisé.";
     }
   }
+  /*   await $fetch("/auth/register", {
+    baseURL: config.public.apiBase,
+    method: "POST",
+    body: {
+      email: "tt@example.com",
+      password: "nosecret",
+      username: "tt",
+    },
+    credentials: "include", // indispensable pour les cookies
+  }); */
 });
 const handleLogin = async () => {
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value,
-  });
+  try {
+    await $fetch(`api/auth/login`, {
+      method: "POST",
+      body: { email: email.value, password: password.value },
+      credentials: "include", // indispensable
+    });
 
-  if (error) {
-    alert("Connexion échouée : " + error.message);
-  } else {
-    // Redirection automatique
-    navigateTo("/");
+    // 1) recharge l'état utilisateur
+    await getUser();
+
+    // 2) redirige (navigateTo marche SSR/CSR)
+    await navigateTo(route.query.redirect || "/films/selections");
+  } catch (error) {
+    const msg =
+      error?.response?._data?.error ||
+      error?.data?.error ||
+      error?.message ||
+      "Erreur inconnue";
+    alert("Connexion échouée : " + msg);
   }
 };
+
 const sendCustomReset = async () => {
-  const res = await fetch(
+  /*   const res = await fetch(
     "https://ylyugnwmbodngbjuiwff.functions.supabase.co/send-link",
     {
       method: "POST",
@@ -108,7 +132,7 @@ const sendCustomReset = async () => {
         type: "recovery", // ou "recovery" ou "invite"
       }),
     }
-  );
+  ); */
 
   const data = await res.json();
   if (res.ok) {
@@ -141,4 +165,51 @@ const sendCustomReset = async () => {
 //     resetEmail.value = "";
 //   }
 // };
+</script> -->
+
+<script setup>
+import { navigateTo } from "nuxt/app";
+
+const email = ref("");
+const password = ref("");
+const showReset = ref(false);
+const resetEmail = ref("");
+const resetMessage = ref("");
+const resetError = ref("");
+const route = useRoute();
+const { getUser } = useAuth();
+
+const handleLogin = async () => {
+  try {
+    await $fetch(`/api/auth/login`, {
+      // ← SLASH ajouté + proxy
+      method: "POST",
+      body: { email: email.value, password: password.value },
+      credentials: "include",
+    });
+
+    // 1) recharge l'état utilisateur (va appeler /api/auth/me)
+    await getUser();
+
+    // 2) redirige vers la page demandée ou défaut
+    const next =
+      typeof route.query.next === "string"
+        ? route.query.next
+        : "/films/selections";
+    await navigateTo(next);
+  } catch (error) {
+    const msg =
+      error?.response?._data?.error ||
+      error?.data?.error ||
+      error?.message ||
+      "Erreur inconnue";
+    alert("Connexion échouée : " + msg);
+  }
+};
+
+// ⚠️ Ton sendCustomReset utilise `res` sans le définir (fetch commenté). Soit tu retires le bloc,
+// soit tu réactives le fetch et tu utilises sa réponse dans `res`.
+const sendCustomReset = async () => {
+  resetError.value = "Fonction de reset à finaliser (fetch commenté).";
+};
 </script>

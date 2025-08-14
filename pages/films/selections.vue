@@ -2,11 +2,7 @@
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Sélections</h1>
 
-    <FilmSearchAdd
-      :selection-id="selectedSelectionId"
-      v-if="role === 'ADMIN'"
-    />
-
+    <FilmSearchAdd :selection-id="selectedSelectionId" v-if="isAdmin" />
     <!-- Sélecteur de sélection -->
     <Select
       v-model="selectedSelectionId"
@@ -82,7 +78,7 @@
         </label>
         <Button
           label="Démarrer le vote"
-          v-if="role === 'ADMIN'"
+          v-if="isAdmin.value"
           @click="startVote"
           size="small"
           class="mb-4"
@@ -116,19 +112,23 @@
               v-for="film in getFilteredFilms(categorie)"
               :key="film.id"
               :film="film"
-              :role="role"
-              :username="username"
-              :userId="userId"
+              :role="user.role"
+              :isAdmin="isAdmin"
+              :username="user.username"
+              :userId="user.id"
               :displayMode="layout"
-              :interestCounts="interestStats?.[film.id] || null"
-              :initialInterest="interestMap[film.id] || null"
               :voteOpen="voteMode"
+              :initialInterestCounts="stats[film.id]"
+              :interestCounts="interestStats?.[film.id] || null"
+              @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
               @toggle-selection="toggleFilmSelection"
               class="col-12 md:col-2 lg:col-3"
             />
+            <!--:interestCounts="interestStats?.[film.id] || null"
+            :initialInterest="interestMap[film.id] || null"-->
           </div>
 
           <div v-else class="flex flex-col gap-4">
@@ -137,12 +137,13 @@
               :key="film.id"
               :film="film"
               :role="role"
+              :isAdmin="isAdmin"
               :username="username"
               :userId="userId"
               :displayMode="layout"
-              :interestCounts="interestStats?.[film.id] || null"
-              :initialInterest="interestMap[film.id] || null"
               :voteOpen="voteMode"
+              :initial-interest-counts="stats[film.id]"
+              @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
@@ -154,7 +155,7 @@
       </div>
     </div>
     <!-- Barre de sélection fixe en bas -->
-    <transition name="slide-up" v-if="role === 'ADMIN'">
+    <transition name="slide-up" v-if="isAdmin.value">
       <div
         v-show="isBarVisible"
         class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
@@ -191,7 +192,7 @@
     <div
       class="fixed bottom-0 right-0 bg-blue-600 text-white text-sm px-4 py-2 rounded-tl cursor-pointer z-50"
       @click="isBarVisible = !isBarVisible"
-      v-if="role === 'ADMIN'"
+      v-if="isAdmin.value"
     >
       🎯 {{ selectedFilms.length }}
     </div>
@@ -206,6 +207,9 @@ import FilmCard from "~/components/FilmCard.vue";
 import { watch } from "vue";
 import { getCategoryColor } from "@/utils/genreColors";
 import { useToast } from "primevue/usetoast";
+import { useAuth } from "@/composables/useAuth";
+import { useInterestStats } from "@/composables/useInterestStats";
+const { user, isAuthenticated, isAdmin, getUser } = useAuth();
 
 const toast = useToast();
 const config = useRuntimeConfig();
@@ -216,7 +220,7 @@ const selectedDate = ref(null);
 const layout = ref("grid");
 const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
 const interestStats = ref({});
-const { role, username, userId, fetchRole } = useUserRole();
+/* const { role, username, userId, fetchRole } = useUserRole(); */
 const { fetchInterests } = useMyInterests();
 const rawInterests = ref([]);
 const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
@@ -226,6 +230,7 @@ const selectedFilms = ref([]);
 const { updateInterest } = useMyInterests();
 const scoreFilm = ref(0);
 const isBarVisible = ref(false);
+const { stats, fetchStatsForFilms } = useInterestStats();
 
 const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
@@ -249,7 +254,7 @@ function openVote() {
  */
 }
 
-const availableDates = computed(() => {
+/* const availableDates = computed(() => {
   if (!selection.value) return [];
 
   const dates = [
@@ -265,12 +270,33 @@ const availableDates = computed(() => {
 
   // Ajoute l'option "Toutes les dates"
   return [{ label: "Toutes les dates", value: null }, ...sortedDates];
+}); */
+
+const availableDates = computed(() => {
+  if (!selection.value) return [{ label: "Toutes les dates", value: null }];
+
+  // 1) On fabrique des clés YYYY-MM-DD uniques
+  const keys = new Set(
+    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean)
+  );
+
+  // 2) Tri croissant par clé (lexicographique OK au format YYYY-MM-DD)
+  const sortedKeys = [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // 3) Map → label lisible + value = clé stable
+  const opts = sortedKeys.map((key) => ({
+    label: fromKeyToLocalDate(key).toLocaleDateString("fr-FR"),
+    value: key, // <-- clé stable
+  }));
+
+  // 4) Ajoute "Toutes les dates"
+  return [{ label: "Toutes les dates", value: null }, ...opts];
 });
 
 onMounted(async () => {
-  await fetchRole();
-  console.log("Rôle utilisateur :", role.value, username.value, userId.value);
-  const res = await fetch(`${config.public.apiBase}/selections`);
+  /* await fetchRole(); */
+  /*   console.log("Rôle utilisateur :", role.value, username.value, userId.value);
+   */ const res = await fetch(`${config.public.apiBase}/selections`);
   selections.value = await res.json();
   if (selectedSelectionId.value) {
     await loadSelection();
@@ -294,26 +320,28 @@ const loadSelection = async () => {
   }));
   const filmIds = selection.value.films.map((film) => film.id);
   const idsParam = filmIds.join(",");
-
-  const data = await $fetch(`${config.public.apiBase}/interests/films`, {
+  await fetchStatsForFilms(idsParam);
+  interestStats.value = stats.value;
+  /*   const data = await $fetch(`${config.public.apiBase}/interests/films`, {
     method: "POST",
     body: {
       ids: filmIds, // liste d’IDs internes
     },
   });
-  interestStats.value = data || {};
+  interestStats.value = data || {}; */
   console.log("Intérêts films", interestStats.value);
 
   //Get MY interests
   const myInterests = await fetchInterests();
-  rawInterests.value = data;
-
+  rawInterests.value = myInterests;
+  console.log("Mes intérêts", myInterests);
   // Transformer la liste en map par film_id (si != "SANS_OPINION")
   interestMap.value = Object.fromEntries(
     myInterests
       .filter((item) => item.value !== "SANS_OPINION")
       .map((item) => [item.film_id, item.value])
   );
+  console.log("interestMap", interestMap.value);
   if (selectedSelectionId.value == 11) {
     voteMode.value = true;
   } else {
@@ -321,33 +349,39 @@ const loadSelection = async () => {
   }
 };
 
-const INTEREST_WEIGHTS = {
-  MUST_SEE: 2,
-  CURIOUS: 1,
-  SANS_OPINION: 0,
-  NOT_INTERESTED: 0,
-};
+function onScoreChanged({ filmId, score }) {
+  const f = selection.value?.films.find((x) => x.id === filmId);
+  if (f) f.score = score;
+  if (sortByInterest.value) {
+    selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  }
+}
 
-/* const getFilteredFilms = (category) => {
-  if (!selection.value) return [];
-  return selection.value.films
-    .filter((f) => f.category === category)
-    .filter((f) => !selectedDate.value || f.releaseDate === selectedDate.value)
-    .sort(
-      (a, b) =>
-        new Date(a.releaseDate || "1900-01-01") -
-        new Date(b.releaseDate || "1900-01-01")
-    );
-}; */
 function getInterestScore(counts = {}) {
   return (
-    (counts.MUST_SEE || 0) * 2 +
+    (counts.MUST_SEE || 0) * 3 +
+    (counts.VERY_INTERESTED || 0) * 2 +
     (counts.CURIOUS || 0) * 1 +
     (counts.NOT_INTERESTED || 0) * -1 +
     (counts.SANS_OPINION || 0) * 0
   );
 }
-const getFilteredFilms = (category) => {
+// helpers dates (locales)
+const toDateKey = (v) => {
+  if (!v) return null;
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+    return v.slice(0, 10); // déjà YYYY-MM-DD
+  }
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const fromKeyToLocalDate = (key) => new Date(`${key}T00:00:00`);
+
+/* const getFilteredFilms = (category) => {
   if (!selection.value) return [];
 
   let filtered = selection.value.films
@@ -360,16 +394,8 @@ const getFilteredFilms = (category) => {
     );
 
   if (sortByInterest.value) {
-    // ✅ Tri par score d'intérêt
-    /*  filtered = filtered.sort((a, b) => {
-      const aScore = getInterestScore(interestStats.value[a.id] || {});
-      const bScore = getInterestScore(interestStats.value[b.id] || {});
-      return bScore - aScore; // tri décroissant
-    }); */
-    //ou par score computed
-    filtered = filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-    //filtered = filtered.sort((a, b) => computeScore(b) - computeScore(a));
+    filtered = filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   } else {
     // ✅ Tri par date (défaut)
     filtered = filtered.sort((a, b) => {
@@ -378,6 +404,31 @@ const getFilteredFilms = (category) => {
         new Date(b.releaseDate || "1900-01-01")
       );
     });
+  }
+  return filtered;
+}; */
+
+const getFilteredFilms = (category) => {
+  if (!selection.value) return [];
+  const targetKey = toDateKey(selectedDate.value);
+
+  let filtered = selection.value.films.filter(
+    (f) =>
+      f.category === category &&
+      (!targetKey || toDateKey(f.releaseDate) === targetKey)
+  );
+
+  // clone avant sort pour ne pas muter la source
+  if (sortByInterest.value) {
+    filtered = [...filtered].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  } else {
+    const timeOf = (v) => {
+      const k = toDateKey(v);
+      return k ? Date.parse(`${k}T00:00:00`) : Number.POSITIVE_INFINITY;
+    };
+    filtered = [...filtered].sort(
+      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate)
+    );
   }
   return filtered;
 };
@@ -454,6 +505,7 @@ function handleInterestCounts({ filmId, oldValue, newValue }) {
   const current = interestStats.value[filmId] || {
     SANS_OPINION: 0,
     NOT_INTERESTED: 0,
+    VERY_INTERESTED: 0,
     CURIOUS: 0,
     MUST_SEE: 0,
   };
@@ -495,6 +547,7 @@ function computeScore(film) {
   return votes * 2 + interestScore;
 }
 const updateFilmScore = async (filmId) => {
+  alert("update films score SHOULDNT be");
   const res = await $fetch(`${config.public.apiBase}/films/${filmId}/score`);
   const newScore = res?.score ?? null;
   console.log("newScore", newScore);
@@ -530,6 +583,7 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
   const current = interestStats.value[filmId] || {
     SANS_OPINION: 0,
     NOT_INTERESTED: 0,
+    VERY_INTERESTED: 0,
     CURIOUS: 0,
     MUST_SEE: 0,
   };

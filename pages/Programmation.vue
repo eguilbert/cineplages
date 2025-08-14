@@ -76,7 +76,7 @@ import { useGrilleStore } from "@/stores/grille";
 
 import { useUserRole } from "@/composables/useUserRole";
 const { role, fetchRole, isLoggedIn } = useUserRole();
-
+const { user, isAuthenticated, isAdmin } = useAuth();
 import FilmGrid from "@/components/FilmGrid.vue";
 import FilmForm from "@/components/FilmForm.vue";
 import FilmPalette from "@/components/FilmPalette.vue";

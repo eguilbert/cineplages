@@ -10,7 +10,7 @@
       <TransitionGroup name="fade-slide" tag="div" class="space-y-2 mb-2">
         <div
           v-for="c in localComments"
-          :key="c.userId"
+          :key="c.user_id"
           class="pb-1 border-l-2 border-green-500 pl-2"
         >
           <span class="font-semibold">{{ c.username }} :</span>
@@ -135,6 +135,7 @@ const handleSubmit = async () => {
           user_id: props.userId,
           commentaire: commentaire.value,
         },
+        credentials: "include",
       }
     );
 
@@ -182,6 +183,7 @@ const handleDelete = async () => {
       `${config.public.apiBase}/films/${props.filmId}/comment/${props.userId}`,
       {
         method: "DELETE",
+        credentials: "include",
       }
     );
 
