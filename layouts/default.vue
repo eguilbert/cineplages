@@ -81,6 +81,7 @@ await auth.getUser();
 //const user = useSupabaseUser();
 const logout = async () => {
   auth.logout;
+  navigateTo("/login");
 };
 console.log("API Base =", useRuntimeConfig().public.apiBase);
 console.log("process.env.NODE_ENV =", process.env.NODE_ENV);
