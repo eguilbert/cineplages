@@ -74,6 +74,25 @@
       <small class="block border border-blue-100 p-2 mb-2">
         {{ film.synopsis }}
       </small>
+      <div
+        v-for="(award, i) in film.awards"
+        :key="i"
+        class="flex flex-col gap-1 items-center mb-2"
+      >
+        <small
+          style="
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+              'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+          "
+        >
+          <i class="pi pi-trophy" style="color: chocolate"></i>
+
+          {{ award.prize }} - {{ award.festival }}
+        </small>
+      </div>
       <div class="screen-only py-3">
         <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only mb-2" />
       </div>
