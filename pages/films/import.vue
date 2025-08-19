@@ -59,8 +59,9 @@ const importFilms = async () => {
         endDate.value.toISOString().split("T")[0]
       }`
     );
-    const data = await res.json();
-    films.value = data;
+    /* const data = await res.json(); */
+    console.log("Films importés :", res);
+    films.value = res;
   } catch (err) {
     console.error("Erreur import TMDb", err);
   } finally {

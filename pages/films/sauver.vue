@@ -71,7 +71,7 @@ const canSave = computed(() => {
 const { apiFetch } = useApi();
 onMounted(async () => {
   const res = await apiFetch(`/selections`);
-  selections.value = await res.json();
+  selections.value = res;
   console.log(selections.value);
 });
 

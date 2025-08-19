@@ -6,7 +6,7 @@
     <!-- Sélecteur de sélection -->
     <Select
       v-model="selectedSelectionId"
-      :options="selections"
+      :options="visibleSelections"
       optionLabel="name"
       optionValue="id"
       placeholder="Choisir une sélection"
@@ -210,7 +210,9 @@ import { useToast } from "primevue/usetoast";
 import { useAuth } from "@/composables/useAuth";
 import { useInterestStats } from "@/composables/useInterestStats";
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
-
+const visibleSelections = computed(() => {
+  return selections.value.filter((s) => s.id !== 18 || isAdmin.value);
+});
 const toast = useToast();
 const config = useRuntimeConfig();
 const selections = ref([]);
