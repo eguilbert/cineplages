@@ -159,8 +159,7 @@ const films = reactive([]);
 
 onMounted(async () => {
   try {
-    const res = await apiFetch(`/films`);
-    const data = await res.json();
+    const data = await apiFetch(`/films`);
     data.forEach((film, i) => {
       films.push({ ...film, remaining: film.remaining ?? 3, id: i + 100 });
     });

@@ -315,9 +315,8 @@ const importFromTMDB = async () => {
   if (startDate.value) params.append("start", startDate.value);
   if (endDate.value) params.append("end", endDate.value);
 
-  const res = await apiFetch(`/import/tmdb?${params.toString()}`);
+  const data = await apiFetch(`/import/tmdb?${params.toString()}`);
 
-  const data = await res.json();
   tmdbFilms.value = data.map((f) => ({
     ...f,
     selected: false,
@@ -357,8 +356,8 @@ const validerTmdbSelection = async () => {
 
   tmdbFilms.value = [];
 
-  const r = await apiFetch(`/films`);
-  films.value = await r.json();
+  const data = await apiFetch(`/films`);
+  films.value = data;
 
   alert("Films TMDb ajoutés avec succès !");
 };
@@ -368,8 +367,7 @@ onMounted(async () => {
 });
 
 const importToGrille = async () => {
-  const res = await apiFetch(`/import/premiere`);
-  const data = await res.json();
+  const data = await apiFetch(`/import/premiere`);
   importedFilms.value = data.map((f) => ({ ...f, selected: false }));
 };
 
@@ -390,7 +388,7 @@ const validerSelection = async () => {
   importedFilms.value = [];
 
   const r = await apiFetch(`/films`);
-  films.value = await r.json();
+  films.value = r;
 
   alert("Importation réussie !");
 };

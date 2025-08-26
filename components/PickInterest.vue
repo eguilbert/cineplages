@@ -6,6 +6,7 @@
     optionValue="value"
     placeholder="Votre intérêt"
     class="w-full md:w-56"
+    :disabled="mode === 'programmation'"
     @change="emit('update:modelValue', $event.value)"
   />
 </template>
@@ -16,6 +17,7 @@ import Select from "primevue/select";
 
 const props = defineProps({
   modelValue: { type: String, default: "SANS_OPINION" },
+  mode: { type: String, default: "selection" },
 });
 const emit = defineEmits(["update:modelValue"]);
 

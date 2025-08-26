@@ -1,277 +1,644 @@
 <template>
-  <div class="p-4">
-    <div v-if="role === 'ADMIN'">
-      <h2 class="text-xl mb-4">Importer une sélection existante</h2>
-      <Button
-        label="Importer dans la grille"
-        icon="pi pi-upload"
-        :disabled="!selectedId"
-        @click="importerSelection"
-      />
-      <Dropdown
-        v-model="selectedId"
-        :options="selections"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Choisir une sélection"
-        class="w-full mb-4"
-      />
-      <!--  <button
-      @click="autoFillGrid"
-      class="mb-4 px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
-    >
-      Remplissage automatique
-    </button>
-    <button
-      @click="importToGrille"
-      class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-    >
-      Importer les films OMDb dans la grille
-    </button>
- -->
-      <FilmGrid
-        :days="days"
-        :hours="hours"
-        :rooms="rooms"
-        :genreColors="genreColorMap"
-        :suggestionColor="suggestionColor"
-        :getFilmsAt="getFilmsAt"
-        :onDrop="onDrop"
-        :onDragStart="onDragStart"
-        :removeFilm="removeFilm"
-        :gridStyle="gridStyle"
-      />
+  <div class="p-6">
+    <h1 class="text-2xl font-bold mb-6">Programmation</h1>
 
-      <!--  <FilmForm />
-
-   <FilmPalette
-      :films="unplacedFilms"
-      :genreColors="genreColors"
-      :onDragStart="onDragStart"
+    <FilmSearchAdd :selection-id="selectedSelectionId" v-if="isAdmin" />
+    <!-- Sélecteur de sélection -->
+    <Select
+      v-model="selectedSelectionId"
+      :options="visibleSelections"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Choisir une sélection"
+      class="mb-4 md:w-1/3 text-sm h-9 px-2 py-0"
+      @change="loadSelection"
+      panelClass="text-sm"
     />
 
-    <FilmSummary :summary="summary" /> -->
-
-      <GenreCategories
-        :genreColors="genreColorMap"
-        :genreCategories="genreCategories"
-      />
-
-      <!--     <CategoryPieChart :data="categoryDistribution" />
- -->
+    <!-- Menu flottant catégories -->
+    <div
+      class="fixed top-100 -left-2 bg-white shadow p-2 rounded z-10 shadow-lg"
+      v-if="selectedSelectionId"
+    >
+      <hr />
+      <div v-for="cat in categories" :key="cat">
+        <a
+          :href="`#cat-${cat}`"
+          @click.prevent="scrollToCategory(cat)"
+          class="block text-sm hover:underline p-2"
+          :style="{ backgroundColor: getCategoryColor(cat) }"
+        >
+          {{ cat }}
+        </a>
+      </div>
     </div>
-    <div v-else>
-      La grille est en travaux...
-      <img
-        src="https://macollectionpaschere.com/88140-thickbox_default/affiche-film-affiche-de-cinema-du-film-travaux-de-2005-dimension-40-x-53-cm-e006.jpg"
-        alt=""
-      />
+
+    <!-- Affichage de la sélection choisie -->
+    <div v-if="selection" class="mb-6">
+      <h2 class="text-xl font-light mb-2 mt-4">
+        {{ selection.name }}
+        <small> ({{ selection.films.length }} films)</small>
+      </h2>
+      <p v-if="selection.id == 15" class="text-sm mb-8">
+        La réunion de programmation aura lieu le 29 aout 2025. Veuillez voter
+        avant cette date.
+      </p>
+      <p>
+        {{ selection.description }}
+      </p>
+
+      <p v-if="selection.id == 11" class="text-sm mb-8">
+        Cette sélection comprend les films d'Art et Essai et Documentaires de
+        début août jusqu'au 3 septembre, et les films Grand Public et Jeunesse
+        de septembre.
+      </p>
+
+      <!-- Changer affichage -->
+      <div class="mb-4 flex gap-4 items-center" v-if="selectedSelectionId">
+        <Button
+          icon="pi pi-th-large"
+          text
+          @click="layout = 'grid'"
+          v-if="layout === 'row'"
+        />
+        <Button icon="pi pi-bars" text @click="layout = 'row'" v-else />
+        <!-- Filtre par date -->
+        <Select
+          v-if="selectedSelectionId"
+          v-model="selectedDate"
+          :options="availableDates"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Filtrer par date de sortie"
+          class="md:w-1/3 small"
+        />
+        <label>
+          <input type="checkbox" v-model="sortByInterest" />
+          Trier par score
+        </label>
+
+        <button
+          @click="handlePrint"
+          class="print-button justify-self-end ml-auto"
+        >
+          🖨️ Imprimer la sélection
+        </button>
+      </div>
+      <div id="print-area">
+        <div
+          v-for="categorie in categories"
+          :key="categorie"
+          class="mb-6 flex flex-col"
+        >
+          <h3
+            :id="`cat-${categorie}`"
+            class="text-lg font-light mb-2 pb-1 p-1"
+            :style="{ color: getCategoryColor(categorie) }"
+          >
+            {{ categorie }} ({{ getFilteredFilms(categorie).length }})
+          </h3>
+
+          <div
+            v-if="layout === 'grid'"
+            class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          >
+            <FilmCard
+              v-for="film in getFilteredFilms(categorie)"
+              :key="film.id"
+              :film="film"
+              :role="user.role"
+              :isAdmin="isAdmin"
+              :username="user.username"
+              :userId="user.id"
+              :displayMode="layout"
+              :voteOpen="voteMode"
+              :initialInterestCounts="stats[film.id]"
+              :interestCounts="interestStats?.[film.id] || null"
+              :mode="'programmation'"
+              @score-changed="onScoreChanged"
+              @interest-change="handleInterestChange"
+              @update="handleFilmUpdate"
+              @remove="handleFilmRemove"
+              @toggle-selection="toggleFilmSelection"
+              class="col-12 md:col-2 lg:col-3"
+            />
+            <!--:interestCounts="interestStats?.[film.id] || null"
+            :initialInterest="interestMap[film.id] || null"-->
+          </div>
+
+          <div v-else class="flex flex-col gap-4">
+            <FilmCard
+              v-for="film in getFilteredFilms(categorie)"
+              :key="film.id"
+              :film="film"
+              :role="role"
+              :isAdmin="isAdmin"
+              :username="username"
+              :userId="userId"
+              :displayMode="layout"
+              :voteOpen="voteMode"
+              :initial-interest-counts="stats[film.id]"
+              :mode="'programmation'"
+              @score-changed="onScoreChanged"
+              @interest-change="handleInterestChange"
+              @update="handleFilmUpdate"
+              @remove="handleFilmRemove"
+              @update-interest-counts="handleInterestCounts"
+              @toggle-selection="toggleFilmSelection"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Barre de sélection fixe en bas -->
+    <transition name="slide-up" v-if="isAdmin">
+      <div
+        v-show="isBarVisible"
+        class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold">
+            🎯 {{ selectedFilms.length }} film(s) sélectionné(s)
+          </h2>
+          <Button label="Approuver la sélection" @click="submitSelection" />
+        </div>
+        <div class="flex gap-3 mt-2 overflow-x-auto">
+          <div
+            v-for="film in selectedFilms"
+            :key="film.id"
+            class="min-w-[100px] bg-gray-50 border rounded p-2 text-xs text-center"
+          >
+            <img
+              :src="film.poster || '/placeholder.png'"
+              class="w-16 h-24 object-cover mx-auto mb-1"
+            />
+            <div class="truncate">{{ film.title }}</div>
+            <div
+              class="text-[10px] mt-1 text-white px-1 rounded"
+              :style="{ backgroundColor: getCategoryColor(film.category) }"
+            >
+              {{ film.category }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Onglet de toggle -->
+    <div
+      class="fixed bottom-0 right-0 bg-blue-600 text-white text-sm px-4 py-2 rounded-tl cursor-pointer z-50"
+      @click="isBarVisible = !isBarVisible"
+      v-if="isAdmin"
+    >
+      🎯 {{ selectedFilms.length }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from "vue";
-import { useGrilleStore } from "@/stores/grille";
-
-import { useUserRole } from "@/composables/useUserRole";
-const { role, fetchRole, isLoggedIn } = useUserRole();
-const { user, isAuthenticated, isAdmin } = useAuth();
-import FilmGrid from "@/components/FilmGrid.vue";
-import FilmForm from "@/components/FilmForm.vue";
-import FilmPalette from "@/components/FilmPalette.vue";
-import FilmSummary from "@/components/FilmSummary.vue";
-import GenreCategories from "@/components/GenreCategories.vue";
-// import CategoryPieChart from "@/components/CategoryPieChart.vue";
-import { useFilms } from "@/composables/useFilms";
-import { getGenreColor, genreList } from "@/utils/genreColors";
-const config = useRuntimeConfig();
-const { apiFetch } = useApi();
-const days = ["Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-const hours = ["14:00", "17:00", "20:00"];
-const rooms = ["Salle 1", "Salle 2"];
-
-const grilleStore = useGrilleStore();
-const selections = ref([]);
-const selectedId = ref(null);
-
-const gridStyle = `grid-template-columns: repeat(${
-  hours.length + 1
-}, minmax(120px, 1fr));`;
-
-/* const { films } = useFilms();
- */ const placements = reactive([]);
-const genreCategories = reactive({
-  SF: "Grand Public",
-  Drame: "Art et Essai",
-  Animation: "Jeunesse",
-  Thriller: "Grand Public",
+import { ref, onMounted, computed } from "vue";
+import Button from "primevue/button";
+import Select from "primevue/select";
+import FilmCard from "~/components/FilmCard.vue";
+import { watch } from "vue";
+import { getCategoryColor } from "@/utils/genreColors";
+import { useToast } from "primevue/usetoast";
+import { useAuth } from "@/composables/useAuth";
+import { useInterestStats } from "@/composables/useInterestStats";
+import { prefetchComponents } from "nuxt/app";
+const { user, isAuthenticated, isAdmin, getUser } = useAuth();
+const visibleSelections = computed(() => {
+  return selections.value.filter((s) => s.status === "programmation");
 });
+const toast = useToast();
+const config = useRuntimeConfig();
+const selections = ref([]);
+const selection = ref(null);
+const selectedSelectionId = ref();
+/* const selectedSelectionId = ref(15); */
+const selectedDate = ref(null);
+const layout = ref("grid");
+const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
+const interestStats = ref({});
+/* const { role, username, userId, fetchRole } = useUserRole(); */
+const { fetchInterests } = useMyInterests();
+const rawInterests = ref([]);
+const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
+const sortByInterest = ref(false);
+const voteMode = ref(false);
+const selectedFilms = ref([]);
+const { updateInterest } = useMyInterests();
+const scoreFilm = ref(0);
+const isBarVisible = ref(false);
+const { stats, fetchStatsForFilms } = useInterestStats();
+const { apiFetch } = useApi();
+const toggleFilmSelection = (film) => {
+  const index = selectedFilms.value.findIndex((f) => f.id === film.id);
+  if (index === -1) {
+    selectedFilms.value.push(film);
+  } else {
+    selectedFilms.value.splice(index, 1);
+  }
+};
 
-const genreColors = getGenreColor();
+const availableDates = computed(() => {
+  if (!selection.value) return [{ label: "Toutes les dates", value: null }];
+
+  // 1) On fabrique des clés YYYY-MM-DD uniques
+  const keys = new Set(
+    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean)
+  );
+
+  // 2) Tri croissant par clé (lexicographique OK au format YYYY-MM-DD)
+  const sortedKeys = [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // 3) Map → label lisible + value = clé stable
+  const opts = sortedKeys.map((key) => ({
+    label: fromKeyToLocalDate(key).toLocaleDateString("fr-FR"),
+    value: key, // <-- clé stable
+  }));
+
+  // 4) Ajoute "Toutes les dates"
+  return [{ label: "Toutes les dates", value: null }, ...opts];
+});
 
 onMounted(async () => {
-  const res = await apiFetch(`/selections`);
-  selections.value = res;
+  selections.value = await apiFetch(`/selections`); // ✅ données directes
+  if (selectedSelectionId.value) {
+    await loadSelection();
+  }
 });
 
-async function importerSelection() {
-  console.log("importerSelection", selectedId.value);
-  if (!selectedId.value) return;
-  const selection = await apiFetch(`/selections/${selectedId.value}`);
-  console.log("selection", selection);
-  // console.log("films", selection[0]["films"]);
-  grilleStore.loadFromSelection(selection["films"]);
-  console.log("Films chargés :", selection["films"]);
-  console.log("Programmation générée :", grilleStore.programmation);
-}
+watch(selectedSelectionId, async (newId) => {
+  if (newId) {
+    await loadSelection();
+  }
+});
 
-function suggestionColor(day, hour, room) {
-  if (hour === 14) return "#dbeafe";
-  if (hour === 22) return "#d1fae5";
-  if (hour === 20) return "#e5e7eb";
-  if (hour === 18) return "#fee2e2";
-  return "#ffffff";
-}
+const loadSelection = async () => {
+  selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
+  selection.value.films = selection.value.films.map((film) => ({
+    ...film,
+    layout: undefined,
+    // ✅ priorité : score stocké en pivot, puis live, puis calcul local
+    score: film.storedScore ?? film.liveScore ?? computeScore(film),
+  }));
+  const filmIds = selection.value.films.map((film) => film.id);
+  await fetchStatsForFilms(filmIds); // ✅ passe un array, pas une string
+  interestStats.value = stats.value;
 
-function onDragStart(event, film) {
-  event.dataTransfer.setData("filmId", film.id);
-}
+  console.log("Intérêts films", interestStats.value);
 
-function onDrop(event, day, hour, room) {
-  const filmId = parseInt(event.dataTransfer.getData("filmId"));
-  const film = films.find((f) => f.id === filmId);
-  if (!film || film.remaining <= 0) return;
-  const currentCategory = genreCategories[film.genre] || "Inconnu";
-  const conflict = placements.find(
-    (p) =>
-      p.day === day &&
-      p.hour === hour &&
-      p.room !== room &&
-      genreCategories[p.genre] === currentCategory
+  //Get MY interests
+  const myInterests = await fetchInterests();
+  rawInterests.value = myInterests;
+  console.log("Mes intérêts", myInterests);
+  // Transformer la liste en map par film_id (si != "SANS_OPINION")
+  interestMap.value = Object.fromEntries(
+    myInterests
+      .filter((item) => item.value !== "SANS_OPINION")
+      .map((item) => [item.film_id, item.value])
   );
-  if (conflict) return;
-  placements.push({ ...film, day, hour, room });
-  film.remaining--;
-}
+  console.log("interestMap", interestMap.value);
+  if (selectedSelectionId.value == 11) {
+    voteMode.value = true;
+  } else {
+    voteMode.value = false;
+  }
+};
 
-function removeFilm(day, hour, room, index) {
-  const found = placements.findIndex(
-    (f, i) =>
-      i ===
-      placements.findIndex(
-        (x, j) =>
-          j === index && x.day === day && x.hour === hour && x.room === room
-      )
-  );
-  if (found !== -1) {
-    const film = placements[found];
-    placements.splice(found, 1);
-    const inPalette = films.find((f) => f.id === film.id);
-    if (inPalette) inPalette.remaining++;
-    else
-      films.push({
-        id: film.id,
-        title: film.title,
-        genre: film.genre,
-        remaining: 1,
-      });
+function onScoreChanged({ filmId, score }) {
+  const f = selection.value?.films.find((x) => x.id === filmId);
+  if (f) f.score = score;
+  if (sortByInterest.value) {
+    selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   }
 }
 
-function getFilmsAt(jour, heure, salle) {
-  console.log("Cherche :", jour, heure, salle);
-  console.log(
-    "Dans programmation :",
-    grilleStore.programmation.map((f) => [f.title, f.jour, f.heure, f.salle])
+function getInterestScore(counts = {}) {
+  return (
+    (counts.MUST_SEE || 0) * 3 +
+    (counts.VERY_INTERESTED || 0) * 2 +
+    (counts.CURIOUS || 0) * 1 +
+    (counts.NOT_INTERESTED || 0) * -1 +
+    (counts.SANS_OPINION || 0) * 0
   );
-
-  const matches = grilleStore.programmation.filter(
-    (f) =>
-      f.jour === String(jour) &&
-      f.heure === String(heure) &&
-      f.salle === String(salle)
-  );
-  console.log("!!!matches", matches);
-  console.log(
-    `[${jour} ${heure} ${salle}] =>`,
-    matches.map((f) => f.title)
-  );
-  return matches;
 }
-
-/* function autoFillGrid() {
-  const slots = [];
-  for (const room of rooms) {
-    for (const day of days) {
-      for (const hour of hours) {
-        if (!getFilmsAt(day, hour, room).length) {
-          slots.push({ day, hour, room });
-        }
-      }
-    }
+// helpers dates (locales)
+const toDateKey = (v) => {
+  if (!v) return null;
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+    return v.slice(0, 10); // déjà YYYY-MM-DD
   }
-  for (const film of films.slice()) {
-    let count = film.remaining;
-    for (const slot of slots.slice()) {
-      if (count <= 0) break;
-      const genre = film.genre;
-      const suggested = suggestionColor(slot.day, slot.hour, slot.room);
-      const matches =
-        suggested === suggestionColor(slot.day, slot.hour, slot.room);
-      const cat = genreCategories[film.genre] || "Autre";
-      const conflict = placements.find(
-        (p) =>
-          p.day === slot.day &&
-          p.hour === slot.hour &&
-          p.room !== slot.room &&
-          genreCategories[p.genre] === cat
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const fromKeyToLocalDate = (key) => new Date(`${key}T00:00:00`);
+
+/* const getFilteredFilms = (category) => {
+  if (!selection.value) return [];
+
+  let filtered = selection.value.films
+    .filter((f) => f.category === category)
+    .filter(
+      (f) =>
+        !selectedDate.value ||
+        new Date(f.releaseDate).toISOString().slice(0, 10) ===
+          selectedDate.value
+    );
+
+  if (sortByInterest.value) {
+
+    filtered = filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  } else {
+    // ✅ Tri par date (défaut)
+    filtered = filtered.sort((a, b) => {
+      return (
+        new Date(a.releaseDate || "1900-01-01") -
+        new Date(b.releaseDate || "1900-01-01")
       );
-      if (matches && !conflict) {
-        placements.push({
-          ...film,
-          day: slot.day,
-          hour: slot.hour,
-          room: slot.room,
-        });
-        film.remaining--;
-        count--;
-        slots.splice(slots.indexOf(slot), 1);
-      }
-    }
+    });
   }
-} */
+  return filtered;
+}; */
 
-const summary = computed(() => {
-  const map = {};
-  placements.forEach((f) => {
-    map[f.title] = (map[f.title] || 0) + 1;
-  });
-  return map;
-});
+const getFilteredFilms = (category) => {
+  if (!selection.value) return [];
+  const targetKey = toDateKey(selectedDate.value);
 
-const categoryDistribution = computed(() => {
-  const categoryCounts = {};
-  placements.forEach((film) => {
-    const cat = genreCategories[film.genre] || "Autre";
-    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-  });
-  return {
-    labels: Object.keys(categoryCounts),
-    datasets: [
-      {
-        data: Object.values(categoryCounts),
-        backgroundColor: [
-          "#4ade80",
-          "#60a5fa",
-          "#facc15",
-          "#fb923c",
-          "#e879f9",
-        ],
+  let filtered = selection.value.films.filter(
+    (f) =>
+      f.category === category &&
+      (!targetKey || toDateKey(f.releaseDate) === targetKey) &&
+      f.selected == true
+  );
+
+  // clone avant sort pour ne pas muter la source
+  if (sortByInterest.value) {
+    filtered = [...filtered].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  } else {
+    const timeOf = (v) => {
+      const k = toDateKey(v);
+      return k ? Date.parse(`${k}T00:00:00`) : Number.POSITIVE_INFINITY;
+    };
+    filtered = [...filtered].sort(
+      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate)
+    );
+  }
+  return filtered;
+};
+
+const handleFilmUpdate = async (updatedFilm) => {
+  alert(JSON.stringify(updatedFilm, null, 2));
+  console.log("Mise à jour film", updatedFilm, updatedFilm.externalLinks);
+  try {
+    await apiFetch(`/films/${updatedFilm.id}/details`, {
+      method: "PUT",
+      body: {
+        commentaire: updatedFilm.commentaire,
+        rating: updatedFilm.rating,
+        tags: updatedFilm.tags,
+        awards: updatedFilm.awards,
+        externalLinks: updatedFilm.externalLinks,
       },
-    ],
-  };
-});
+    });
+  } catch (error) {
+    console.error("Erreur mise à jour film", error);
+  }
+};
 
-const unplacedFilms = computed(() => films.filter((f) => f.remaining > 0));
+const handleFilmRemove = (filmToRemove) => {
+  if (!selection.value) return;
+  selection.value.films = selection.value.films.filter(
+    (f) => f.id !== filmToRemove.id
+  );
+  //TODO delete film from selection
+};
+
+const scrollToCategory = (cat) => {
+  const el = document.getElementById(`cat-${cat}`);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+const startVote = async () => {
+  const input = prompt("Combien de votants pour ce vote ?");
+  const nbVotants = parseInt(input);
+
+  if (isNaN(nbVotants) || nbVotants <= 0) {
+    toast.add({
+      severity: "error",
+      summary: "Entrée invalide",
+      detail: "Veuillez entrer un nombre valide de votants",
+      life: 3000,
+    });
+    return;
+  }
+
+  // ⚙️ Mise à jour du rating pour chaque film sélectionné
+  selectedFilms.forEach((film) => {
+    if (!film.votes || film.votes.length === 0) return;
+    const somme = film.votes.reduce((acc, v) => acc + v.note, 0);
+    film.rating = Math.round((somme / nbVotants) * 10) / 10; // ✅ format 1 chiffre après virgule
+    film.score = computeScore(film); // si tu l'as défini globalement
+  });
+
+  toast.add({
+    severity: "success",
+    summary: "Vote démarré",
+    detail: `${nbVotants} votants pris en compte.`,
+    life: 4000,
+  });
+
+  isBarVisible.value = true;
+  voteMode.value = true;
+};
+
+function handleInterestCounts({ filmId, oldValue, newValue }) {
+  console.log("handleInterestCounts:", filmId, oldValue, "→", newValue);
+  const current = interestStats.value[filmId] || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    VERY_INTERESTED: 0,
+    CURIOUS: 0,
+    MUST_SEE: 0,
+  };
+  if (oldValue === newValue) {
+    console.log("Aucun changement d'intérêt détecté, rien à faire.");
+    return;
+  }
+  console.log("current interest stats:", current);
+  // Met à jour proprement les comptes
+  interestStats.value[filmId] = {
+    ...current,
+    [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
+    [newValue]: (current[newValue] || 0) + 1,
+  };
+  console.log(
+    "Calcul Updated interest stats:",
+    current[oldValue],
+    current[newValue]
+  );
+  console.log("Updated interest stats:", interestStats.value[filmId]);
+}
+const handlePrint = async () => {
+  layout.value = "row";
+
+  // attendre que le DOM se mette à jour
+  await nextTick();
+
+  // lancer l'impression après une légère pause
+  setTimeout(() => {
+    window.print();
+  }, 100);
+};
+
+function computeScore(film) {
+  console.log("computeScore for film", film.title, film.id);
+  const votes = film.rating || 0; // ou autre metric
+  const interestScore = getInterestScore(interestStats.value[film.id] || {});
+  console.log("computeScore for film", votes * 2 + interestScore);
+  return votes * 2 + interestScore;
+}
+const updateFilmScore = async (filmId) => {
+  alert("update films score SHOULDNT be");
+  const res = await apiFetch(`/films/${filmId}/score`);
+  const newScore = res?.score ?? null;
+  console.log("newScore", newScore);
+  // 🎯 Mets à jour le film dans selection.value
+  const film = selection.value.films.find((f) => f.id === filmId);
+  if (film && newScore !== null) {
+    film.score = newScore;
+  }
+};
+
+async function handleInterestChange({ filmId, oldValue, newValue }) {
+  console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
+
+  // Update backend
+  await updateInterest(filmId, newValue);
+
+  // Met à jour les compteurs localement
+  const current = interestStats.value[filmId] || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    VERY_INTERESTED: 0,
+    CURIOUS: 0,
+    MUST_SEE: 0,
+  };
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
+
+  interestStats.value[filmId] = {
+    ...current,
+    [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
+    [newValue]: (current[newValue] || 0) + 1,
+  };
+
+  await updateFilmScore(filmId); // 🔁 met à jour localement le score
+}
 </script>
+
+<style>
+.print-only {
+  display: none;
+}
+body {
+  font-family: "Inter", sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Tiktok Sans", sans-serif;
+  /* font-family: "Playfair Display", serif; */
+}
+@media print {
+  .screen-only {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white;
+    color: black;
+    font-family: Georgia, serif;
+    padding: 1cm;
+  }
+  body * {
+    visibility: hidden;
+  }
+
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  .film-card.printable {
+    width: 100%;
+    border: 1px solid #000;
+    padding: 1rem;
+    margin-bottom: 1cm;
+    page-break-inside: avoid;
+  }
+
+  .film-card.printable h2 {
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .film-card.printable .synopsis {
+    font-style: italic;
+  }
+
+  /* Si tu veux une mise en page en deux colonnes */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  #print-area {
+    column-count: 2;
+    column-gap: 2cm;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1cm;
+  }
+
+  .print-button,
+  .navigation-bar,
+  .filters,
+  .menu-flottant {
+    display: none !important;
+  }
+
+  .film-card {
+    page-break-inside: avoid;
+  }
+}
+
+.no-print {
+  display: none !important;
+}
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
+</style>

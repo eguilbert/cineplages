@@ -13,7 +13,7 @@
           :key="c.user_id"
           class="pb-1 border-l-2 border-green-500 pl-2"
         >
-          <span class="font-semibold">{{ c.username }} :</span>
+          <span class="font-semibold">{{ c.username }} : </span>
           <span class="italic">{{ c.commentaire }}</span>
         </div>
       </TransitionGroup>

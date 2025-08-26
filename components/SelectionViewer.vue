@@ -105,8 +105,8 @@ const films = ref([]);
 const commentaireFiltre = ref("");
 const { apiFetch } = useApi();
 onMounted(async () => {
-  const res = await apiFetch(`/selections`);
-  selections.value = await res.json();
+  const data = await apiFetch(`/selections`);
+  selections.value = data;
 });
 const formatDate = (dateStr) =>
   new Date(dateStr).toLocaleDateString("fr-FR", {
@@ -116,8 +116,8 @@ const formatDate = (dateStr) =>
   });
 watch(selectedId, async () => {
   if (!selectedId.value) return;
-  const res = await apiFetch(`/selections/${selectedId.value}`);
-  const selection = await res.json();
+  const selection = await apiFetch(`/selections/${selectedId.value}`);
+
   console.log(selection);
   films.value = selection.films || [];
 });

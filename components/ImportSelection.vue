@@ -59,9 +59,8 @@ const importFilms = async () => {
     if (startDate.value) params.append("start", formatDate(startDate).value);
     if (endDate.value) params.append("end", formatDate(endDate.value));
 
-    const res = await apiFetch(`/import/tmdb?${params.toString()}`);
+    const data = await apiFetch(`/import/tmdb?${params.toString()}`);
 
-    const data = await res.json();
     films.value = data;
   } catch (err) {
     console.error("Erreur import TMDb", err);

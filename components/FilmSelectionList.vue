@@ -42,7 +42,7 @@ const selections = ref([]);
 
 const fetchSelections = async () => {
   const res = await apiFetch(`/selections`);
-  selections.value = await res.json();
+  selections.value = res;
 };
 
 onMounted(fetchSelections);

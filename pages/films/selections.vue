@@ -78,7 +78,7 @@
         </label>
         <Button
           label="Démarrer le vote"
-          v-if="isAdmin.value"
+          v-if="isAdmin"
           @click="startVote"
           size="small"
           class="mb-4"
@@ -118,6 +118,7 @@
               :userId="user.id"
               :displayMode="layout"
               :voteOpen="voteMode"
+              :nbVotants="nbVotants"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               @score-changed="onScoreChanged"
@@ -125,6 +126,7 @@
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
               @toggle-selection="toggleFilmSelection"
+              @vote-change="onVoteChange"
               class="col-12 md:col-2 lg:col-3"
             />
             <!--:interestCounts="interestStats?.[film.id] || null"
@@ -136,26 +138,28 @@
               v-for="film in getFilteredFilms(categorie)"
               :key="film.id"
               :film="film"
-              :role="role"
+              :role="user.role"
               :isAdmin="isAdmin"
-              :username="username"
-              :userId="userId"
+              :username="user.username"
+              :userId="user.id"
               :displayMode="layout"
               :voteOpen="voteMode"
-              :initial-interest-counts="stats[film.id]"
+              :nbVotants="nbVotants"
+              :initialInterestCounts="stats[film.id]"
+              :interestCounts="interestStats?.[film.id] || null"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
               @remove="handleFilmRemove"
-              @update-interest-counts="handleInterestCounts"
               @toggle-selection="toggleFilmSelection"
+              @vote-change="onVoteChange"
             />
           </div>
         </div>
       </div>
     </div>
     <!-- Barre de sélection fixe en bas -->
-    <transition name="slide-up" v-if="isAdmin.value">
+    <transition name="slide-up" v-if="isAdmin">
       <div
         v-show="isBarVisible"
         class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
@@ -192,7 +196,7 @@
     <div
       class="fixed bottom-0 right-0 bg-blue-600 text-white text-sm px-4 py-2 rounded-tl cursor-pointer z-50"
       @click="isBarVisible = !isBarVisible"
-      v-if="isAdmin.value"
+      v-if="isAdmin"
     >
       🎯 {{ selectedFilms.length }}
     </div>
@@ -211,7 +215,10 @@ import { useAuth } from "@/composables/useAuth";
 import { useInterestStats } from "@/composables/useInterestStats";
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
 const visibleSelections = computed(() => {
-  return selections.value.filter((s) => s.id !== 18 || isAdmin.value);
+  /* selection 18 est un test */
+  return selections.value.filter((s) => s.status !== "programmation");
+  /*   return selections.value.filter((s) => s.id !== 18 || isAdmin.value);
+   */
 });
 const toast = useToast();
 const config = useRuntimeConfig();
@@ -310,10 +317,14 @@ watch(selectedSelectionId, async (newId) => {
 
 const loadSelection = async () => {
   selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
+  /* todo filtreer selections par !programmation */
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
-    layout: undefined, // ou ne pas l'inclure
+    layout: undefined,
+    // ✅ priorité : score stocké en pivot, puis live, puis calcul local
+    score: film.storedScore ?? film.liveScore ?? computeScore(film),
   }));
+
   const filmIds = selection.value.films.map((film) => film.id);
   await fetchStatsForFilms(filmIds); // ✅ passe un array, pas une string
   interestStats.value = stats.value;
@@ -331,11 +342,6 @@ const loadSelection = async () => {
       .map((item) => [item.film_id, item.value])
   );
   console.log("interestMap", interestMap.value);
-  if (selectedSelectionId.value == 11) {
-    voteMode.value = true;
-  } else {
-    voteMode.value = false;
-  }
 };
 
 function onScoreChanged({ filmId, score }) {
@@ -455,11 +461,12 @@ const scrollToCategory = (cat) => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
+const nbVotants = ref(null);
 const startVote = async () => {
   const input = prompt("Combien de votants pour ce vote ?");
-  const nbVotants = parseInt(input);
+  const parsed = parseInt(input);
 
-  if (isNaN(nbVotants) || nbVotants <= 0) {
+  if (isNaN(parsed) || parsed <= 0) {
     toast.add({
       severity: "error",
       summary: "Entrée invalide",
@@ -469,24 +476,27 @@ const startVote = async () => {
     return;
   }
 
-  // ⚙️ Mise à jour du rating pour chaque film sélectionné
-  selectedFilms.forEach((film) => {
+  nbVotants.value = parsed;
+  voteMode.value = true;
+  isBarVisible.value = true;
+
+  toast.add({
+    severity: "success",
+    summary: "Vote démarré",
+    detail: `${parsed} votants pris en compte.`,
+    life: 4000,
+  });
+};
+
+// ⚙️ Mise à jour du rating pour chaque film sélectionné
+/*   selectedFilms.forEach((film) => {
     if (!film.votes || film.votes.length === 0) return;
     const somme = film.votes.reduce((acc, v) => acc + v.note, 0);
     film.rating = Math.round((somme / nbVotants) * 10) / 10; // ✅ format 1 chiffre après virgule
     film.score = computeScore(film); // si tu l'as défini globalement
   });
 
-  toast.add({
-    severity: "success",
-    summary: "Vote démarré",
-    detail: `${nbVotants} votants pris en compte.`,
-    life: 4000,
-  });
-
-  isBarVisible.value = true;
-  voteMode.value = true;
-};
+ */
 
 function handleInterestCounts({ filmId, oldValue, newValue }) {
   console.log("handleInterestCounts:", filmId, oldValue, "→", newValue);
@@ -527,34 +537,63 @@ const handlePrint = async () => {
   }, 100);
 };
 
-function computeScore(film) {
+/* function computeScore(film) {
   console.log("computeScore for film", film.title, film.id);
   const votes = film.rating || 0; // ou autre metric
   const interestScore = getInterestScore(interestStats.value[film.id] || {});
-  console.log("computeScore for film", votes * 2 + interestScore);
+  console.log(
+    "computeScore for film, votes:",
+    votes,
+    "interest:",
+    interestScore,
+    "total:",
+    votes * 2 + interestScore
+  );
+  return votes * 2 + interestScore;
+} */
+function computeScore(film) {
+  const votes = Number(film?.rating) || 0; // nb de voix pour ce film (slider / select)
+  const counts = interestStats.value?.[film.id] || {};
+  const interestScore = getInterestScore(counts);
   return votes * 2 + interestScore;
 }
-const updateFilmScore = async (filmId) => {
-  alert("update films score SHOULDNT be");
-  const res = await apiFetch(`/films/${filmId}/score`);
-  const newScore = res?.score ?? null;
-  console.log("newScore", newScore);
-  // 🎯 Mets à jour le film dans selection.value
-  const film = selection.value.films.find((f) => f.id === filmId);
-  if (film && newScore !== null) {
-    film.score = newScore;
+/* const updateFilmScore = async (filmId, scoreUpdated) => {
+  console.log("updateFilmScore for filmId", filmId, scoreUpdated);
+  if (scoreUpdated) {
+    const film = selection.value.films.find((f) => f.id === filmId);
+    if (film && scoreUpdated !== null) {
+      film.score = scoreUpdated;
+    }
+    return; // score déjà fourni, pas besoin d'appeler l'API
   }
+
+}; */
+
+/* const onVoteChange = async ({ filmId, vote }) => {
+  alert(vote.value);
+  const film = selection.value?.films.find((f) => f.id === filmId);
+  if (film) {
+    film.rating = vote.value;
+    film.score = computeScore(film); // recalcul du score en local
+  }
+ 
+  await updateFilmScore(filmId, film.score); // 🔁 met à jour localement le score
+}; */
+const onVoteChange = async ({ filmId, vote }) => {
+  const film = selection.value?.films.find((x) => x.id === filmId);
+  if (!film) return;
+
+  film.rating = Number(vote?.value) || 0; // ← le vote unique
+  film.score = computeScore(film); // ← recalcul unifié
+
+  if (sortByInterest.value) {
+    selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  }
+
+  // (si tu veux persister le vote individuellement plus tard, tu pourras POST ici)
 };
 
-const onVoteChange = async ({ filmId, note }) => {
-  await apiFetch(`/votes`, {
-    method: "POST",
-    body: { filmId, note },
-  });
-  await updateFilmScore(filmId); // 🔁 met à jour localement le score
-};
-
-async function handleInterestChange({ filmId, oldValue, newValue }) {
+/* async function handleInterestChange({ filmId, oldValue, newValue }) {
   console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
 
   // Update backend
@@ -577,6 +616,35 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
   };
 
   await updateFilmScore(filmId); // 🔁 met à jour localement le score
+} */
+async function handleInterestChange({ filmId, oldValue, newValue }) {
+  // 1) MAJ backend (RLS, etc.)
+  await updateInterest(filmId, newValue);
+
+  // 2) MAJ locale des compteurs d’intérêts
+  const current = interestStats.value[filmId] || {
+    SANS_OPINION: 0,
+    NOT_INTERESTED: 0,
+    VERY_INTERESTED: 0,
+    CURIOUS: 0,
+    MUST_SEE: 0,
+  };
+  if (oldValue !== newValue) {
+    interestStats.value[filmId] = {
+      ...current,
+      [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
+      [newValue]: (current[newValue] || 0) + 1,
+    };
+  }
+
+  // 3) Recalcul du score unifié
+  const film = selection.value?.films.find((x) => x.id === filmId);
+  if (film) {
+    film.score = computeScore(film);
+    if (sortByInterest.value) {
+      selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    }
+  }
 }
 
 const submitSelection = async () => {
@@ -584,18 +652,25 @@ const submitSelection = async () => {
     alert("Aucune sélection à approuver.");
     return;
   }
-
-  const confirmed = confirm("Approuver cette sélection comme programmation ?");
-  if (!confirmed) return;
+  if (!confirm("Approuver cette sélection comme programmation ?")) return;
 
   try {
+    const filmsPayload = selectedFilms.value.map((f) => ({
+      id: f.id,
+      votes: Number(f.rating) || 0, // ← nb de voix attribuées à ce film
+      localScore: Number(f.score) || 0, // ← optionnel (traçabilité)
+    }));
+
     await apiFetch(`/selections/${selectedSelectionId.value}/approve`, {
       method: "POST",
-      body: { filmIds: selectedFilms.value.map((f) => f.id) }, // ✅ $fetch sérialise
+      body: {
+        films: filmsPayload,
+        nbVotants: Number(nbVotants.value) || null, // ← contrôle serveur (optionnel)
+      },
     });
 
     alert("Sélection approuvée !");
-    await loadSelection();
+    await loadSelection(); // rechargera les scores stockés en pivot
     selectedFilms.value = [];
   } catch (err) {
     console.error(err);

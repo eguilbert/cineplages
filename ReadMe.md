@@ -1,11 +1,27 @@
 Responsve
 pb login
 
-AVANT OUVERTURE
+TODDO:
 
-IMPORTANT
+!!!VOTE
 
-= tester Interests (update vue, enregistrement correct avec nouveau user)
+sauver (api) score avec votes (qui clot le vote pour la selection)
+!!Quand selection en mode programmation, plus d'interets possibles plus de votes, mais doit rester visible: mettre en disabled (avoir un mode Prog sur FilmCard)
+mais peut etre un Film a suivre
+?? si le film est dans une autre selection, !! interet reporté: l'interet doit etre attaché à une selection
+Pour l'instant, si selection, interet, sinon (liste) etc.
+
+? que deviennent les selections?
+? comment rechercher un film et le trouver soit en selection, soit en programmation
+
+!!Programmation
+!!seuls les films approuvés doivent rester dans la prog
+!!le score doit etre enregistré
+
+?Comment suivre un film
+
+Nlle section FILM
+Fiche complete
 
 SCORES!!
 Commenaire: delete + proprio

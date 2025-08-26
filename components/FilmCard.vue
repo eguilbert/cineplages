@@ -177,7 +177,7 @@
                 <PickInterest
                   v-model="myInterest"
                   :film-id="filmId"
-                  @user-change="onChangeInterest"
+                  :mode="mode"
                 />
                 <!-- @user-change="onChangeInterest" -->
               </div>
@@ -201,16 +201,20 @@
             </AccordionContent>
           </AccordionPanel>
         </Accordion>
-
-        <div class="mt-2 screen-only" v-if="isAdmin">
-          <label class="block text-xs mb-1">Votes :</label>
-          <Rating
-            v-model.number="localFilm.rating"
-            :stars="10"
-            @change="alert($event.value)"
+        <div v-if="voteOpen" class="mt-2">
+          VOTES
+          <label for="vote-count" class="block text-xs text-gray-500 mb-1">
+            Nombre de voix (max {{ nbVotants }}) note:{{ note }}
+          </label>
+          <InputNumber
+            v-model="vote"
+            :max="nbVotants"
+            :min="0"
+            class="w-full"
+            @input="handleVoteChange"
           />
         </div>
-        <!-- Bouton "+" -->
+
         <div class="absolute bottom-4 right-2 screen-only" v-if="isAdmin">
           <button
             @click="toggleMenu"
@@ -250,7 +254,7 @@
         <!-- Actions rapides -->
         <div
           class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
-          v-if="isAdmin"
+          v-if="isAdmin && mode !== 'programmation'"
         >
           <Button
             icon="pi pi-save"
@@ -280,6 +284,7 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive, watch, toRaw } from "vue";
+import InputNumber from "primevue/inputnumber";
 
 import { getInterestCount, computeAggregateScore } from "@/utils/score";
 import Rating from "primevue/rating";
@@ -305,7 +310,9 @@ const emit = defineEmits([
   "toggle-selection",
   "interest-change",
   "score-changed",
+  "vote-change",
 ]);
+const localVote = ref(0);
 const emitUpdate = () => {
   alert("Film mis à jour !");
   emit("update", toRaw(localFilm));
@@ -332,10 +339,13 @@ const props = defineProps({
     type: String,
     default: "grid",
   },
+  nbVotants: { type: Number, default: 0 },
+
   initialInterestCounts: { type: Object, default: null },
   voteOpen: { type: Boolean, default: true },
   isAdmin: { type: Boolean, default: false },
   interestCounts: { type: Object },
+  mode: { type: String, default: "none" },
 });
 
 // Intérêts (moi + agrégats)
@@ -398,7 +408,9 @@ const myInterest = computed({
     }
   },
 });
-
+function handleVoteChange(value) {
+  emit("vote-change", { filmId: props.film.id, vote: value });
+}
 const counts = ref(
   props.initialInterestCounts || {
     SANS_OPINION: 0,
@@ -448,8 +460,10 @@ const totalInterests = computed(() => {
 async function updateCommentCounts(commentsCounts) {
   totalComments.value = commentsCounts;
 }
+
 const awards = ref([]);
 const externalLinks = ref([]);
+const vote = ref([]);
 
 const myScore = computed(() => {
   const avgRating = props.film.avgRating ?? props.film.rating ?? 0;

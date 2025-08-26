@@ -6,23 +6,26 @@
         <slot name="header-actions" />
         <!--         <NuxtLink to="/" class="hover:underline">Accueil</NuxtLink>
  -->
-        <NuxtLink v-if="isAdmin" to="/films/import">Présélection</NuxtLink>
+        <NuxtLink v-if="isAdmin" to="/films/import">Imports</NuxtLink>
         <!-- <NuxtLink to="/films/preparer">Préparer une sélection</NuxtLink>
       <NuxtLink to="/films/sauver">Sauvegarder une sélection</NuxtLink> -->
-        <NuxtLink to="/films/selections">Programmation</NuxtLink>
-        <!--         <NuxtLink to="/films/TagValidation">Tags</NuxtLink>
- -->
+        <NuxtLink to="/films/selections">Présélections</NuxtLink>
+
+        <NuxtLink to="/programmation" v-if="isAdmin">Programmation</NuxtLink>
         <NuxtLink to="/selections/" class="hover:underline" v-if="isAdmin"
           >Séances</NuxtLink
         >
+        <!--<NuxtLink to="/films/TagValidation">Tags</NuxtLink>
+ -->
+        <!--   
 
         <NuxtLink to="/programmation" class="hover:underline" v-if="isAdmin"
           >Grille</NuxtLink
         >
         <NuxtLink to="/films/films" class="hover:underline" v-if="isAdmin"
           >Films</NuxtLink
-        >
-        <NuxtLink
+        > -->
+        <!--  <NuxtLink
           to="/selections/preferences"
           class="hover:underline"
           v-if="isAdmin"
@@ -30,7 +33,7 @@
         >
         <NuxtLink to="/admin" v-if="isAdmin" class="hover:underline"
           >Admin</NuxtLink
-        >
+        > -->
         <NuxtLink to="/activity" v-if="isAdmin" class="hover:underline"
           >Logs</NuxtLink
         >
