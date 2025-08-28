@@ -345,8 +345,10 @@ const loadSelection = async () => {
 };
 
 function onScoreChanged({ filmId, score }) {
+  console.log("onScoreChanged:", filmId, score);
   const f = selection.value?.films.find((x) => x.id === filmId);
   if (f) f.score = score;
+  console.log("Film updated score:", f, score);
   if (sortByInterest.value) {
     selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   }
@@ -553,8 +555,17 @@ const handlePrint = async () => {
 } */
 function computeScore(film) {
   const votes = Number(film?.rating) || 0; // nb de voix pour ce film (slider / select)
+  console.log("computeScore for film", film.title, film.id, "votes:", votes);
   const counts = interestStats.value?.[film.id] || {};
   const interestScore = getInterestScore(counts);
+  console.log(
+    "computeScore for film, votes:",
+    votes,
+    "interest:",
+    interestScore,
+    "total:",
+    votes * 2 + interestScore
+  );
   return votes * 2 + interestScore;
 }
 /* const updateFilmScore = async (filmId, scoreUpdated) => {
@@ -618,6 +629,7 @@ const onVoteChange = async ({ filmId, vote }) => {
   await updateFilmScore(filmId); // 🔁 met à jour localement le score
 } */
 async function handleInterestChange({ filmId, oldValue, newValue }) {
+  console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
   // 1) MAJ backend (RLS, etc.)
   await updateInterest(filmId, newValue);
 
@@ -636,7 +648,7 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
       [newValue]: (current[newValue] || 0) + 1,
     };
   }
-
+  console.log("Updated interest stats:", interestStats.value[filmId]);
   // 3) Recalcul du score unifié
   const film = selection.value?.films.find((x) => x.id === filmId);
   if (film) {

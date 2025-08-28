@@ -115,6 +115,7 @@
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               :mode="'programmation'"
+              :selectionId="selectedSelectionId"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -276,7 +277,9 @@ watch(selectedSelectionId, async (newId) => {
 });
 
 const loadSelection = async () => {
-  selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
+  selection.value = await apiFetch(
+    `/programmation/${selectedSelectionId.value}`
+  );
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
     layout: undefined,

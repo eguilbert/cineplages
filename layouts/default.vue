@@ -11,7 +11,7 @@
       <NuxtLink to="/films/sauver">Sauvegarder une sélection</NuxtLink> -->
         <NuxtLink to="/films/selections">Présélections</NuxtLink>
 
-        <NuxtLink to="/programmation" v-if="isAdmin">Programmation</NuxtLink>
+        <NuxtLink to="/programmation">Programmation</NuxtLink>
         <NuxtLink to="/selections/" class="hover:underline" v-if="isAdmin"
           >Séances</NuxtLink
         >

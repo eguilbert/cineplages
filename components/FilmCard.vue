@@ -96,7 +96,10 @@
       <div class="screen-only py-3">
         <TrailerPlayer :youtubeUrl="film.trailerUrl" class="screen-only mb-2" />
       </div>
-      <div class="text-sm text-gray-600 space-y-2">
+      <div
+        class="text-sm text-gray-600 space-y-2"
+        v-if="mode !== 'programmation'"
+      >
         <!-- BONUS INFO -->
         <Accordion multiple :value="['1', '2']">
           <AccordionPanel value="0">
@@ -278,6 +281,25 @@
           />
         </div>
       </div>
+
+      <ProgrammingPanel
+        v-if="mode === 'programmation'"
+        :selection-id="selectionId"
+        :film="film"
+        :cinemas="[
+          { id: 5, name: 'Agon' },
+          { id: 2, name: 'Hauteville' },
+        ]"
+        :cycles="cycles"
+        :programming-comments="film.programmingComments || []"
+        @saved="() => loadSelection()"
+        @updated="
+          ({ filmId, programming }) => {
+            const f = selection.films.find((x) => x.id === filmId);
+            if (f) f.programming = programming;
+          }
+        "
+      />
     </div>
   </div>
 </template>
@@ -346,6 +368,7 @@ const props = defineProps({
   isAdmin: { type: Boolean, default: false },
   interestCounts: { type: Object },
   mode: { type: String, default: "none" },
+  selectionId: { type: [Number, String], default: null },
 });
 
 // Intérêts (moi + agrégats)
@@ -358,6 +381,11 @@ const optimisticInterest = ref(null); // <-- nouveau
 const myInterest = computed({
   get() {
     // si on vient de choisir une valeur, on l'affiche tout de suite
+    console.log(
+      "myInterest computed get:",
+      optimisticInterest.value,
+      myInterestFor(filmId.value)
+    );
     return (
       (optimisticInterest.value ?? myInterestFor(filmId.value)) ||
       "SANS_OPINION"
@@ -365,6 +393,7 @@ const myInterest = computed({
   },
 
   async set(newValue) {
+    console.log("myInterest computed set NEW VALUE:", newValue);
     const prev = myInterestFor(filmId.value) || "SANS_OPINION";
     if (newValue === prev) return;
 
@@ -386,16 +415,17 @@ const myInterest = computed({
     if (next[prev] > 0) next[prev] -= 1;
     next[newValue] = toNum(next[newValue]) + 1;
     counts.value = next;
-
+    console.log("Updated counts:", counts.value);
     const localScore = computePopularityScore(next);
+    console.log("Optimistic score:", localScore);
     emit("score-changed", { filmId: filmId.value, score: localScore });
 
     try {
       await updateInterest(filmId.value, newValue);
-      const { score } = await apiFetch(`/films/${filmId.value}/score`);
-      emit("score-changed", {
+      /*       const { score } = await apiFetch(`/films/${filmId.value}/score`);
+       */ emit("score-changed", {
         filmId: filmId.value,
-        score: score ?? localScore,
+        score: localScore ?? score,
       });
     } catch (e) {
       counts.value = before;
@@ -482,6 +512,7 @@ const localFilm = reactive({
 const note = computed(() => localFilm.rating); // ← ta note
 
 watch(myScore, (val) => {
+  console.log("myScore changed:", val);
   localFilm.myScore = val;
 });
 
