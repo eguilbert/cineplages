@@ -102,13 +102,14 @@
       >
         <!-- BONUS INFO -->
         <Accordion multiple :value="['1', '2']">
-          <AccordionPanel value="0">
+          <AccordionPanel value="0" class="screen-only">
             <AccordionHeader
               style="
                 background-color: rgba(151, 234, 118, 0.8);
                 color: rgba(30, 80, 10, 0.8);
                 font-weight: 300;
               "
+              class="screen-only"
             >
               <i class="pi pi-link mr-2"></i> articles
               <Badge
@@ -143,6 +144,7 @@
                 color: rgba(0, 108, 143, 0.8);
                 font-weight: 300;
               "
+              class="screen-only"
               ><i class="pi pi-comment mr-2"></i> commentaires
               <Badge
                 :value="film.comments.length"
@@ -159,7 +161,7 @@
               />
             </AccordionContent>
           </AccordionPanel>
-          <AccordionPanel value="2">
+          <AccordionPanel value="2" class="screen-only">
             <AccordionHeader
               style="
                 background-color: rgba(255, 237, 141, 0.91);
