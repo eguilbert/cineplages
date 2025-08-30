@@ -68,16 +68,23 @@
         {{ film.genre }}
         <span v-if="film.duration > 0">/ {{ film.duration }}m</span>
       </div>
-      <div class="text-sm text-gray-600 space-y-2">
+      <div
+        class="text-sm text-gray-600 space-y-2"
+        :class="{ 'screen-only': mode === 'programmation' }"
+      >
         <div v-if="film.actors">Avec: {{ film.actors }}</div>
       </div>
-      <small class="block border border-blue-100 p-2 mb-2">
+      <small
+        class="block border border-blue-100 p-2 mb-2"
+        :class="{ 'screen-only': mode === 'programmation' }"
+      >
         {{ film.synopsis }}
       </small>
       <div
         v-for="(award, i) in film.awards"
         :key="i"
         class="flex flex-col gap-1 items-center mb-2"
+        :class="{ 'screen-only': mode === 'programmation' }"
       >
         <small
           style="
