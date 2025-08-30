@@ -292,7 +292,6 @@
           { id: 5, name: 'Agon' },
           { id: 2, name: 'Hauteville' },
         ]"
-        :cycles="cycles"
         :programming-comments="film.programmingComments || []"
         @saved="() => loadSelection()"
         @updated="

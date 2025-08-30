@@ -11,7 +11,7 @@
           indicatif et les notes.
         </p> -->
       </div>
-      <!--       <br />
+      <!--<br />
       <Button
         size="small"
         label="Enregistrer"
@@ -20,9 +20,9 @@
       /> -->
     </div>
 
-    <div class="grid md:grid-cols-2 gap-4">
+    <!--     <div class="grid md:grid-cols-2 gap-4">
       <div
-        v-for="c in displayCinemas"
+        v-for="c in displayedCinemas"
         :key="c.id"
         class="border rounded p-3"
         :class="classesFor(c).box"
@@ -34,6 +34,7 @@
               <Checkbox :binary="true" v-model="state[c.id].checked" />
             </template>
             <template v-else>
+              {{ programmingByCinema[c.id] }}
               <span
                 class="text-[10px] px-2 py-0.5 rounded"
                 :class="classesFor(c).chip"
@@ -43,7 +44,7 @@
             </template>
           </div>
           <br />
-          <!-- <span
+          <span
             v-if="isAdmin ? state[c.id].checked : programmingByCinema[c.id]"
             class="text-xs px-2 py-0.5 rounded"
             :class="
@@ -60,7 +61,7 @@
                 : programmingByCinema[c.id]?.suggested
             }}
             séance(s)
-          </span> -->
+          </span> 
         </div>
 
         <div
@@ -99,18 +100,7 @@
               />
             </div>
 
-            <!--<div class="flex items-center gap-3">
-            <label class="text-xs w-28">Cycle</label>
-            <Select
-              v-model="state[c.id].cycleId"
-              :options="cycles"
-              optionLabel="name"
-              optionValue="id"
-              placeholder="Aucun"
-              class="w-full md:w-56"
-              panelClass="text-sm"
-            />
-          </div> -->
+           
 
             <div>
               <label class="text-xs block mb-1">Notes</label>
@@ -124,13 +114,15 @@
           </template>
 
           <template v-else>
-            <!-- version lecture seule -->
+            
             <div class="text-sm text-gray-700" v-if="programmingByCinema[c.id]">
               <p v-if="programmingByCinema[c.id].suggested > 0">
                 Séances suggérées :
                 <strong>{{ programmingByCinema[c.id].suggested }}</strong>
               </p>
-              <p>Max : {{ programmingByCinema[c.id].capLabel || "—" }}</p>
+              <p v-if="programmingByCinema[c.id].capLabel">
+                Max : {{ programmingByCinema[c.id].capLabel }}
+              </p>
               <p v-if="programmingByCinema[c.id].notes">
                 Notes :
                 <span class="italic">{{
@@ -140,6 +132,106 @@
             </div>
             <div v-else class="text-sm text-gray-400 italic">Non programmé</div>
           </template>
+        </div>
+      </div>
+    </div> -->
+    <!-- ===== ADMIN ===== -->
+    <div v-if="isAdmin" class="grid md:grid-cols-2 gap-4">
+      <div
+        v-for="c in adminCinemas"
+        :key="c.id"
+        class="border rounded p-3"
+        :class="classesFor(c).box"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            {{ c.name }}
+            <Checkbox :binary="true" v-model="state[c.id].checked" />
+          </div>
+        </div>
+
+        <div v-if="state[c.id].checked" class="mt-3 space-y-2">
+          <!-- Séances -->
+          <div class="flex-col items-center gap-3">
+            <label class="text-xs w-28">Séances (0..9)</label>
+            <br />
+            <InputNumber
+              v-model="state[c.id].suggested"
+              :min="0"
+              :max="9"
+              :step="1"
+              inputClass="w-8"
+              buttonLayout="horizontal"
+              showButtons
+              :useGrouping="false"
+              size="small"
+            />
+          </div>
+
+          <!-- Cap -->
+          <div class="flex-col items-center gap-3">
+            <label class="text-xs w-28">Max indicatif</label>
+            <br />
+            <Select
+              v-model="state[c.id].capLabel"
+              :options="capOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Max"
+              class="w-full md:w-24"
+              panelClass="text-sm"
+              size="small"
+            />
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="text-xs block mb-1">Notes</label>
+            <Textarea
+              v-model="state[c.id].notes"
+              rows="3"
+              autoResize
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NON-ADMIN ===== -->
+    <div v-else class="grid md:grid-cols-2 gap-4">
+      <div
+        v-for="c in nonAdminCinemas"
+        :key="c.id"
+        class="border rounded p-3"
+        :class="classesFor(c).box"
+      >
+        <!-- Seulement le nom (chip) si juste coché -->
+        <div class="flex items-center gap-2">
+          <span
+            class="text-[10px] px-2 py-0.5 rounded"
+            :class="classesFor(c).chip"
+          >
+            {{ c.name }}
+          </span>
+        </div>
+
+        <!-- Si des infos existent, on les montre dessous -->
+        <div
+          v-if="hasDetails(c.id)"
+          class="mt-3 text-sm text-gray-700 space-y-1"
+        >
+          <p v-if="programmingByCinema[c.id]?.suggested > 0">
+            Séances suggérées :
+            <strong>{{ programmingByCinema[c.id].suggested }}</strong>
+          </p>
+          <p v-if="programmingByCinema[c.id]?.capLabel">
+            Max : {{ programmingByCinema[c.id].capLabel }}
+          </p>
+          <p v-if="programmingByCinema[c.id]?.notes">
+            Notes :
+            <span class="italic">{{ programmingByCinema[c.id].notes }}</span>
+          </p>
         </div>
       </div>
     </div>
@@ -282,18 +374,17 @@ const classesFor = (c) => {
   };
 };
 const displayCinemas = computed(() => {
-  if (isAdmin) {
-    // admin : n'affiche que les cinémas cochés
-    return props.cinemas;
-    /*     return props.cinemas.filter((c) => state[c.id]?.checked === true);
-     */
-  }
-  // non-admin : n'affiche que les cinémas programmés (données backend)
-  return props.cinemas.filter((c) => !!programmingByCinema.value[c.id]);
+  return props.cinemas.filter(
+    (c) => isAdmin || programmingByCinema.value[c.id]
+  );
 });
 
 const emit = defineEmits(["saved", "error", "updated"]);
-
+function shouldDisplayCinema(c) {
+  if (isAdmin) return true;
+  const p = programmingByCinema.value[c.id];
+  return !!p && (p.suggested > 0 || p.capLabel || p.notes);
+}
 const { apiFetch } = useApi();
 const toast = useToast();
 const saving = ref(false);
@@ -328,7 +419,11 @@ const makeEmpty = () => ({
   notes: "",
   cycleId: null,
 });
-
+const displayedCinemas = computed(() => {
+  return props.cinemas.filter((c) => {
+    return isAdmin || !!programmingByCinema.value[c.id];
+  });
+});
 const state = reactive({});
 for (const c of props.cinemas) state[c.id] = makeEmpty();
 
@@ -527,6 +622,21 @@ async function addComment() {
     });
   }
 }
+//NEW
+const isChosen = (cinemaId) => !!programmingByCinema.value[cinemaId];
+
+const hasDetails = (cinemaId) => {
+  const p = programmingByCinema.value[cinemaId];
+  if (!p) return false;
+  return (
+    Number(p.suggested) > 0 || !!p.capLabel || !!(p.notes && p.notes.trim())
+  );
+};
+
+const adminCinemas = computed(() => props.cinemas); // tout pour admin
+const nonAdminCinemas = computed(() =>
+  props.cinemas.filter((c) => isChosen(c.id))
+); // seulement cochés
 </script>
 
 <style scoped>
