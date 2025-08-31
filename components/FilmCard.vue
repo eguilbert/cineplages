@@ -1,11 +1,12 @@
 <template>
   <div
     class="border rounded p-3 bg-white shadow-sm relative"
-    :class="
+    :class="[
       displayMode === 'grid'
         ? 'flex flex-col'
-        : 'flex flex-row gap-4 w-full items-start'
-    "
+        : 'flex flex-row gap-4 w-full items-start',
+      compact ? 'py-2 px-3 gap-2' : 'py-4 px-4 gap-4',
+    ]"
   >
     <Badge
       :value="film.score"
@@ -22,12 +23,14 @@
       "
       :style="{ backgroundColor: getScoreColor(film.score) }"
     />
-    <div>
-      <small class="center">
-        {{ formatDate(film.releaseDate) }}
-        <!-- 🇨🇦 {{ formatDate(film.releaseCanDate) }} -->
-      </small>
-
+    <small class="center">
+      {{ formatDate(film.releaseDate) }}
+      <!-- 🇨🇦 {{ formatDate(film.releaseCanDate) }} -->
+    </small>
+    <div
+      class="flex"
+      :class="compact ? 'items-center gap-3' : 'items-start gap-4'"
+    >
       <img
         v-if="film.poster"
         :src="film.poster"
@@ -40,7 +43,10 @@
     </div>
 
     <div class="flex-1">
-      <div class="flex justify-between items-start mb-1">
+      <div
+        class="flex justify-between items-start mb-1"
+        :class="compact ? 'text-sm' : 'text-lg'"
+      >
         <div>
           <a
             :href="`https://www.themoviedb.org/movie/${film.tmdbId}`"
@@ -55,7 +61,16 @@
           <small class="bg-blue-500/10 px-2 py-0.5 rounded">{{
             film.directorName
           }}</small>
+
+          <!-- Toggle individuel -->
         </div>
+        <!--        <Button
+          text
+          size="small"
+          :icon="localExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          @click="localExpanded = !localExpanded"
+          v-if="!compact"
+        /> -->
 
         <span
           class="text-xs rounded px-2 py-0.5"
@@ -75,6 +90,7 @@
         <div v-if="film.actors">Avec: {{ film.actors }}</div>
       </div>
       <small
+        v-if="!compact"
         class="block border border-blue-100 p-2 mb-2"
         :class="{ 'screen-only': mode === 'programmation' }"
       >
@@ -105,7 +121,7 @@
       </div>
       <div
         class="text-sm text-gray-600 space-y-2"
-        v-if="mode !== 'programmation'"
+        v-if="!(compact || mode == 'programmation')"
       >
         <!-- BONUS INFO -->
         <Accordion multiple :value="['1', '2']">
@@ -290,6 +306,15 @@
           />
         </div>
       </div>
+      <div v-if="compact">
+        <!-- Intérêt -->
+        <PickInterest
+          v-model="myInterest"
+          :film-id="filmId"
+          :mode="mode"
+          :mode-compact="true"
+        />
+      </div>
 
       <ProgrammingPanel
         v-if="mode === 'programmation'"
@@ -377,6 +402,11 @@ const props = defineProps({
   interestCounts: { type: Object },
   mode: { type: String, default: "none" },
   selectionId: { type: [Number, String], default: null },
+  compact: { type: Boolean, default: false },
+});
+const localExpanded = ref(false);
+watchEffect(() => {
+  if (props.compact) localExpanded.value = false;
 });
 
 // Intérêts (moi + agrégats)
@@ -591,6 +621,12 @@ const addTags = () => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

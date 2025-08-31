@@ -31,6 +31,25 @@
           {{ cat }}
         </a>
       </div>
+      <!-- Compact FilmCard -->
+      <div class="mb-1 flex items-center gap-2 mt-2">
+        <Button
+          :severity="view.mode === 'compact' ? 'primary' : 'secondary'"
+          icon="pi pi-window-minimize"
+          size="small"
+          label=""
+          @click="view.setMode('compact')"
+        />
+        <Button
+          :severity="view.mode === 'full' ? 'primary' : 'secondary'"
+          icon="pi pi-window-maximize"
+          size="small"
+          label=""
+          @click="view.setMode('full')"
+        />
+        <!-- (Option) Raccourci clavier: M pour toggle -->
+        <kbd class="ml-2 text-xs">M</kbd>
+      </div>
     </div>
 
     <!-- Affichage de la sélection choisie -->
@@ -90,6 +109,25 @@
           🖨️ Imprimer la sélection
         </button>
       </div>
+      <!-- Compact FilmCard -->
+      <div class="mb-3 flex items-center gap-2">
+        <Button
+          :severity="view.mode === 'compact' ? 'primary' : 'secondary'"
+          icon="pi pi-window-minimize"
+          size="small"
+          label=""
+          @click="view.setMode('compact')"
+        />
+        <Button
+          :severity="view.mode === 'full' ? 'primary' : 'secondary'"
+          icon="pi pi-window-maximize"
+          size="small"
+          label=""
+          @click="view.setMode('full')"
+        />
+        <!-- (Option) Raccourci clavier: M pour toggle -->
+        <kbd class="ml-2 text-xs">M</kbd>
+      </div>
       <div id="print-area">
         <div
           v-for="categorie in categories"
@@ -106,8 +144,14 @@
 
           <div
             v-if="layout === 'grid'"
-            class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+            :class="
+              view.mode === 'compact'
+                ? 'grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 xs:grid-cols-1 gap-3'
+                : 'grid grid-cols-3 xl:grid-cols-3 md:grid-cols-3 sm:grid-cols-1 gap-4'
+            "
           >
+            <!--           class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+ -->
             <FilmCard
               v-for="film in getFilteredFilms(categorie)"
               :key="film.id"
@@ -121,6 +165,7 @@
               :nbVotants="nbVotants"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
+              :compact="view.mode === 'compact'"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -213,6 +258,13 @@ import { getCategoryColor } from "@/utils/genreColors";
 import { useToast } from "primevue/usetoast";
 import { useAuth } from "@/composables/useAuth";
 import { useInterestStats } from "@/composables/useInterestStats";
+import { useViewMode } from "@/stores/useViewMode";
+const view = useViewMode();
+
+onMounted(() => {
+  // hydrate depuis localStorage côté client
+  view.init();
+});
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
 const visibleSelections = computed(() => {
   /* selection 18 est un test */
@@ -224,7 +276,7 @@ const toast = useToast();
 const config = useRuntimeConfig();
 const selections = ref([]);
 const selection = ref(null);
-const selectedSelectionId = ref();
+const selectedSelectionId = ref(21);
 const selectedDate = ref(null);
 const layout = ref("grid");
 const categories = ["Art et Essai", "Documentaire", "Grand Public", "Jeunesse"];
@@ -262,7 +314,20 @@ function openVote() {
   });
  */
 }
+function onKey(e) {
+  const tag = e.target.tagName.toLowerCase();
+  const isTyping =
+    tag === "input" || tag === "textarea" || e.target.isContentEditable;
 
+  if (isTyping) return; // ⛔ on ignore si on tape dans un champ
+
+  if (e.key.toLowerCase() === "m") {
+    view.toggle(); // ton action compact/complet
+  }
+}
+
+onMounted(() => window.addEventListener("keydown", onKey));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 /* const availableDates = computed(() => {
   if (!selection.value) return [];
 
