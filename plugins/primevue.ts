@@ -3,6 +3,7 @@ import { defineNuxtPlugin } from "#app";
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
 import ConfirmationService from "primevue/confirmationservice";
+import AutoComplete from "primevue/autocomplete";
 
 // ✅ NO CSS import like 'primevue/resources/...'
 // ✅ Use the new theme system instead:
@@ -21,4 +22,5 @@ export default defineNuxtPlugin((nuxtApp) => {
   });
   nuxtApp.vueApp.use(ToastService);
   nuxtApp.vueApp.use(ConfirmationService);
+  nuxtApp.vueApp.component("AutoComplete", AutoComplete);
 });

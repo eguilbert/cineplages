@@ -12,7 +12,7 @@ export function useFilms() {
 
   const loadFilms = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/films");
+      const res = await fetch("/api/films");
       const data = await res.json();
       data.forEach((film, i) => {
         films.push({ ...film, remaining: film.remaining ?? 3, id: i + 100 });
@@ -24,7 +24,7 @@ export function useFilms() {
 
   const submitFilm = async () => {
     try {
-      const res = await fetch("http://localhost:4000/api/films", {
+      const res = await fetch("/api/films", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...newFilm.value }),

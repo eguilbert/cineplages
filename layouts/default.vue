@@ -12,19 +12,17 @@
         <NuxtLink to="/films/selections">Présélections</NuxtLink>
 
         <NuxtLink to="/programmation">Programmation</NuxtLink>
-        <NuxtLink to="/selections/" class="hover:underline" v-if="isAdmin"
+        <!-- <NuxtLink to="/selections/" class="hover:underline" v-if="isAdmin"
           >Séances</NuxtLink
         >
-        <!--<NuxtLink to="/films/TagValidation">Tags</NuxtLink>
+        <NuxtLink to="/films/TagValidation">Tags</NuxtLink>
  -->
         <!--   
 
         <NuxtLink to="/programmation" class="hover:underline" v-if="isAdmin"
           >Grille</NuxtLink
-        >
-        <NuxtLink to="/films/films" class="hover:underline" v-if="isAdmin"
-          >Films</NuxtLink
-        > -->
+        >-->
+        <NuxtLink to="/films/films" class="hover:underline">Films</NuxtLink>
         <!--  <NuxtLink
           to="/selections/preferences"
           class="hover:underline"
@@ -36,6 +34,9 @@
         > -->
         <NuxtLink to="/activity" v-if="isAdmin" class="hover:underline"
           >Logs</NuxtLink
+        >
+        <NuxtLink to="/projections" v-if="isAdmin" class="hover:underline"
+          >Projections</NuxtLink
         >
         <button @click="logout" v-if="isAuthenticated">Se déconnecter</button>
       </div>
