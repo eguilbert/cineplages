@@ -14,7 +14,6 @@
       @change="loadSelection"
       panelClass="text-sm"
     />
-
     <!-- Menu flottant catégories -->
     <div
       class="fixed top-100 -left-2 bg-white shadow p-2 rounded z-10 shadow-lg"

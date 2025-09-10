@@ -1,11 +1,12 @@
 <template>
   <div
-    class="border rounded p-3 bg-white shadow-sm relative"
+    class="border rounded p-3 shadow-sm relative"
     :class="[
       displayMode === 'grid'
         ? 'flex flex-col'
         : 'flex flex-row gap-4 w-full items-start',
       compact ? 'py-2 px-3 gap-2' : 'py-4 px-4 gap-4',
+      myInterest == null ? 'bg-slate-200' : 'bg-white',
     ]"
   >
     <Badge
@@ -41,6 +42,18 @@
         "
       />
     </div>
+    <div v-if="film.afcae">
+      <img
+        src="https://dauvsy92u4wdt.cloudfront.net/fit-in/200x50/prod/vl/137/e15d58c4-e439-49fd-a82a-6ab37f5a81f0_header.jpg"
+        alt=""
+        style="
+          width: 50px;
+          margin-top: -46px;
+          border: 1px solid black;
+          margin-left: -5px;
+        "
+      />
+    </div>
 
     <div class="flex-1">
       <div
@@ -64,17 +77,22 @@
 
           <!-- Toggle individuel -->
         </div>
-        <!--        <Button
-          text
-          size="small"
-          :icon="localExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-          @click="localExpanded = !localExpanded"
-          v-if="!compact"
-        /> -->
-
         <span
           class="text-xs rounded px-2 py-0.5"
           :class="badgeClass(film.category)"
+          v-if="compact"
+        >
+          {{
+            film.category in categoryCompact
+              ? categoryCompact[film.category]
+              : film.category || "NC"
+          }}
+          <!-- {{ film.category || "Non classé" }} -->
+        </span>
+        <span
+          class="text-xs rounded px-2 py-0.5"
+          :class="badgeClass(film.category)"
+          v-else
         >
           {{ film.category || "Non classé" }}
         </span>
@@ -299,11 +317,25 @@
             @click="removeFilm"
           />
           <Button
+            v-if="voteOpen"
             size="small"
             label="🎯 Ajouter à la sélection"
             @click="$emit('toggle-selection', film)"
             class="mt-2"
           />
+        </div>
+      </div>
+      <div class="" v-if="isAdmin">
+        <div class="">
+          <!-- synopsis, infos... -->
+          <PublicRating :film-id="filmId" />
+        </div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6" v-if="isAdmin">
+        <div class="md:col-span-3 space-y-3">
+          <FilmFollowToggle :film-id="filmId" />
+
+          <AddToListButton :film-id="filmId" />
         </div>
       </div>
       <div v-if="compact">
@@ -349,6 +381,8 @@ import AccordionPanel from "primevue/accordionpanel";
 import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import TrailerPlayer from "./TrailerPlayer.vue";
+import AddToListButton from "./lists/AddToListButton.vue";
+import PublicRating from "./film/PublicRating.vue";
 import Badge from "primevue/badge";
 const config = useRuntimeConfig();
 const ready = ref(false);
@@ -375,7 +409,12 @@ const emitUpdate = () => {
 const countOfInterests = getInterestCount();
 const myComment = ref("");
 const filmId = computed(() => props.film.id);
-
+const categoryCompact = {
+  "Art et Essai": "A&E",
+  Documentaire: "Doc",
+  Jeunesse: "J",
+  "Grand Public": "GP",
+};
 const props = defineProps({
   film: { type: Object, required: true },
   score: Number,
@@ -424,15 +463,13 @@ const myInterest = computed({
       optimisticInterest.value,
       myInterestFor(filmId.value)
     );
-    return (
-      (optimisticInterest.value ?? myInterestFor(filmId.value)) ||
-      "SANS_OPINION"
-    );
+    return (optimisticInterest.value ?? myInterestFor(filmId.value)) || null;
   },
 
   async set(newValue) {
     console.log("myInterest computed set NEW VALUE:", newValue);
-    const prev = myInterestFor(filmId.value) || "SANS_OPINION";
+    const prev = myInterestFor(filmId.value);
+    // const prev = myInterestFor(filmId.value) || "SANS_OPINION";
     if (newValue === prev) return;
 
     optimisticInterest.value = newValue;

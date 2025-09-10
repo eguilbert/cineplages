@@ -1,0 +1,6 @@
+[
+  { "component": "HomeNextProgram" },
+  { "component": "HomeFilmHighlight", "props": { "filmId": 179 } },
+  { "component": "HomeNewsList" },
+  { "component": "HomeStats" }
+]

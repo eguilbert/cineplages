@@ -23,6 +23,9 @@
           >Grille</NuxtLink
         >-->
         <NuxtLink to="/films/films" class="hover:underline">Films</NuxtLink>
+        <NuxtLink to="/lists/create" class="hover:underline" v-if="isAdmin"
+          >Listes</NuxtLink
+        >
         <!--  <NuxtLink
           to="/selections/preferences"
           class="hover:underline"

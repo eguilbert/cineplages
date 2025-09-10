@@ -6,7 +6,7 @@
       :options="options"
       optionLabel="label"
       optionValue="value"
-      placeholder="Votre intérêt"
+      placeholder="Donnez votre avis"
       class="w-full md:w-48"
       size="small"
       :disabled="mode === 'programmation'"
@@ -21,7 +21,7 @@ import { ref, watch } from "vue";
 import Select from "primevue/select";
 
 const props = defineProps({
-  modelValue: { type: String, default: "SANS_OPINION" },
+  modelValue: { type: String },
   mode: { type: String, default: "selection" },
   modeCompact: { type: Boolean, default: false },
 });
