@@ -140,13 +140,13 @@
           >
             {{ categorie }} ({{ getFilteredFilms(categorie).length }})
           </h3>
-
+          mmode {{ view.mode }}
           <div
             v-if="layout === 'grid'"
             :class="
               view.mode === 'compact'
                 ? 'grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 xs:grid-cols-1 gap-3'
-                : 'grid grid-cols-3 xl:grid-cols-3 md:grid-cols-3 sm:grid-cols-1 gap-4'
+                : 'grid xl:grid-cols-3 md:grid-cols-1 sm:grid-cols-1 gap-4'
             "
           >
             <!--           class="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
