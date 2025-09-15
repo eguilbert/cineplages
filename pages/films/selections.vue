@@ -140,7 +140,6 @@
           >
             {{ categorie }} ({{ getFilteredFilms(categorie).length }})
           </h3>
-          mmode {{ view.mode }}
           <div
             v-if="layout === 'grid'"
             :class="
