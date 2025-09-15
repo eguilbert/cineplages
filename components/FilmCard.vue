@@ -67,7 +67,7 @@
             class="text-blue-600 font-semibold hover:underline"
           >
             {{ film.title }}
-            <small> ({{ film.origin }})</small>
+            <small> ({{ translateCountries(film.origin) }})</small>
             <span v-if="isAdmin" style="font-size: 10px"> [{{ film.id }}]</span>
           </a>
           <br />
@@ -325,9 +325,8 @@
           />
         </div>
       </div>
-      <div class="" v-if="isAdmin">
+      <!-- <div class="" v-if="isAdmin">
         <div class="">
-          <!-- synopsis, infos... -->
           <PublicRating :film-id="filmId" />
         </div>
       </div>
@@ -337,7 +336,7 @@
 
           <AddToListButton :film-id="filmId" />
         </div>
-      </div>
+      </div> -->
       <div v-if="compact">
         <!-- Intérêt -->
         <PickInterest
@@ -391,6 +390,8 @@ const { apiFetch } = useApi();
 import { useMyInterests } from "@/composables/useMyInterests";
 import { useInterestStats } from "@/composables/useInterestStats";
 import { EMPTY_COUNTS, INTEREST_LABEL } from "@/lib/interests";
+import countries from "i18n-iso-countries";
+import frLocale from "i18n-iso-countries/langs/fr.json";
 
 const totalComments = ref(0);
 const emit = defineEmits([
@@ -401,6 +402,9 @@ const emit = defineEmits([
   "score-changed",
   "vote-change",
 ]);
+
+// charger les noms français
+countries.registerLocale(frLocale);
 const localVote = ref(0);
 const emitUpdate = () => {
   alert("Film mis à jour !");
@@ -454,6 +458,11 @@ const { fetchStatsForFilm } = useInterestStats();
 
 // 1) computed en v-model direct (pas de ref local)
 const optimisticInterest = ref(null); // <-- nouveau
+
+function translateCountries(code) {
+  return countries.getName(code, "fr") || code;
+  //return codes.map((code) => countries.getName(code, "fr") || code);
+}
 
 const myInterest = computed({
   get() {
