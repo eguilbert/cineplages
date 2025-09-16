@@ -19,7 +19,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return; // encore frais → on ne refait pas l'appel
   }
 
-  try {
+  /* try {
     // ✅ Appelle la bonne URL de l’API Railway
     const res: any = await $fetch(`${apiBase}/api/health`, {
       retry: 0, // pas de retry en boucle
@@ -34,5 +34,5 @@ export default defineNuxtRouteMiddleware(async (to) => {
     healthOk.value = false;
     lastCheck.value = now;
     return navigateTo("/maintenance");
-  }
+  } */
 });

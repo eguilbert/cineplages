@@ -2,7 +2,7 @@
   <div class="max-w-md mx-auto p-6">
     <h1 class="text-xl font-bold mb-4">Connexion</h1>
 
-    <form @submit.prevent="handleLogin">
+    <form @submit.prevent="doLogin">
       <input
         v-model="email"
         type="email"
@@ -69,8 +69,9 @@ const resetEmail = ref("");
 const resetMessage = ref("");
 const resetError = ref("");
 const route = useRoute();
-const { login, getUser } = useAuth();
+const { login, logout, getUser, user, isAuthenticated } = useAuth();
 
+/*
 const handleLogin = async () => {
   try {
     await login(email.value, password.value); // ← appelle Railway via apiBase
@@ -84,8 +85,16 @@ const handleLogin = async () => {
       "Erreur inconnue";
     alert("Connexion échouée : " + msg);
   }
+}; */
+const doLogin = async () => {
+  const res = await login(email.value, password.value);
+  console.log("✅ connecté :", user.value);
+  console.log("✅ connecté :", user.value.username);
+  localStorage.setItem("token", res.token);
+  if (user.value.username) {
+    await navigateTo(route.query.next || "/films/selections");
+  }
 };
-
 // ⚠️ Ton sendCustomReset utilise `res` sans le définir (fetch commenté). Soit tu retires le bloc,
 // soit tu réactives le fetch et tu utilises sa réponse dans `res`.
 const sendCustomReset = async () => {

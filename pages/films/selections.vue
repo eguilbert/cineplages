@@ -1,6 +1,6 @@
 <template>
   <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">Sélections</h1>
+    <h1 class="text-2xl font-bold mb-6">Présélections</h1>
 
     <FilmSearchAdd :selection-id="selectedSelectionId" v-if="isAdmin" />
     <!-- Sélecteur de sélection -->

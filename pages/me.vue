@@ -6,13 +6,15 @@
       <p>Email : {{ user.email }}</p>
       <p>Rôle : {{ user.role }}</p>
       <p>Username : {{ user.username }}</p>
+
       <button
-        @click="user.logout"
+        @click="logout"
         class="mt-4 bg-red-500 text-white px-3 py-1 rounded"
       >
         Se déconnecter
       </button>
     </div>
+
     <div v-else>
       <p>Non connecté.</p>
     </div>
@@ -20,5 +22,5 @@
 </template>
 
 <script setup>
-const { user, isAuthenticated, isAdmin } = useAuth();
+const { user, isAuthenticated, logout } = useAuth();
 </script>
