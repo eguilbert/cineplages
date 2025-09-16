@@ -117,7 +117,7 @@
           <NuxtLink to="/activity" v-if="isAdmin" class="hover:underline"
             >Logs</NuxtLink
           >
-          <NuxtLink to="/projections" v-if="isAdmin" class="hover:underline"
+          <NuxtLink to="/projections" class="hover:underline"
             >Projections</NuxtLink
           >
           <NuxtLink

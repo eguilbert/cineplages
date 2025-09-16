@@ -49,6 +49,7 @@ async function toggle() {
     await apiFetch(`/films/${props.filmId}/follow`, {
       method: "POST",
       body: { follow: next },
+      credentials: "include",
     });
     emit("change", next);
   } catch (e) {

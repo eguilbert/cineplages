@@ -3,13 +3,13 @@
     <AutoComplete
       v-model="selectedFilm"
       :suggestions="filmOptions"
-      @complete="searchFilms"
       field="title"
       :minLength="2"
-      optionLabel="title"
+      :optionLabel="displayValue"
       :dropdown="true"
       :forceSelection="true"
       placeholder="Rechercher un film..."
+      @complete="searchFilms"
       class="w-full"
     />
     <small v-if="selectedFilm" class="text-gray-500">
@@ -54,13 +54,14 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, h } from "vue";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 import Dropdown from "primevue/dropdown";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import AutoComplete from "primevue/autocomplete";
+
 import { useFetch } from "#imports";
 
 const { apiFetch } = useApi();
@@ -80,6 +81,10 @@ const form = ref({
   commentaire: "",
   ...props.modelValue,
 });
+const displayValue = (film) => {
+  if (!film) return "";
+  return film.director ? `${film.title} – ${film.director.name}` : film.title;
+};
 
 const films = ref([]);
 const selectedFilm = ref(null); // objet { id, title, ... }
