@@ -134,7 +134,7 @@ const handleSubmit = async () => {
         user_id: props.userId,
         commentaire: commentaire.value,
       },
-      credentials: "include",
+      // credentials: "include",
       server: false,
     });
 
@@ -180,7 +180,7 @@ const handleDelete = async () => {
   try {
     await apiFetch(`/films/${props.filmId}/comment/${props.userId}`, {
       method: "DELETE",
-      credentials: "include",
+      /* credentials: "include", */
       server: false,
     });
 
