@@ -61,18 +61,16 @@
           showIcon
           dateFormat="yy-mm-dd"
         />
-      </div>
+      </div> -->
 
- -->
       <!-- Table triable -->
-      <!--       <DataTable :value="filmStats" paginator :rows="10" sortMode="multiple">
+      <!--  <DataTable :value="filmStats" paginator :rows="10" sortMode="multiple">
         <Column field="title" header="Film" sortable />
         <Column field="seances" header="Séances" sortable />
         <Column field="spectateurs" header="Spectateurs" sortable />
         <Column field="ratio" header="Moyenne / séance" sortable />
-      </DataTable>
+      </DataTable> -->
 
- -->
       <!-- Graphique par jour de semaine -->
       <!--       <div class="flex flex-col md:flex-row gap-4">
         <div>
@@ -80,10 +78,10 @@
             Fréquentation par jour de la semaine
           </h3>
           <Chart type="bar" :data="attendanceByWeekday" />
-        </div>
- -->
+        </div>-->
+
       <!-- Graphique par catégorie -->
-      <!--         <div>
+      <!--<div>
           <h3 class="text-xl font-bold mb-2">Fréquentation par catégorie</h3>
           <Chart
             type="pie"
@@ -91,8 +89,8 @@
             class="w-full md:w-[30rem]"
           />
         </div>
-      </div>
-      <div>
+      </div> -->
+      <!--       <div>
         <h3 class="text-xl font-bold mb-2">
           Fréquentation par catégorie et créneau
         </h3>
@@ -104,11 +102,10 @@
             scales: { x: { stacked: true }, y: { stacked: true } },
           }"
         />
-      </div>
- -->
+      </div> -->
+    </div>
 
-      <!--     </div>
- --><!--     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!--  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <template #title>Total projections</template>
         <template #content>
@@ -126,9 +123,8 @@
         <template #content>
           <p class="text-2xl font-bold">{{ avgSpectateurs }}</p>
         </template>
-      </Card>-->
-    </div>
-    <!-- <ProjectionStats class="block" /> -->
+      </Card>
+    </div> -->
     <Panel header="Ajouter / Modifier une projection" toggleable v-if="isAdmin">
       <ProjectionForm :model-value="selectedProjection" @saved="onSaved" />
     </Panel>
@@ -185,10 +181,6 @@ const { apiFetch } = useApi();
 const projections = ref([]);
 const selectedProjection = ref(null);
 const toast = useToast();
-/* const stats = ref({
-  totalProjections: 0,
-  totalSpectateurs: 0,
-}); */
 
 const avgSpectateurs = computed(() => {
   if (stats.value.totalProjections === 0) return 0;
@@ -298,13 +290,6 @@ const weekdays = [
   "Dimanche",
 ];
 
-/* function getTimeslot(dateStr) {
-  const h = new Date(dateStr).getHours();
-  if (h >= 14 && h < 16) return "Début PM (14h-16h)";
-  if (h >= 16 && h < 19) return "Fin PM (16h30-18h)";
-  if (h >= 19) return "Soirée (≥19h)";
-  return "Autres";
-}
 const attendanceByWeekday = computed(() => {
   const totals = Array(7).fill(0);
   filteredProjections.value.forEach((p) => {
@@ -324,7 +309,7 @@ const attendanceByWeekday = computed(() => {
       },
     ],
   };
-}); */
+});
 
 function getTimeslot(dateStr) {
   const h = new Date(dateStr).getHours();

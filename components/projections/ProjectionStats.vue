@@ -3,6 +3,7 @@
     <!-- Filtres -->
     <div class="flex flex-wrap items-end gap-4">
       <div class="flex flex-col">
+        <p class="text-sm font-bold uppercase bold">Choisir une période</p>
         <label class="text-sm mb-1">Début</label>
         <Calendar v-model="startDate" showIcon dateFormat="yy-mm-dd" />
       </div>
@@ -11,7 +12,26 @@
         <Calendar v-model="endDate" showIcon dateFormat="yy-mm-dd" />
       </div>
     </div>
-
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card class="text-center m-0">
+        <template #content>
+          <p class="text-2xl font-bold m-0">{{ stats.totalProjections }}</p>
+          <p>Total projections</p>
+        </template>
+      </Card>
+      <Card class="text-center m-0">
+        <template #content>
+          <p class="text-2xl font-bold">{{ stats.totalSpectateurs }}</p>
+          <p>Total spectateurs</p>
+        </template>
+      </Card>
+      <Card class="text-center m-0">
+        <template #content>
+          <p class="text-2xl font-bold">{{ avgSpectateurs }}</p>
+          <p>Moyenne spectateurs / projection</p>
+        </template>
+      </Card>
+    </div>
     <!-- 1) Fréquentation par jour de la semaine -->
     <section>
       <h2 class="text-xl font-bold mb-2">
@@ -75,6 +95,17 @@
         class="w-full md:w-[30rem]"
       />
     </section>
+    <section>
+      <p class="text-center">
+        {{ filmStats.length }} films projetés pendant cette période
+      </p>
+      <DataTable :value="filmStats" paginator :rows="10" sortMode="multiple">
+        <Column field="title" header="Film" sortable />
+        <Column field="seances" header="Séances" sortable />
+        <Column field="spectateurs" header="Spectateurs" sortable />
+        <Column field="ratio" header="Moyenne / séance" sortable />
+      </DataTable>
+    </section>
   </div>
 </template>
 
@@ -82,6 +113,10 @@
 import { ref, computed, watch } from "vue";
 import Chart from "primevue/chart";
 import Calendar from "primevue/calendar";
+import Card from "primevue/card";
+import Column from "primevue/column";
+
+import DataTable from "primevue/datatable";
 import Dropdown from "primevue/dropdown";
 
 /**
@@ -176,6 +211,50 @@ const attendanceByWeekday = computed(() => {
         data: totals,
       },
     ],
+  };
+});
+
+const avgSpectateurs = computed(() => {
+  if (stats.value.totalProjections === 0) return 0;
+  return Math.round(
+    stats.value.totalSpectateurs / stats.value.totalProjections
+  );
+});
+
+const filmStats = computed(() => {
+  const map = {};
+  for (const p of filteredProjections.value) {
+    if (!map[p.filmId]) {
+      map[p.filmId] = { title: p.film.title, seances: 0, spectateurs: 0 };
+    }
+    if (p.audienceCount != null) {
+      map[p.filmId].seances += 1;
+      map[p.filmId].spectateurs += p.audienceCount;
+    }
+  }
+  return Object.values(map).map((f) => ({
+    ...f,
+    ratio: f.seances > 0 ? Math.round(f.spectateurs / f.seances) : 0,
+  }));
+});
+
+const stats = computed(() => {
+  const valid = filteredProjections.value.filter(
+    (p) => p.audienceCount != null
+  );
+  const totalProjections = valid.length;
+  const totalSpectateurs = valid.reduce(
+    (sum, p) => sum + (p.audienceCount || 0),
+    0
+  );
+
+  return {
+    totalProjections,
+    totalSpectateurs,
+    avgSpectateurs:
+      totalProjections > 0
+        ? Math.round(totalSpectateurs / totalProjections)
+        : 0,
   };
 });
 
