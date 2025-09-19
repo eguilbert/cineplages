@@ -129,11 +129,11 @@
       </Card>-->
     </div>
     <!-- <ProjectionStats class="block" /> -->
-    <Panel header="Ajouter / Modifier une projection" toggleable>
+    <Panel header="Ajouter / Modifier une projection" toggleable v-if="isAdmin">
       <ProjectionForm :model-value="selectedProjection" @saved="onSaved" />
     </Panel>
 
-    <Panel header="Liste des projections existantes" toggleable>
+    <Panel header="Liste des projections existantes" toggleable v-if="isAdmin">
       <DataTable
         :value="projections"
         dataKey="id"
@@ -180,6 +180,7 @@ import Calendar from "primevue/calendar";
 import Chart from "primevue/chart";
 import ProjectionStats from "@/components/projections/ProjectionStats.vue";
 import { useToast } from "primevue/usetoast";
+const { user, isAuthenticated, isAdmin, getUser } = useAuth();
 const { apiFetch } = useApi();
 const projections = ref([]);
 const selectedProjection = ref(null);

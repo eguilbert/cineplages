@@ -75,7 +75,6 @@
         class="w-full md:w-[30rem]"
       />
     </section>
-    End Proj stats
   </div>
 </template>
 
