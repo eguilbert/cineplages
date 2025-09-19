@@ -4,8 +4,51 @@
 
     <!-- Dashboard synthétique -->
     <div class="flex flex-col gap-4">
+      <ProjectionStats class="block" :projections="projections" />
+
+      <!--        <div class="p-6 space-y-8">
+        <!-- Sélecteur dimension -->
+      <!--  <div class="flex gap-4 items-center">
+          <Calendar v-model="startDate" showIcon dateFormat="yy-mm-dd" />
+          <Calendar v-model="endDate" showIcon dateFormat="yy-mm-dd" />
+          <Select
+            v-model="analysisDimension"
+            :options="['category', 'origin', 'genre']"
+          />
+        </div> -->
+
+      <!-- Graphique selon dimension choisie -->
+      <!--         <Chart type="pie" :data="attendanceByDimension" />
+ -->
+      <!-- Tableau jour/horaires -->
+      <!--         <h2 class="text-xl font-bold mt-6">
+          Fréquentation par jour et créneau
+        </h2>
+        <DataTable
+          :value="attendanceByDaySlot"
+          :sortField="'value'"
+          :sortOrder="-1"
+        >
+          <Column field="label" header="Jour – Créneau" sortable />
+          <Column field="value" header="Spectateurs" sortable />
+        </DataTable>
+
+ -->
+      <!-- Résumé meilleur/pire -->
+      <!--         <div class="mt-4">
+          <p v-if="bestSlot">
+            🔥 Meilleur créneau : {{ bestSlot.label }} ({{ bestSlot.value }}
+            spectateurs)
+          </p>
+          <p v-if="worstSlot">
+            😬 Pire créneau : {{ worstSlot.label }} ({{ worstSlot.value }}
+            spectateurs)
+          </p>
+        </div>
+      </div>
+ -->
       <!-- Choix période -->
-      <div class="flex-row gap-4">
+      <!--       <div class="flex-row gap-4">
         <Calendar
           v-model="startDate"
           placeholder="Date de début"
@@ -20,26 +63,28 @@
         />
       </div>
 
+ -->
       <!-- Table triable -->
-      <DataTable :value="filmStats" paginator :rows="10" sortMode="multiple">
+      <!--       <DataTable :value="filmStats" paginator :rows="10" sortMode="multiple">
         <Column field="title" header="Film" sortable />
         <Column field="seances" header="Séances" sortable />
         <Column field="spectateurs" header="Spectateurs" sortable />
         <Column field="ratio" header="Moyenne / séance" sortable />
       </DataTable>
 
+ -->
       <!-- Graphique par jour de semaine -->
-      <div class="flex flex-col md:flex-row gap-4">
+      <!--       <div class="flex flex-col md:flex-row gap-4">
         <div>
-          <h2 class="text-xl font-bold mb-2">
+          <h3 class="text-xl font-bold mb-2">
             Fréquentation par jour de la semaine
-          </h2>
+          </h3>
           <Chart type="bar" :data="attendanceByWeekday" />
         </div>
-
-        <!-- Graphique par catégorie -->
-        <div>
-          <h2 class="text-xl font-bold mb-2">Fréquentation par catégorie</h2>
+ -->
+      <!-- Graphique par catégorie -->
+      <!--         <div>
+          <h3 class="text-xl font-bold mb-2">Fréquentation par catégorie</h3>
           <Chart
             type="pie"
             :data="attendanceByCategory"
@@ -47,15 +92,23 @@
           />
         </div>
       </div>
+      <div>
+        <h3 class="text-xl font-bold mb-2">
+          Fréquentation par catégorie et créneau
+        </h3>
+        <Chart
+          type="bar"
+          :data="attendanceByCategoryTimeslot"
+          :options="{
+            responsive: true,
+            scales: { x: { stacked: true }, y: { stacked: true } },
+          }"
+        />
+      </div>
+ -->
 
-      <!-- Stats globales -->
-      <!--  <div class="mb-4">
-        <p>Total projections : {{ stats.totalProjections }}</p>
-        <p>Total spectateurs : {{ stats.totalSpectateurs }}</p>
-        <p>Moyenne spectateurs : {{ stats.avgSpectateurs }}</p>
-      </div> -->
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!--     </div>
+ --><!--     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <template #title>Total projections</template>
         <template #content>
@@ -73,7 +126,7 @@
         <template #content>
           <p class="text-2xl font-bold">{{ avgSpectateurs }}</p>
         </template>
-      </Card>
+      </Card>-->
     </div>
     <!-- <ProjectionStats class="block" /> -->
     <Panel header="Ajouter / Modifier une projection" toggleable>
@@ -125,7 +178,7 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import Calendar from "primevue/calendar";
 import Chart from "primevue/chart";
-import ProjectionStats from "@/components/admin/ProjectionStats.vue";
+import ProjectionStats from "@/components/projections/ProjectionStats.vue";
 import { useToast } from "primevue/usetoast";
 const { apiFetch } = useApi();
 const projections = ref([]);
@@ -142,7 +195,16 @@ const avgSpectateurs = computed(() => {
     stats.value.totalSpectateurs / stats.value.totalProjections
   );
 });
+function getLastFullMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1); // 1er du mois dernier
+  const end = new Date(now.getFullYear(), now.getMonth(), 0); // dernier jour du mois dernier
+  return { start, end };
+}
 
+const { start, end } = getLastFullMonthRange();
+const startDate = ref(start);
+const endDate = ref(end);
 async function loadProjections() {
   projections.value = await apiFetch("/projections");
 
@@ -172,9 +234,6 @@ function onSaved() {
   selectedProjection.value = null;
   loadProjections();
 }
-// Dates choisies
-const startDate = ref(null);
-const endDate = ref(null);
 
 // Filtrer par période choisie
 const filteredProjections = computed(() => {
@@ -237,6 +296,14 @@ const weekdays = [
   "Samedi",
   "Dimanche",
 ];
+
+/* function getTimeslot(dateStr) {
+  const h = new Date(dateStr).getHours();
+  if (h >= 14 && h < 16) return "Début PM (14h-16h)";
+  if (h >= 16 && h < 19) return "Fin PM (16h30-18h)";
+  if (h >= 19) return "Soirée (≥19h)";
+  return "Autres";
+}
 const attendanceByWeekday = computed(() => {
   const totals = Array(7).fill(0);
   filteredProjections.value.forEach((p) => {
@@ -255,6 +322,91 @@ const attendanceByWeekday = computed(() => {
         backgroundColor: "#3b82f6", // bleu Tailwind
       },
     ],
+  };
+}); */
+
+function getTimeslot(dateStr) {
+  const h = new Date(dateStr).getHours();
+  if (h >= 14 && h < 16) return "Début PM";
+  if (h >= 16 && h < 19) return "Fin PM";
+  if (h >= 19) return "Soirée";
+  return "Autres";
+}
+
+const attendanceByDaySlot = computed(() => {
+  const map = {}; // { "Lundi – Début PM": total }
+
+  filteredProjections.value.forEach((p) => {
+    if (p.audienceCount != null) {
+      const d = new Date(p.date);
+      const weekday = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][
+        d.getDay()
+      ];
+      const slot = getTimeslot(p.date);
+      const key = `${weekday} – ${slot}`;
+      map[key] = (map[key] || 0) + p.audienceCount;
+    }
+  });
+
+  // transformer en tableau trié
+  return Object.entries(map).map(([label, value]) => ({ label, value }));
+});
+
+const attendanceByCategoryTimeslot = computed(() => {
+  const map = {}; // { catégorie: { créneau: totalSpectateurs } }
+
+  filteredProjections.value.forEach((p) => {
+    if (p.audienceCount != null) {
+      const slot = getTimeslot(p.date);
+      if (!map[p.film.category]) map[p.film.category] = {};
+      map[p.film.category][slot] =
+        (map[p.film.category][slot] || 0) + p.audienceCount;
+    }
+  });
+
+  // transformer pour Chart.js
+  const slots = ["Début PM (14h-16h)", "Fin PM (16h30-18h)", "Soirée (≥19h)"];
+  const categories = Object.keys(map);
+
+  const bestSlot = computed(() => {
+    if (!attendanceByDaySlot.value.length) return null;
+    return attendanceByDaySlot.value.reduce((a, b) =>
+      b.value > a.value ? b : a
+    );
+  });
+
+  const worstSlot = computed(() => {
+    if (!attendanceByDaySlot.value.length) return null;
+    return attendanceByDaySlot.value.reduce((a, b) =>
+      b.value < a.value ? b : a
+    );
+  });
+
+  const datasets = categories.map((cat, i) => ({
+    label: cat,
+    data: slots.map((s) => map[cat][s] || 0),
+    backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6"][
+      i % 5
+    ],
+  }));
+
+  return { labels: slots, datasets };
+});
+
+const analysisDimension = ref("category");
+// "category" | "origin" | "genre"
+
+const attendanceByDimension = computed(() => {
+  const map = {};
+  filteredProjections.value.forEach((p) => {
+    if (p.audienceCount != null) {
+      const key = p[analysisDimension.value] || "Inconnu";
+      map[key] = (map[key] || 0) + p.audienceCount;
+    }
+  });
+  return {
+    labels: Object.keys(map),
+    datasets: [{ label: "Spectateurs", data: Object.values(map) }],
   };
 });
 
