@@ -4,7 +4,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (PUBLIC.has(to.path)) return;
 
   // 🔐 Check cookie "session" côté SSR sans casser le build client
-  if (process.server) {
+  /*   if (process.server) {
     const event = useRequestEvent();
     if (event) {
       const { getCookie } = await import("h3"); // import dynamique = OK en .js
@@ -13,8 +13,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
       }
     }
-  }
+  } */
 
+  // 🔐 SSR: on ne peut pas lire le token localStorage, donc on laisse le client
+  // décider de la redirection pour éviter les faux négatifs en multi-onglets.
+  if (process.server) return;
   // 👤 Puis on s'assure côté client/SSR que l'utilisateur est chargé
   const { ensureUserLoaded, isAuthenticated } = useAuth();
   try {

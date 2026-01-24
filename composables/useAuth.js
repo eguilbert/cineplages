@@ -2,6 +2,7 @@
 export const useAuth = () => {
   const config = useRuntimeConfig();
   const apiBase = (config.public?.apiBase || "").replace(/\/$/, "");
+  const sessionCookie = useCookie("session", { path: "/", sameSite: "lax" });
 
   const user = useState("auth:user", () => null);
   const loading = useState("auth:loading", () => false);
@@ -76,6 +77,7 @@ export const useAuth = () => {
 
       if (response.token) {
         localStorage.setItem("token", response.token);
+        sessionCookie.value = response.token;
       }
 
       await getUser();
@@ -91,6 +93,7 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("token");
+    sessionCookie.value = null;
     user.value = null;
     loadedOnce.value = false;
   };
@@ -100,8 +103,10 @@ export const useAuth = () => {
     // on ne dépend PAS de loadedOnce ici, on relance au mount client
     queueMicrotask(() => {
       const token = getToken();
-      if (token) getUser();
-      else loadedOnce.value = true;
+      if (token) {
+        if (!sessionCookie.value) sessionCookie.value = token;
+        getUser();
+      } else loadedOnce.value = true;
     });
   }
 
