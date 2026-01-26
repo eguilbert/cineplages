@@ -159,8 +159,6 @@
               :username="user.username"
               :userId="user.id"
               :displayMode="layout"
-              :voteOpen="voteMode"
-              :nbVotants="nbVotants"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               :compact="view.mode === 'compact'"
@@ -186,8 +184,6 @@
               :username="user.username"
               :userId="user.id"
               :displayMode="layout"
-              :voteOpen="voteMode"
-              :nbVotants="nbVotants"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               @score-changed="onScoreChanged"
@@ -208,9 +204,20 @@
         class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
       >
         <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold">
-            🎯 {{ selectedFilms.length }} film(s) sélectionné(s)
-          </h2>
+          <div>
+            <h2 class="text-sm font-semibold">
+              🎯 {{ selectedFilms.length }} film(s) sélectionné(s)
+            </h2>
+            <div class="flex flex-wrap gap-2 mt-1">
+              <span
+                v-for="(count, genre) in selectedGenreCounts"
+                :key="genre"
+                class="text-[11px] px-2 py-0.5 rounded bg-gray-100 border text-gray-700"
+              >
+                {{ genre }} : {{ count }}
+              </span>
+            </div>
+          </div>
           <Button label="Approuver la sélection" @click="submitSelection" />
         </div>
         <div class="flex gap-3 mt-2 overflow-x-auto">
@@ -284,7 +291,6 @@ const { fetchInterests } = useMyInterests();
 const rawInterests = ref([]);
 const interestMap = ref({}); // { [film_id]: "MUST_SEE" }
 const sortByInterest = ref(false);
-const voteMode = ref(false);
 const selectedFilms = ref([]);
 const { updateInterest } = useMyInterests();
 const scoreFilm = ref(0);
@@ -299,19 +305,7 @@ const toggleFilmSelection = (film) => {
     selectedFilms.value.splice(index, 1);
   }
 };
-function openVote() {
-  isBarVisible.value = true;
-  voteMode.value = true;
 
-  // Facultatif : calcul dynamique du rating moyen
-  /*   selectedSelection.value.films.forEach((film) => {
-    const votes = film.votes || [];
-    if (votes.length > 0) {
-      film.rating = votes.reduce((acc, v) => acc + v.note, 0) / votes.length;
-    }
-  });
- */
-}
 function onKey(e) {
   const tag = e.target.tagName.toLowerCase();
   const isTyping =
@@ -326,23 +320,6 @@ function onKey(e) {
 
 onMounted(() => window.addEventListener("keydown", onKey));
 onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
-/* const availableDates = computed(() => {
-  if (!selection.value) return [];
-
-  const dates = [
-    ...new Set(selection.value.films.map((f) => f.releaseDate).filter(Boolean)),
-  ];
-
-  const sortedDates = dates
-    .sort((a, b) => new Date(a) - new Date(b))
-    .map((date) => ({
-      label: new Date(date).toLocaleDateString("fr-FR"),
-      value: date,
-    }));
-
-  // Ajoute l'option "Toutes les dates"
-  return [{ label: "Toutes les dates", value: null }, ...sortedDates];
-}); */
 
 const availableDates = computed(() => {
   if (!selection.value) return [{ label: "Toutes les dates", value: null }];
@@ -441,33 +418,6 @@ const toDateKey = (v) => {
 };
 const fromKeyToLocalDate = (key) => new Date(`${key}T00:00:00`);
 
-/* const getFilteredFilms = (category) => {
-  if (!selection.value) return [];
-
-  let filtered = selection.value.films
-    .filter((f) => f.category === category)
-    .filter(
-      (f) =>
-        !selectedDate.value ||
-        new Date(f.releaseDate).toISOString().slice(0, 10) ===
-          selectedDate.value
-    );
-
-  if (sortByInterest.value) {
-
-    filtered = filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  } else {
-    // ✅ Tri par date (défaut)
-    filtered = filtered.sort((a, b) => {
-      return (
-        new Date(a.releaseDate || "1900-01-01") -
-        new Date(b.releaseDate || "1900-01-01")
-      );
-    });
-  }
-  return filtered;
-}; */
-
 const getFilteredFilms = (category) => {
   if (!selection.value) return [];
   const targetKey = toDateKey(selectedDate.value);
@@ -526,43 +476,17 @@ const scrollToCategory = (cat) => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
-const nbVotants = ref(null);
-const startVote = async () => {
-  const input = prompt("Combien de votants pour ce vote ?");
-  const parsed = parseInt(input);
-
-  if (isNaN(parsed) || parsed <= 0) {
-    toast.add({
-      severity: "error",
-      summary: "Entrée invalide",
-      detail: "Veuillez entrer un nombre valide de votants",
-      life: 3000,
-    });
-    return;
-  }
-
-  nbVotants.value = parsed;
-  voteMode.value = true;
+const startVote = () => {
   isBarVisible.value = true;
-
-  toast.add({
-    severity: "success",
-    summary: "Vote démarré",
-    detail: `${parsed} votants pris en compte.`,
-    life: 4000,
-  });
 };
 
-// ⚙️ Mise à jour du rating pour chaque film sélectionné
-/*   selectedFilms.forEach((film) => {
-    if (!film.votes || film.votes.length === 0) return;
-    const somme = film.votes.reduce((acc, v) => acc + v.note, 0);
-    film.rating = Math.round((somme / nbVotants) * 10) / 10; // ✅ format 1 chiffre après virgule
-    film.score = computeScore(film); // si tu l'as défini globalement
-  });
-
- */
-
+const selectedGenreCounts = computed(() =>
+  selectedFilms.value.reduce((acc, film) => {
+    const genre = film.genre || film.category || "Inconnu";
+    acc[genre] = (acc[genre] || 0) + 1;
+    return acc;
+  }, {})
+);
 function handleInterestCounts({ filmId, oldValue, newValue }) {
   console.log("handleInterestCounts:", filmId, oldValue, "→", newValue);
   const current = interestStats.value[filmId] || {
@@ -602,20 +526,6 @@ const handlePrint = async () => {
   }, 100);
 };
 
-/* function computeScore(film) {
-  console.log("computeScore for film", film.title, film.id);
-  const votes = film.rating || 0; // ou autre metric
-  const interestScore = getInterestScore(interestStats.value[film.id] || {});
-  console.log(
-    "computeScore for film, votes:",
-    votes,
-    "interest:",
-    interestScore,
-    "total:",
-    votes * 2 + interestScore
-  );
-  return votes * 2 + interestScore;
-} */
 function computeScore(film) {
   const votes = Number(film?.rating) || 0; // nb de voix pour ce film (slider / select)
   console.log("computeScore for film", film.title, film.id, "votes:", votes);
@@ -631,28 +541,7 @@ function computeScore(film) {
   );
   return votes * 2 + interestScore;
 }
-/* const updateFilmScore = async (filmId, scoreUpdated) => {
-  console.log("updateFilmScore for filmId", filmId, scoreUpdated);
-  if (scoreUpdated) {
-    const film = selection.value.films.find((f) => f.id === filmId);
-    if (film && scoreUpdated !== null) {
-      film.score = scoreUpdated;
-    }
-    return; // score déjà fourni, pas besoin d'appeler l'API
-  }
 
-}; */
-
-/* const onVoteChange = async ({ filmId, vote }) => {
-  alert(vote.value);
-  const film = selection.value?.films.find((f) => f.id === filmId);
-  if (film) {
-    film.rating = vote.value;
-    film.score = computeScore(film); // recalcul du score en local
-  }
- 
-  await updateFilmScore(filmId, film.score); // 🔁 met à jour localement le score
-}; */
 const onVoteChange = async ({ filmId, vote }) => {
   const film = selection.value?.films.find((x) => x.id === filmId);
   if (!film) return;
@@ -663,34 +552,8 @@ const onVoteChange = async ({ filmId, vote }) => {
   if (sortByInterest.value) {
     selection.value.films.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   }
-
-  // (si tu veux persister le vote individuellement plus tard, tu pourras POST ici)
 };
 
-/* async function handleInterestChange({ filmId, oldValue, newValue }) {
-  console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
-
-  // Update backend
-  await updateInterest(filmId, newValue);
-
-  // Met à jour les compteurs localement
-  const current = interestStats.value[filmId] || {
-    SANS_OPINION: 0,
-    NOT_INTERESTED: 0,
-    VERY_INTERESTED: 0,
-    CURIOUS: 0,
-    MUST_SEE: 0,
-  };
-  await updateFilmScore(filmId); // 🔁 met à jour localement le score
-
-  interestStats.value[filmId] = {
-    ...current,
-    [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
-    [newValue]: (current[newValue] || 0) + 1,
-  };
-
-  await updateFilmScore(filmId); // 🔁 met à jour localement le score
-} */
 async function handleInterestChange({ filmId, oldValue, newValue }) {
   console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
   // 1) MAJ backend (RLS, etc.)
@@ -732,7 +595,6 @@ const submitSelection = async () => {
   try {
     const filmsPayload = selectedFilms.value.map((f) => ({
       id: f.id,
-      votes: Number(f.rating) || 0, // ← nb de voix attribuées à ce film
       localScore: Number(f.score) || 0, // ← optionnel (traçabilité)
     }));
 
@@ -740,7 +602,6 @@ const submitSelection = async () => {
       method: "POST",
       body: {
         films: filmsPayload,
-        nbVotants: Number(nbVotants.value) || null, // ← contrôle serveur (optionnel)
       },
     });
 
