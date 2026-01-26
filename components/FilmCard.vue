@@ -337,13 +337,19 @@
           <AddToListButton :film-id="filmId" />
         </div>
       </div> -->
-      <div v-if="compact">
+      <div v-if="compact" class="mt-2 flex flex-col gap-2">
         <!-- Intérêt -->
         <PickInterest
           v-model="myInterest"
           :film-id="filmId"
           :mode="mode"
           :mode-compact="true"
+        />
+        <Button
+          v-if="isAdmin && mode === 'programmation' && voteOpen"
+          size="small"
+          label="🎯 Ajouter à ma sélection"
+          @click="$emit('toggle-selection', film)"
         />
       </div>
 

@@ -12,7 +12,18 @@
       :disabled="mode === 'programmation'"
       @change="emit('update:modelValue', $event.value)"
     />
-    <span v-else> </span>
+    <Select
+      v-else
+      v-model="localValue"
+      :options="options"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Avis"
+      class="w-full text-xs"
+      size="small"
+      :disabled="mode === 'programmation'"
+      @change="emit('update:modelValue', $event.value)"
+    />
   </div>
 </template>
 
