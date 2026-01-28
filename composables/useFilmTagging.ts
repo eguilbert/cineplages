@@ -18,6 +18,7 @@ export const useFilmTagging = () => {
       method: "POST",
       body: { tagIds },
     });
+    // après patch backend: renvoie FilmTag[]
     return Array.isArray(data) ? (data as FilmTagDTO[]) : [];
   };
 

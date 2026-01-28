@@ -17,7 +17,7 @@ export const useFilmTagCatalog = () => {
 
   const fetchCategories = async () => {
     if (categories.value.length) return categories.value;
-    const data = await apiFetch("/filmtags/categories");
+    const data = await apiFetch("/tags/categories");
     categories.value = Array.isArray(data) ? data : [];
     return categories.value;
   };
@@ -32,7 +32,7 @@ export const useFilmTagCatalog = () => {
     qs.set("category", category);
     if (search) qs.set("search", search);
 
-    const data = await apiFetch(`/filmtags?${qs.toString()}`);
+    const data = await apiFetch(`/tags?${qs.toString()}`);
     const list = Array.isArray(data) ? (data as FilmTagDTO[]) : [];
 
     if (!search) tagsByCategory.value[category] = list;
@@ -40,7 +40,7 @@ export const useFilmTagCatalog = () => {
   };
 
   const createTag = async (label: string, category: string) => {
-    const tag = (await apiFetch("/filmtags", {
+    const tag = (await apiFetch("/tags", {
       method: "POST",
       body: { label, category },
     })) as FilmTagDTO;

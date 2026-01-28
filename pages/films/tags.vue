@@ -121,9 +121,16 @@ const searchFilms = async () => {
     selectedFilmId.value = 0;
     return;
   }
-  filmResults.value = await apiFetch(
-    `/films/search?q=${encodeURIComponent(q)}`
+
+  const data = await apiFetch(
+    `/films/search?q=${encodeURIComponent(q)}&page=1&pageSize=20`
   );
+  const items = Array.isArray(data?.items) ? data.items : [];
+  filmResults.value = items.map((f: any) => ({
+    id: f.id,
+    title: f.title,
+    posterUrl: f.posterUrl,
+  }));
 };
 
 const loadSelection = async () => {
