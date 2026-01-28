@@ -57,10 +57,10 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
-      <p v-if="selection.id == 15" class="text-sm mb-8">
-        La réunion de programmation aura lieu le 29 aout 2025. Veuillez voter
-        avant cette date.
+      <p class="text-sm text-gray-600">
+        👥 {{ interestParticipantCount }} participant(s) au vote d'intérêt
       </p>
+
       <p>
         {{ selection.description }}
       </p>
@@ -197,6 +197,24 @@
         </div>
       </div>
     </div>
+    <transition name="slide-up">
+      <div
+        v-if="showInterestProgress"
+        class="fixed left-0 w-full bg-white border-t border-gray-200 shadow z-40 px-4 py-2"
+        :class="isAdmin ? 'bottom-16' : 'bottom-0'"
+      >
+        <div class="flex items-center justify-between text-sm">
+          <span>📝 Films notés</span>
+          <span>{{ ratedFilmsCount }} / {{ totalFilmsCount }}</span>
+        </div>
+        <div class="mt-1 h-1.5 w-full rounded bg-gray-100">
+          <div
+            class="h-1.5 rounded bg-blue-500 transition-all"
+            :style="{ width: `${interestProgressPercent}%` }"
+          ></div>
+        </div>
+      </div>
+    </transition>
     <!-- Barre de sélection fixe en bas -->
     <transition name="slide-up" v-if="isAdmin">
       <div
@@ -297,6 +315,38 @@ const scoreFilm = ref(0);
 const isBarVisible = ref(false);
 const { stats, fetchStatsForFilms } = useInterestStats();
 const { apiFetch } = useApi();
+const interestParticipantCount = computed(() => {
+  if (!selection.value) return 0;
+  const filmIds = selection.value.films.map((film) => film.id);
+  let maxTotal = 0;
+  for (const filmId of filmIds) {
+    const counts = interestStats.value?.[filmId];
+    if (!counts) continue;
+    const total = Object.values(counts).reduce(
+      (sum, value) => sum + (Number(value) || 0),
+      0
+    );
+    if (total > maxTotal) maxTotal = total;
+  }
+  return maxTotal;
+});
+const totalFilmsCount = computed(() => selection.value?.films.length ?? 0);
+const ratedFilmsCount = computed(() => {
+  if (!selection.value) return 0;
+  return selection.value.films.reduce((count, film) => {
+    return interestMap.value[film.id] ? count + 1 : count;
+  }, 0);
+});
+const showInterestProgress = computed(
+  () => selection.value && ratedFilmsCount.value > 0
+);
+const interestProgressPercent = computed(() => {
+  if (!totalFilmsCount.value) return 0;
+  return Math.min(
+    100,
+    Math.round((ratedFilmsCount.value / totalFilmsCount.value) * 100)
+  );
+});
 const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
   if (index === -1) {
@@ -573,6 +623,12 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
       [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
       [newValue]: (current[newValue] || 0) + 1,
     };
+  }
+  if (newValue === "SANS_OPINION") {
+    const { [filmId]: _removed, ...rest } = interestMap.value;
+    interestMap.value = rest;
+  } else {
+    interestMap.value = { ...interestMap.value, [filmId]: newValue };
   }
   console.log("Updated interest stats:", interestStats.value[filmId]);
   // 3) Recalcul du score unifié

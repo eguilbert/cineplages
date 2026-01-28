@@ -29,7 +29,7 @@
                 v-bind="props.action"
                 :href="href"
                 @click="navigate"
-                class="flex items-center gap-2 px-2 py-1 text-white hover:bg-white/10 rounded"
+                class="flex items-center gap-2 px-2 py-1 text-white rounded"
               >
                 <span v-if="item.icon" :class="item.icon" />
                 <span>{{ item.label }}</span>
@@ -41,7 +41,7 @@
               v-else
               v-bind="props.action"
               @click="item.command?.()"
-              class="flex items-center gap-2 px-2 py-1 text-white hover:bg-white/10 rounded"
+              class="flex items-center gap-2 px-2 py-1 text-white rounded"
               style="color: #f5f5f5"
             >
               <span
