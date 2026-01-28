@@ -222,7 +222,7 @@ const menuItems = computed(() => {
       items: [
         { label: "Logs", to: "/activity" },
         { label: "Tags", to: "/films/TagValidation" },
-        { label: " Film Tags", to: "/admin/films/tags" },
+        { label: " Film Tags", to: "/films/tags" },
         { label: "Admin", to: "/admin" },
       ],
     },
