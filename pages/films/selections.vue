@@ -606,10 +606,9 @@ const onVoteChange = async ({ filmId, vote }) => {
 
 async function handleInterestChange({ filmId, oldValue, newValue }) {
   console.log("handleInterestChange:", filmId, oldValue, "→", newValue);
-  // 1) MAJ backend (RLS, etc.)
-  await updateInterest(filmId, newValue);
-
-  // 2) MAJ locale des compteurs d’intérêts
+  const previous = oldValue ?? "SANS_OPINION";
+  const nextValue = newValue ?? "SANS_OPINION";
+  // 1) MAJ locale des compteurs d’intérêts
   const current = interestStats.value[filmId] || {
     SANS_OPINION: 0,
     NOT_INTERESTED: 0,
@@ -617,18 +616,18 @@ async function handleInterestChange({ filmId, oldValue, newValue }) {
     CURIOUS: 0,
     MUST_SEE: 0,
   };
-  if (oldValue !== newValue) {
+  if (previous !== nextValue) {
     interestStats.value[filmId] = {
       ...current,
-      [oldValue]: Math.max((current[oldValue] || 1) - 1, 0),
-      [newValue]: (current[newValue] || 0) + 1,
+      [previous]: Math.max((current[previous] || 1) - 1, 0),
+      [nextValue]: (current[nextValue] || 0) + 1,
     };
   }
-  if (newValue === "SANS_OPINION") {
+  if (nextValue === "SANS_OPINION") {
     const { [filmId]: _removed, ...rest } = interestMap.value;
     interestMap.value = rest;
   } else {
-    interestMap.value = { ...interestMap.value, [filmId]: newValue };
+    interestMap.value = { ...interestMap.value, [filmId]: nextValue };
   }
   console.log("Updated interest stats:", interestStats.value[filmId]);
   // 3) Recalcul du score unifié

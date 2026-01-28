@@ -487,6 +487,12 @@ const myInterest = computed({
     // const prev = myInterestFor(filmId.value) || "SANS_OPINION";
     if (newValue === prev) return;
 
+    emit("interest-change", {
+      filmId: filmId.value,
+      oldValue: prev ?? "SANS_OPINION",
+      newValue: newValue ?? "SANS_OPINION",
+    });
+
     optimisticInterest.value = newValue;
 
     const toNum = (v) => (Number.isFinite(+v) ? +v : 0);

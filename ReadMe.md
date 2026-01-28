@@ -1,7 +1,20 @@
-Responsve
-pb login
+Responsive
 
-TODDO:
+NEXT features:
+interface pour creer tags
+interface pour rajouter tags a films
+
+dans la page Selections, pour chaque film outil de comparaison (icone)
+lorsqu'on clique, on a des films équivalents:
+"comedie francaise"
+"avec Didier Bourdon" (faire ça pour les grands noms, les bankables)
+"italien"
+etc.
+et donner liste de films avec meme etiquette et nb entrees
+
+Plus tard, basé sur cet algoritme, suggestion de prendre le film ou non
+
+TODO:
 
 !!!VOTE
 
