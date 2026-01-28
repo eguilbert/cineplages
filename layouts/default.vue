@@ -265,8 +265,6 @@ html {
     .p-menubar .p-menubar-item-active a.p-menubar-item-link,
 
   ) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #26474e !important;
 }
 :deep(.p-menubar .pi) {
   color: #f5f5f5 !important;
