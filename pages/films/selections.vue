@@ -74,18 +74,29 @@
       </p>
 
       <!-- ✅ Nuage de tags -->
-      <div class="my-4" v-if="tagCloudItems.length">
-        <TagCloud
+      <div class="my-3 flex items-center gap-2" v-if="selection">
+        <Button
+          :label="showTagCloud ? 'Masquer les tags' : 'Afficher les tags'"
+          :icon="showTagCloud ? 'pi pi-eye-slash' : 'pi pi-eye'"
+          size="small"
+          severity="secondary"
+          @click="showTagCloud = !showTagCloud"
+        />
+        <span class="text-xs text-gray-500" v-if="tagCloudItems.length">
+          {{ tagCloudItems.length }} tags
+        </span>
+      </div>
+      <div class="my-4" v-if="showTagCloud && tagCloudItems.length">
+        <TagCloudGraphic
           :items="tagCloudItems"
           :active-ids="activeTagIds"
           @toggle="toggleTag"
           @clear="clearTags"
         />
+
         <div class="text-xs text-gray-500 mt-2" v-if="activeTagIds.size">
-          Filtrage actif :
-          <strong>{{ filteredFilmsCount }}</strong> /
-          {{ selection.films.length }}
-          films correspondent
+          Filtrage actif : <strong>{{ filteredFilmsCount }}</strong> /
+          {{ selection.films.length }} films correspondent
         </div>
       </div>
 
@@ -310,7 +321,7 @@ import { useToast } from "primevue/usetoast";
 import { useAuth } from "@/composables/useAuth";
 import { useInterestStats } from "@/composables/useInterestStats";
 import { useViewMode } from "@/stores/useViewMode";
-import TagCloud from "~/components/selection/TagCloud.vue";
+import TagCloudGraphic from "~/components/selection/TagCloudGraphic.vue";
 import { buildTagCloud } from "~/composables/useSelectionTagCloud";
 
 const view = useViewMode();
@@ -333,7 +344,16 @@ const interestMap = ref({});
 const sortByInterest = ref(false);
 const selectedFilms = ref([]);
 const isBarVisible = ref(false);
+const showTagCloud = ref(true);
 
+onMounted(() => {
+  const saved = localStorage.getItem("cineplages_showTagCloud");
+  if (saved != null) showTagCloud.value = saved === "1";
+});
+
+watch(showTagCloud, (v) => {
+  localStorage.setItem("cineplages_showTagCloud", v ? "1" : "0");
+});
 const toast = useToast();
 const { stats, fetchStatsForFilms } = useInterestStats();
 const { apiFetch } = useApi();
@@ -356,7 +376,7 @@ const tagCloudItems = computed(() => {
     ...f,
     tags: f._tagObjects || [],
   }));
-  return buildTagCloud(filmsForCloud);
+  return buildTagCloud(filmsForCloud).slice(0, 60);
 });
 
 const toggleTag = (tagId) => {
@@ -375,7 +395,7 @@ const filteredFilmsCount = computed(() => {
   if (!activeTagIds.value.size) return selection.value.films.length;
   const ids = activeTagIds.value;
   return selection.value.films.filter((f) =>
-    (f._tagObjects || []).some((t) => ids.has(t.id))
+    (f._tagObjects || []).some((t) => ids.has(t.id)),
   ).length;
 });
 
@@ -433,7 +453,7 @@ const interestParticipantCount = computed(() => {
     if (!counts) continue;
     const total = Object.values(counts).reduce(
       (sum, value) => sum + (Number(value) || 0),
-      0
+      0,
     );
     if (total > maxTotal) maxTotal = total;
   }
@@ -450,14 +470,14 @@ const ratedFilmsCount = computed(() => {
 });
 
 const showInterestProgress = computed(
-  () => selection.value && ratedFilmsCount.value > 0
+  () => selection.value && ratedFilmsCount.value > 0,
 );
 
 const interestProgressPercent = computed(() => {
   if (!totalFilmsCount.value) return 0;
   return Math.min(
     100,
-    Math.round((ratedFilmsCount.value / totalFilmsCount.value) * 100)
+    Math.round((ratedFilmsCount.value / totalFilmsCount.value) * 100),
   );
 });
 
@@ -484,7 +504,7 @@ const availableDates = computed(() => {
   if (!selection.value) return [{ label: "Toutes les dates", value: null }];
 
   const keys = new Set(
-    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean)
+    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean),
   );
 
   const sortedKeys = [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
@@ -542,7 +562,7 @@ const loadSelection = async () => {
   interestMap.value = Object.fromEntries(
     myInterests
       .filter((item) => item.value !== "SANS_OPINION")
-      .map((item) => [item.film_id, item.value])
+      .map((item) => [item.film_id, item.value]),
   );
 };
 
@@ -604,7 +624,7 @@ const getFilteredFilms = (category) => {
       return k ? Date.parse(`${k}T00:00:00`) : Number.POSITIVE_INFINITY;
     };
     filtered = [...filtered].sort(
-      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate)
+      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate),
     );
   }
   return filtered;
@@ -630,7 +650,7 @@ const handleFilmUpdate = async (updatedFilm) => {
 const handleFilmRemove = (filmToRemove) => {
   if (!selection.value) return;
   selection.value.films = selection.value.films.filter(
-    (f) => f.id !== filmToRemove.id
+    (f) => f.id !== filmToRemove.id,
   );
 };
 
@@ -648,7 +668,7 @@ const selectedGenreCounts = computed(() =>
     const genre = film.genre || film.category || "Inconnu";
     acc[genre] = (acc[genre] || 0) + 1;
     return acc;
-  }, {})
+  }, {}),
 );
 
 const handlePrint = async () => {
