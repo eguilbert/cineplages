@@ -85,6 +85,32 @@
         </button>
       </div>
       <div id="print-area">
+        <!-- ✅ VERSION IMPRESSION SIMPLIFIÉE -->
+        <div class="print-only" v-if="selection">
+          <h1 class="print-title">Programmation – {{ selection.name }}</h1>
+
+          <div
+            v-for="cin in printByCinema"
+            :key="cin.cinemaId"
+            class="print-cinema"
+          >
+            <h2 class="print-cinema-title">
+              {{ cin.cinemaName }}
+              <span class="print-small">({{ cin.items.length }} films)</span>
+            </h2>
+
+            <ul class="print-list">
+              <li
+                v-for="item in cin.items"
+                :key="item.filmId"
+                class="print-row"
+              >
+                <span class="print-film-title">{{ item.title }}</span>
+                <span class="print-sessions">{{ item.seances }} séance(s)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
         <div
           v-for="categorie in categories"
           :key="categorie"
@@ -197,7 +223,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, nextTick } from "vue";
 import Button from "primevue/button";
 import Select from "primevue/select";
 import FilmCard from "~/components/FilmCard.vue";
@@ -242,12 +268,96 @@ const toggleFilmSelection = (film) => {
   }
 };
 
+const printByCinema = computed(() => {
+  if (!selection.value?.films?.length) return [];
+
+  const map = new Map();
+  const films = selection.value.films.filter((f) => f.selected === true);
+
+  for (const film of films) {
+    const entries = extractCinemaEntries(film);
+
+    for (const e of entries) {
+      const cinemaId = e.cinemaId ?? "unknown";
+      const cinemaName = e.cinemaName ?? "Cinéma (non renseigné)";
+      const seances = Number(e.seances ?? 0);
+
+      if (!map.has(cinemaId)) {
+        map.set(cinemaId, { cinemaId, cinemaName, items: [] });
+      }
+
+      map.get(cinemaId).items.push({
+        filmId: film.id,
+        title: film.title,
+        seances,
+      });
+    }
+  }
+
+  // tri cinéma par nom + tri films par titre
+  const res = [...map.values()].sort((a, b) =>
+    a.cinemaName.localeCompare(b.cinemaName, "fr"),
+  );
+  res.forEach((c) =>
+    c.items.sort((a, b) => a.title.localeCompare(b.title, "fr")),
+  );
+
+  return res;
+});
+
+/**
+ * ✅ Adaptateur : retourne une liste d'objets { cinemaId, cinemaName, seances }
+ * -> ajuste ici si ton backend renvoie un autre shape
+ */
+function extractCinemaEntries(film) {
+  // 1) Cas: film.programmings = [{ cinemaId, cinemaName, seances }]
+  if (Array.isArray(film.programmings) && film.programmings.length) {
+    return film.programmings.map((p) => ({
+      cinemaId: p.cinemaId,
+      cinemaName: p.cinemaName,
+      seances: p.seances ?? p.sessions ?? 0,
+    }));
+  }
+
+  // 2) Cas: film.projections = [{ cinemaId, cinemaName, ... }] => on compte
+  if (Array.isArray(film.projections) && film.projections.length) {
+    const byCinema = new Map();
+    for (const pr of film.projections) {
+      const id = pr.cinemaId ?? pr.cinema?.id ?? "unknown";
+      const name = pr.cinemaName ?? pr.cinema?.name ?? "Cinéma (non renseigné)";
+      byCinema.set(id, {
+        cinemaId: id,
+        cinemaName: name,
+        seances: (byCinema.get(id)?.seances ?? 0) + 1,
+      });
+    }
+    return [...byCinema.values()];
+  }
+
+  // 3) Cas: film.selectionFilmProgrammings (pivot) = [{ cinemaId, cinema:{name}, sessionsCount }]
+  if (
+    Array.isArray(film.selectionFilmProgrammings) &&
+    film.selectionFilmProgrammings.length
+  ) {
+    return film.selectionFilmProgrammings.map((p) => ({
+      cinemaId: p.cinemaId ?? p.cinema?.id,
+      cinemaName: p.cinema?.name ?? p.cinemaName,
+      seances: p.sessionsCount ?? p.nbSeances ?? p.seances ?? 0,
+    }));
+  }
+
+  // fallback : pas d’info cinéma -> une ligne “unknown”
+  return [
+    { cinemaId: "unknown", cinemaName: "Cinéma (non renseigné)", seances: 0 },
+  ];
+}
+
 const availableDates = computed(() => {
   if (!selection.value) return [{ label: "Toutes les dates", value: null }];
 
   // 1) On fabrique des clés YYYY-MM-DD uniques
   const keys = new Set(
-    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean)
+    selection.value.films.map((f) => toDateKey(f.releaseDate)).filter(Boolean),
   );
 
   // 2) Tri croissant par clé (lexicographique OK au format YYYY-MM-DD)
@@ -278,7 +388,7 @@ watch(selectedSelectionId, async (newId) => {
 
 const loadSelection = async () => {
   selection.value = await apiFetch(
-    `/programmation/${selectedSelectionId.value}`
+    `/programmation/${selectedSelectionId.value}`,
   );
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
@@ -300,7 +410,7 @@ const loadSelection = async () => {
   interestMap.value = Object.fromEntries(
     myInterests
       .filter((item) => item.value !== "SANS_OPINION")
-      .map((item) => [item.film_id, item.value])
+      .map((item) => [item.film_id, item.value]),
   );
   console.log("interestMap", interestMap.value);
   if (selectedSelectionId.value == 11) {
@@ -377,7 +487,7 @@ const getFilteredFilms = (category) => {
     (f) =>
       f.category === category &&
       (!targetKey || toDateKey(f.releaseDate) === targetKey) &&
-      f.selected == true
+      f.selected == true,
   );
 
   // clone avant sort pour ne pas muter la source
@@ -389,7 +499,7 @@ const getFilteredFilms = (category) => {
       return k ? Date.parse(`${k}T00:00:00`) : Number.POSITIVE_INFINITY;
     };
     filtered = [...filtered].sort(
-      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate)
+      (a, b) => timeOf(a.releaseDate) - timeOf(b.releaseDate),
     );
   }
   return filtered;
@@ -417,7 +527,7 @@ const handleFilmUpdate = async (updatedFilm) => {
 const handleFilmRemove = (filmToRemove) => {
   if (!selection.value) return;
   selection.value.films = selection.value.films.filter(
-    (f) => f.id !== filmToRemove.id
+    (f) => f.id !== filmToRemove.id,
   );
   //TODO delete film from selection
 };
@@ -484,20 +594,13 @@ function handleInterestCounts({ filmId, oldValue, newValue }) {
   console.log(
     "Calcul Updated interest stats:",
     current[oldValue],
-    current[newValue]
+    current[newValue],
   );
   console.log("Updated interest stats:", interestStats.value[filmId]);
 }
 const handlePrint = async () => {
-  layout.value = "row";
-
-  // attendre que le DOM se mette à jour
   await nextTick();
-
-  // lancer l'impression après une légère pause
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  window.print();
 };
 
 function computeScore(film) {
@@ -560,76 +663,74 @@ h3 {
   /* font-family: "Playfair Display", serif; */
 }
 @media print {
-  .screen-only {
+  /* cache tout */
+  body * {
     display: none !important;
   }
-  .print-only {
+
+  /* n'affiche que le bloc print */
+  .print-only,
+  .print-only * {
     display: block !important;
   }
+
   body {
     background: white;
     color: black;
     font-family: Georgia, serif;
-    padding: 1cm;
-  }
-  body * {
-    visibility: hidden;
-  }
-
-  #print-area,
-  #print-area * {
-    visibility: visible;
-  }
-
-  #print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
     padding: 0;
     margin: 0;
   }
 
-  .film-card.printable {
-    width: 100%;
-    border: 1px solid #000;
-    padding: 1rem;
-    margin-bottom: 1cm;
-    page-break-inside: avoid;
-  }
-
-  .film-card.printable h2 {
-    font-size: 1.5em;
-    margin-bottom: 0.5em;
-  }
-
-  .film-card.printable .synopsis {
-    font-style: italic;
-  }
-
-  /* Si tu veux une mise en page en deux colonnes */
   @page {
     size: A4 portrait;
     margin: 1cm;
   }
 
-  #print-area {
-    column-count: 2;
-    column-gap: 2cm;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1cm;
+  .print-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
   }
 
-  .print-button,
-  .navigation-bar,
-  .filters,
-  .menu-flottant {
-    display: none !important;
-  }
-
-  .film-card {
+  .print-cinema {
+    margin-bottom: 14px;
     page-break-inside: avoid;
+  }
+
+  .print-cinema-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 10px 0 6px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 4px;
+  }
+
+  .print-small {
+    font-weight: 400;
+    font-size: 12px;
+  }
+
+  .print-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .print-row {
+    display: flex !important;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 0;
+    border-bottom: 1px dotted #bbb;
+  }
+
+  .print-film-title {
+    flex: 1;
+  }
+
+  .print-sessions {
+    white-space: nowrap;
   }
 }
 

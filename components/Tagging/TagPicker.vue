@@ -14,7 +14,7 @@
       <select v-model.number="selectedTagId">
         <option :value="0">—</option>
         <option v-for="t in tags" :key="t.id" :value="t.id">
-          {{ t.label }} <span v-if="!t.validated"> (à valider)</span>
+          {{ t.label }} <span v-if="!t.validated"></span>
         </option>
       </select>
     </div>
