@@ -272,35 +272,35 @@ const printByCinema = computed(() => {
   if (!selection.value?.films?.length) return [];
 
   const map = new Map();
+
+  // films sélectionnés uniquement (garde si c’est ton intention)
   const films = selection.value.films.filter((f) => f.selected === true);
 
   for (const film of films) {
     const entries = extractCinemaEntries(film);
 
-    for (const e of entries) {
-      const cinemaId = e.cinemaId ?? "unknown";
-      const cinemaName = e.cinemaName ?? "Cinéma (non renseigné)";
-      const seances = Number(e.seances ?? 0);
+    // ✅ si aucune entrée valide, on saute le film (il n'apparaitra pas)
+    if (!entries.length) continue;
 
-      if (!map.has(cinemaId)) {
-        map.set(cinemaId, { cinemaId, cinemaName, items: [] });
+    for (const e of entries) {
+      if (!map.has(e.cinemaId)) {
+        map.set(e.cinemaId, { cinemaId: e.cinemaId, cinemaName: e.cinemaName, items: [] });
       }
 
-      map.get(cinemaId).items.push({
+      map.get(e.cinemaId).items.push({
         filmId: film.id,
         title: film.title,
-        seances,
+        seances: e.seances,
       });
     }
   }
 
+  // ✅ on supprime les cinémas sans items (normalement inutile)
+  let res = [...map.values()].filter((c) => c.items.length);
+
   // tri cinéma par nom + tri films par titre
-  const res = [...map.values()].sort((a, b) =>
-    a.cinemaName.localeCompare(b.cinemaName, "fr"),
-  );
-  res.forEach((c) =>
-    c.items.sort((a, b) => a.title.localeCompare(b.title, "fr")),
-  );
+  res.sort((a, b) => a.cinemaName.localeCompare(b.cinemaName, "fr"));
+  res.forEach((c) => c.items.sort((a, b) => a.title.localeCompare(b.title, "fr")));
 
   return res;
 });
@@ -310,29 +310,19 @@ const printByCinema = computed(() => {
  * -> ajuste ici si ton backend renvoie un autre shape
  */
 function extractCinemaEntries(film) {
-  // 1) Cas: film.programmings = [{ cinemaId, cinemaName, seances }]
-  if (Array.isArray(film.programming) && film.programming.length) {
-    return film.programming.map((p) => ({
-      cinemaId: p.cinemaId,
-      cinemaName: p.cinemaName,
-      seances: p.seances ?? p.sessions ?? 0,
-    }));
-  }
+  const arr = Array.isArray(film.programming) ? film.programming : [];
 
-  // 2) Cas: film.projections = [{ cinemaId, cinemaName, ... }] => on compte
-  if (Array.isArray(film.projections) && film.projections.length) {
-    const byCinema = new Map();
-    for (const pr of film.projections) {
-      const id = pr.cinemaId ?? pr.cinema?.id ?? "unknown";
-      const name = pr.cinemaName ?? pr.cinema?.name ?? "Cinéma (non renseigné)";
-      byCinema.set(id, {
-        cinemaId: id,
-        cinemaName: name,
-        seances: (byCinema.get(id)?.seances ?? 0) + 1,
-      });
-    }
-    return [...byCinema.values()];
-  }
+  // on filtre: cinemaId + cinemaName + seances > 0
+  const clean = arr
+    .map((p) => ({
+      cinemaId: p.cinemaId ?? null,
+      cinemaName: p.cinemaName ?? null,
+      seances: Number(p.seances ?? p.sessionsCount ?? p.sessions ?? 0),
+    }))
+    .filter((e) => e.cinemaId && e.cinemaName && e.seances > 0);
+
+  return clean;
+}
 
   // 3) Cas: film.selectionFilmProgrammings (pivot) = [{ cinemaId, cinema:{name}, sessionsCount }]
   if (
