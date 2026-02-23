@@ -311,8 +311,8 @@ const printByCinema = computed(() => {
  */
 function extractCinemaEntries(film) {
   // 1) Cas: film.programmings = [{ cinemaId, cinemaName, seances }]
-  if (Array.isArray(film.programmings) && film.programmings.length) {
-    return film.programmings.map((p) => ({
+  if (Array.isArray(film.programming) && film.programming.length) {
+    return film.programming.map((p) => ({
       cinemaId: p.cinemaId,
       cinemaName: p.cinemaName,
       seances: p.seances ?? p.sessions ?? 0,
@@ -390,6 +390,11 @@ const loadSelection = async () => {
   selection.value = await apiFetch(
     `/programmation/${selectedSelectionId.value}`,
   );
+  console.log(
+    "sample film keys",
+    Object.keys(selection.value.films?.[0] || {}),
+  );
+  console.log("sample film", selection.value.films?.[0]);
   selection.value.films = selection.value.films.map((film) => ({
     ...film,
     layout: undefined,
