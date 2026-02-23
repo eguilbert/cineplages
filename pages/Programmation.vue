@@ -663,74 +663,38 @@ h3 {
   /* font-family: "Playfair Display", serif; */
 }
 @media print {
-  /* cache tout */
+  /* Cache tout sans casser le flow */
   body * {
-    display: none !important;
+    visibility: hidden !important;
   }
 
-  /* n'affiche que le bloc print */
-  .print-only,
-  .print-only * {
+  /* Ré-affiche uniquement la zone print */
+  #print-area,
+  #print-area * {
+    visibility: visible !important;
+  }
+
+  /* Place la zone imprimée en haut */
+  #print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Affiche le bloc print-only */
+  .print-only {
     display: block !important;
   }
 
-  body {
-    background: white;
-    color: black;
-    font-family: Georgia, serif;
-    padding: 0;
-    margin: 0;
+  /* (Optionnel) cache le reste dans print-area si tu veux strictement que le print-only */
+  #print-area > :not(.print-only) {
+    display: none !important;
   }
 
   @page {
     size: A4 portrait;
     margin: 1cm;
-  }
-
-  .print-title {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-
-  .print-cinema {
-    margin-bottom: 14px;
-    page-break-inside: avoid;
-  }
-
-  .print-cinema-title {
-    font-size: 14px;
-    font-weight: 700;
-    margin: 10px 0 6px;
-    border-bottom: 1px solid #000;
-    padding-bottom: 4px;
-  }
-
-  .print-small {
-    font-weight: 400;
-    font-size: 12px;
-  }
-
-  .print-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .print-row {
-    display: flex !important;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 2px 0;
-    border-bottom: 1px dotted #bbb;
-  }
-
-  .print-film-title {
-    flex: 1;
-  }
-
-  .print-sessions {
-    white-space: nowrap;
   }
 }
 
