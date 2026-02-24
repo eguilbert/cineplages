@@ -32,7 +32,7 @@
 
         <div class="flex items-center space-x-2">
           <select
-            v-model="selectedCategories[film.tmdbId]"
+            v-model="selectedCategories[getTmdbId(film)]"
             class="border rounded p-1"
           >
             <option disabled value="">Catégorie</option>
@@ -54,78 +54,59 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useFetch } from "#app";
-
-import { Button } from "primevue";
+import { ref, watch } from "vue";
 const { apiFetch } = useApi();
 
-const props = defineProps({
-  selectionId: Number,
-});
-const searchQuery = ref("");
-const searchResults = ref([]);
-const isSearching = ref(false);
+const props = defineProps({ selectionId: Number });
+const emit = defineEmits(["added"]);
 
-const config = useRuntimeConfig();
 const query = ref("");
 const results = ref([]);
 const selectedCategories = ref({});
-const searchFilm = async () => {
-  if (!query.value.trim()) return;
 
-  // Recherche locale
-  const local = await apiFetch(
-    `/films/search?q=${encodeURIComponent(query.value)}`
-  );
-  if (local.length) {
-    results.value = local;
-  } else {
-    // Recherche TMDB
-    const tmdb = await apiFetch(
-      `/tmdb/search?q=${encodeURIComponent(query.value)}`
-    );
-    results.value = tmdb;
-  }
-};
-watch(searchQuery, async (query) => {
-  if (!query) {
-    searchResults.value = [];
+const getTmdbId = (film) => film.tmdbId ?? film.id;
+
+const searchFilm = async () => {
+  const q = query.value.trim();
+  if (!q) {
+    results.value = [];
     return;
   }
 
-  isSearching.value = true;
-  const { data, error } = await apiFetch(`/films/search?query=${query}`);
-  if (!error.value) {
-    searchResults.value = data.value;
+  // Essaie local d'abord
+  const local = await apiFetch(`/films/search?q=${encodeURIComponent(q)}`);
+  if (Array.isArray(local) && local.length) {
+    results.value = local;
+    return;
   }
-  isSearching.value = false;
-});
+
+  // Sinon TMDB
+  const tmdb = await apiFetch(`/tmdb/search?q=${encodeURIComponent(q)}`);
+  results.value = Array.isArray(tmdb) ? tmdb : [];
+};
+
 const addFilmToSelection = async (film) => {
-  const category = selectedCategories.value[film.tmdbId];
+  const tmdbId = getTmdbId(film);
+  const category = selectedCategories.value[tmdbId];
+
   if (!category) {
     alert("Merci de sélectionner une catégorie.");
     return;
   }
 
-  try {
-    await apiFetch(`/selections/${props.selectionId}/add-film`, {
-      method: "POST",
-      body: {
-        tmdbId: film.tmdbId,
-        category,
-      },
-    });
-    alert(`Film "${film.title}" ajouté à la sélection.`);
-  } catch (err) {
-    console.error("Erreur ajout film:", err);
-    alert("Erreur lors de l'ajout.");
-  }
+  const res = await apiFetch(`/selections/${props.selectionId}/add-film`, {
+    method: "POST",
+    body: { tmdbId, category },
+  });
+
+  // ✅ rafraîchir la sélection affichée
+  emit("added", res?.selection);
+
+  alert(`Film "${film.title}" ajouté à la sélection.`);
 };
+
 function resetSearch() {
-  searchQuery.value = "";
-  searchResults.value = [];
+  query.value = "";
   results.value = [];
-  isSearching.value = false;
 }
 </script>

@@ -125,8 +125,10 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
-              'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            font-family:
+              &quot;Lucida Sans&quot;, &quot;Lucida Sans Regular&quot;,
+              &quot;Lucida Grande&quot;, &quot;Lucida Sans Unicode&quot;,
+              Geneva, Verdana, sans-serif;
           "
         >
           <i class="pi pi-trophy" style="color: chocolate"></i>
@@ -453,6 +455,7 @@ const props = defineProps({
   selectionId: { type: [Number, String], default: null },
   compact: { type: Boolean, default: false },
 });
+
 const localExpanded = ref(false);
 watchEffect(() => {
   if (props.compact) localExpanded.value = false;
@@ -476,7 +479,7 @@ const myInterest = computed({
     console.log(
       "myInterest computed get:",
       optimisticInterest.value,
-      myInterestFor(filmId.value)
+      myInterestFor(filmId.value),
     );
     return (optimisticInterest.value ?? myInterestFor(filmId.value)) || null;
   },
@@ -504,7 +507,7 @@ const myInterest = computed({
       VERY_INTERESTED: 0,
       MUST_SEE: 0,
       ...Object.fromEntries(
-        Object.entries(before).map(([k, v]) => [k, toNum(v)])
+        Object.entries(before).map(([k, v]) => [k, toNum(v)]),
       ),
     };
 
@@ -544,7 +547,7 @@ const counts = ref(
     CURIOUS: 0,
     VERY_INTERESTED: 0,
     MUST_SEE: 0,
-  }
+  },
 );
 const saving = ref(false);
 
@@ -618,7 +621,7 @@ watch(
     localFilm.commentaire = newFilm.commentaire || "";
     localFilm.rating = newFilm.rating || 0;
     localFilm.tags = newFilm.tags || [];
-  }
+  },
 );
 
 const formatDate = (dateStr) =>

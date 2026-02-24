@@ -96,7 +96,10 @@
           >
             <h2 class="print-cinema-title">
               {{ cin.cinemaName }}
-              <span class="print-small">({{ cin.items.length }} films)</span>
+              <span class="print-small">
+                ({{ cin.items.length }} films •
+                {{ cin.totalSeances }} séance(s))
+              </span>
             </h2>
 
             <ul class="print-list">
@@ -210,6 +213,20 @@
         </div>
       </div>
     </transition>
+    <div
+      class="fixed bottom-0 left-0 w-full bg-white border-t shadow z-50 px-4 py-2"
+    >
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="font-semibold">
+          📽️ Total : {{ totalAllSeances }} séance(s)
+        </div>
+
+        <div v-for="c in cinemaTotals" :key="c.cinemaId" class="text-sm">
+          <strong>{{ c.cinemaName }}</strong> : {{ c.totalSeances }} séance(s)
+          ({{ c.filmsCount }} films)
+        </div>
+      </div>
+    </div>
 
     <!-- Onglet de toggle -->
     <div
@@ -259,6 +276,20 @@ const scoreFilm = ref(0);
 const isBarVisible = ref(false);
 const { stats, fetchStatsForFilms } = useInterestStats();
 const { apiFetch } = useApi();
+
+const cinemaTotals = computed(() =>
+  printByCinema.value.map((c) => ({
+    cinemaId: c.cinemaId,
+    cinemaName: c.cinemaName,
+    filmsCount: c.items.length,
+    totalSeances: c.totalSeances,
+  })),
+);
+
+const totalAllSeances = computed(() =>
+  cinemaTotals.value.reduce((sum, c) => sum + c.totalSeances, 0),
+);
+
 const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
   if (index === -1) {
@@ -272,74 +303,61 @@ const printByCinema = computed(() => {
   if (!selection.value?.films?.length) return [];
 
   const map = new Map();
-
-  // films sélectionnés uniquement (garde si c’est ton intention)
   const films = selection.value.films.filter((f) => f.selected === true);
 
   for (const film of films) {
-    const entries = extractCinemaEntries(film);
-
-    // ✅ si aucune entrée valide, on saute le film (il n'apparaitra pas)
+    const entries = extractCinemaEntries(film); // déjà filtré sur seances > 0
     if (!entries.length) continue;
 
     for (const e of entries) {
       if (!map.has(e.cinemaId)) {
-        map.set(e.cinemaId, { cinemaId: e.cinemaId, cinemaName: e.cinemaName, items: [] });
+        map.set(e.cinemaId, {
+          cinemaId: e.cinemaId,
+          cinemaName: e.cinemaName,
+          items: [],
+          totalSeances: 0,
+        });
       }
 
-      map.get(e.cinemaId).items.push({
+      const cin = map.get(e.cinemaId);
+      cin.items.push({
         filmId: film.id,
         title: film.title,
         seances: e.seances,
       });
+      cin.totalSeances += e.seances; // ✅ total
     }
   }
 
-  // ✅ on supprime les cinémas sans items (normalement inutile)
-  let res = [...map.values()].filter((c) => c.items.length);
+  const res = [...map.values()].filter((c) => c.items.length > 0);
 
-  // tri cinéma par nom + tri films par titre
   res.sort((a, b) => a.cinemaName.localeCompare(b.cinemaName, "fr"));
-  res.forEach((c) => c.items.sort((a, b) => a.title.localeCompare(b.title, "fr")));
+  res.forEach((c) =>
+    c.items.sort((a, b) => a.title.localeCompare(b.title, "fr")),
+  );
 
   return res;
 });
 
 /**
  * ✅ Adaptateur : retourne une liste d'objets { cinemaId, cinemaName, seances }
- * -> ajuste ici si ton backend renvoie un autre shape
  */
 function extractCinemaEntries(film) {
   const arr = Array.isArray(film.programming) ? film.programming : [];
 
-  // on filtre: cinemaId + cinemaName + seances > 0
-  const clean = arr
+  return arr
     .map((p) => ({
       cinemaId: p.cinemaId ?? null,
       cinemaName: p.cinemaName ?? null,
-      seances: Number(p.seances ?? p.sessionsCount ?? p.sessions ?? 0),
+      seances: Number(p.seances ?? 0),
     }))
-    .filter((e) => e.cinemaId && e.cinemaName && e.seances > 0);
-
-  return clean;
-}
-
-  // 3) Cas: film.selectionFilmProgrammings (pivot) = [{ cinemaId, cinema:{name}, sessionsCount }]
-  if (
-    Array.isArray(film.selectionFilmProgrammings) &&
-    film.selectionFilmProgrammings.length
-  ) {
-    return film.selectionFilmProgrammings.map((p) => ({
-      cinemaId: p.cinemaId ?? p.cinema?.id,
-      cinemaName: p.cinema?.name ?? p.cinemaName,
-      seances: p.sessionsCount ?? p.nbSeances ?? p.seances ?? 0,
-    }));
-  }
-
-  // fallback : pas d’info cinéma -> une ligne “unknown”
-  return [
-    { cinemaId: "unknown", cinemaName: "Cinéma (non renseigné)", seances: 0 },
-  ];
+    .filter(
+      (e) =>
+        e.cinemaId &&
+        e.cinemaName &&
+        Number.isFinite(e.seances) &&
+        e.seances > 0,
+    );
 }
 
 const availableDates = computed(() => {
@@ -658,41 +676,83 @@ h3 {
   /* font-family: "Playfair Display", serif; */
 }
 @media print {
-  /* Cache tout sans casser le flow */
   body * {
     visibility: hidden !important;
   }
 
-  /* Ré-affiche uniquement la zone print */
   #print-area,
   #print-area * {
     visibility: visible !important;
   }
 
-  /* Place la zone imprimée en haut */
   #print-area {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
+    margin: 1.5cm;
   }
 
-  /* Affiche le bloc print-only */
   .print-only {
     display: block !important;
   }
 
-  /* (Optionnel) cache le reste dans print-area si tu veux strictement que le print-only */
   #print-area > :not(.print-only) {
     display: none !important;
   }
 
   @page {
     size: A4 portrait;
-    margin: 1cm;
+    margin: 1.2cm;
+  }
+
+  /* ---------- TITRE GLOBAL ---------- */
+  .print-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  /* ---------- CINÉMA ---------- */
+  .print-cinema {
+    margin-top: 28px; /* espace au-dessus */
+    page-break-inside: avoid;
+  }
+
+  .print-cinema-title {
+    font-size: 17px; /* plus gros */
+    font-weight: 800; /* plus gras */
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-small {
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  /* ---------- LISTE FILMS ---------- */
+  .print-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .print-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+  }
+
+  .print-film-title {
+    flex: 1;
+    padding-right: 25px; /* ✅ espace entre titre et séances */
+  }
+
+  .print-sessions {
+    min-width: 90px; /* colonne stable */
+    text-align: right;
+    font-weight: 600;
   }
 }
-
 .no-print {
   display: none !important;
 }

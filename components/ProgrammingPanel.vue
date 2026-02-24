@@ -375,7 +375,7 @@ const classesFor = (c) => {
 };
 const displayCinemas = computed(() => {
   return props.cinemas.filter(
-    (c) => isAdmin || programmingByCinema.value[c.id]
+    (c) => isAdmin || programmingByCinema.value[c.id],
   );
 });
 
@@ -402,8 +402,10 @@ const programmingByCinema = computed(() => {
   const map = {};
   for (const p of props.film?.programming || []) {
     if (!p.cinemaId) continue;
+    const n = Number(p.suggested ?? p.seances ?? 0);
+
     map[p.cinemaId] = {
-      suggested: Number(p.suggested ?? 0),
+      suggested: n,
       capLabel: p.capLabel ?? null,
       notes: p.notes ?? "",
       cycle: p.cycle ?? null,
@@ -428,26 +430,44 @@ const state = reactive({});
 for (const c of props.cinemas) state[c.id] = makeEmpty();
 
 // init à partir de film.programming (si présent)
-const hydrateFromFilm = () => {
-  if (!props.film?.programming) return;
-  for (const p of props.film.programming) {
+// ✅ reset + hydrate : toujours repartir d’un state propre
+function resetState() {
+  for (const c of props.cinemas) state[c.id] = makeEmpty();
+}
+
+function hydrateFromFilm() {
+  resetState();
+
+  const list = Array.isArray(props.film?.programming)
+    ? props.film.programming
+    : [];
+
+  for (const p of list) {
+    if (!p?.cinemaId) continue;
     if (!state[p.cinemaId]) continue;
+
+    const n = Number(p.suggested ?? p.seances ?? 0);
+
     state[p.cinemaId].checked = true;
-    state[p.cinemaId].suggested = Number(p.suggested || 0);
-    state[p.cinemaId].capLabel = p.capLabel || null;
-    state[p.cinemaId].notes = p.notes || "";
+    state[p.cinemaId].suggested = n;
+    state[p.cinemaId].capLabel = p.capLabel ?? null;
+    state[p.cinemaId].notes = p.notes ?? "";
     state[p.cinemaId].cycleId = p.cycle?.id ?? null;
   }
-};
+}
+
 hydrateFromFilm();
+
+watch(() => [props.film?.id, props.film?.programming], hydrateFromFilm, {
+  deep: true,
+});
+
 console.log(props.film.programming);
-
-watch(
-  () => props.film?.programming,
-  () => hydrateFromFilm(),
-  { deep: true }
+console.log("[ProgrammingPanel] film", props.film.id, props.film.title);
+console.log(
+  "[ProgrammingPanel] programming",
+  JSON.stringify(props.film.programming, null, 2),
 );
-
 // duplication simple : copie la première salle cochée vers l'autre
 function duplicateToOther() {
   const checked = props.cinemas.filter((c) => state[c.id].checked);
@@ -603,7 +623,7 @@ async function addComment() {
           commentaire: txt,
         },
         credentials: "include",
-      }
+      },
     );
     commentsLocal.value.unshift(created);
     newComment.value = "";
@@ -635,7 +655,7 @@ const hasDetails = (cinemaId) => {
 
 const adminCinemas = computed(() => props.cinemas); // tout pour admin
 const nonAdminCinemas = computed(() =>
-  props.cinemas.filter((c) => isChosen(c.id))
+  props.cinemas.filter((c) => isChosen(c.id)),
 ); // seulement cochés
 </script>
 
