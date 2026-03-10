@@ -1,158 +1,210 @@
 <template>
   <div class="min-h-screen bg-[#fff7f0] text-[#333]">
     <header
-      class="sticky top-0 z-40 bg-[#26474e] text-white backdrop-blur border-b"
+      class="sticky top-0 z-40 bg-[#26474e] text-white backdrop-blur border-b border-white/10"
     >
       <div class="max-w-6xl mx-auto px-4">
-        <MenuBar :model="menuItems" class="border-0 text-white" v-if="isAdmin">
-          <!-- Zone gauche (logo / home) -->
-          <template #start>
+        <!-- Header admin avec menus -->
+        <div
+          v-if="isAdmin"
+          class="flex items-center justify-between py-3 gap-6"
+        >
+          <div class="flex items-center gap-6">
             <NuxtLink
               to="/"
-              class="flex items-center gap-2 py-3 text-white hover:text-gray-200"
+              class="flex items-center gap-2 py-2 text-white hover:text-gray-200"
             >
-              <!-- <span class="pi pi-play" /> -->
               <span class="font-semibold">Cineplages</span>
             </NuxtLink>
-          </template>
 
-          <!-- Rendu de chaque item (NuxtLink custom) -->
-          <template #item="{ item, props }">
-            <!-- Lien route (NuxtLink) -->
-            <NuxtLink
-              v-if="item.to"
-              v-slot="{ href, navigate }"
-              :to="item.to"
-              custom
-            >
-              <a
-                v-bind="props.action"
-                :href="href"
-                @click="navigate"
-                class="flex items-center gap-2 px-2 py-1 text-white rounded"
+            <div class="hidden md:flex items-center gap-2">
+              <div
+                v-for="group in navGroups"
+                :key="group.label"
+                class="relative pb-2"
+                @mouseenter="openMenu = group.label"
+                @mouseleave="openMenu = null"
               >
-                <span v-if="item.icon" :class="item.icon" />
-                <span>{{ item.label }}</span>
-              </a>
+                <button
+                  type="button"
+                  class="px-3 py-2 rounded-md text-white hover:bg-white/10 transition-colors"
+                >
+                  {{ group.label }}
+                </button>
+
+                <div
+                  v-if="openMenu === group.label"
+                  class="absolute left-0 top-full w-56 rounded-lg bg-[#26474e] border border-white/10 shadow-xl py-2 z-50"
+                >
+                  <NuxtLink
+                    v-for="item in group.items"
+                    :key="item.to"
+                    :to="item.to"
+                    class="block px-4 py-2 text-sm text-white hover:bg-white/10"
+                  >
+                    {{ item.label }}
+                  </NuxtLink>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hidden md:flex items-center gap-3">
+            <slot name="header-actions" />
+
+            <NuxtLink
+              v-if="!isAuthenticated"
+              to="/login"
+              class="text-sm text-white hover:underline"
+            >
+              Se connecter
             </NuxtLink>
 
-            <!-- Action (command) -->
-            <a
-              v-else
-              v-bind="props.action"
-              @click="item.command?.()"
-              class="flex items-center gap-2 px-2 py-1 text-white rounded"
-              style="color: #f5f5f5"
+            <Button
+              v-if="isAuthenticated"
+              label="Se déconnecter"
+              icon="pi pi-sign-out"
+              severity="secondary"
+              text
+              @click="doLogout"
+              class="!py-2 !text-white hover:!bg-white/10"
+            />
+          </div>
+
+          <!-- Version mobile -->
+          <div class="md:hidden flex items-center gap-2">
+            <button
+              type="button"
+              class="px-3 py-2 rounded-md text-white hover:bg-white/10"
+              @click="mobileMenuOpen = !mobileMenuOpen"
             >
-              <span
-                v-if="item.icon"
-                :class="item.icon"
-                style="color: #f5f5f5"
-              />
-              <span>{{ item.label }}</span>
-            </a>
-          </template>
+              ☰
+            </button>
+          </div>
+        </div>
 
-          <!-- Zone droite (compte / logout) -->
-          <template #end>
-            <div class="flex items-center gap-3">
-              <NuxtLink
-                v-if="!isAuthenticated"
-                to="/login"
-                class="text-sm text-white hover:underline"
-                style="color: #fff"
-              >
-                Se connecter
-              </NuxtLink>
-              <Button
-                v-if="isAuthenticated"
-                label="Se déconnecter"
-                icon="pi pi-sign-out"
-                severity="secondary"
-                text
-                @click="doLogout"
-                class="!py-2 text-white hover:!bg-white/10"
-                style="color: #fff"
-              />
-            </div>
-          </template>
-        </MenuBar>
+        <!-- Header non-admin -->
         <div
-          class="container mx-auto flex justify-between items-center max-w-6xl mx-auto px-4 py-3"
           v-else
+          class="flex justify-between items-center py-3 gap-4 flex-wrap"
         >
-          <h1 class="text-xl font-bold text-[#fefae0]">🎬 Cineplages</h1>
-          <slot name="header-actions" />
-          <!--         <NuxtLink to="/" class="hover:underline">Accueil</NuxtLink>
- -->
-          <NuxtLink v-if="isAdmin" to="/films/import">Imports</NuxtLink>
-          <!-- <NuxtLink to="/films/preparer">Préparer une sélection</NuxtLink>
-      <NuxtLink to="/films/sauver">Sauvegarder une sélection</NuxtLink> -->
-          <NuxtLink to="/films/selections">Présélections</NuxtLink>
+          <div class="flex items-center gap-4 flex-wrap">
+            <NuxtLink to="/" class="text-xl font-bold text-[#fefae0]">
+              🎬 Cineplages
+            </NuxtLink>
 
-          <NuxtLink to="/programmation">Programmation</NuxtLink>
-          <!-- <NuxtLink to="/selections/" class="hover:underline" v-if="isAdmin"
-          >Séances</NuxtLink
-        >
-        <NuxtLink to="/films/TagValidation">Tags</NuxtLink>
- -->
-          <!--   
+            <slot name="header-actions" />
 
-        <NuxtLink to="/programmation" class="hover:underline" v-if="isAdmin"
-          >Grille</NuxtLink
-        >-->
-          <NuxtLink to="/films/films" class="hover:underline">Films</NuxtLink>
-          <NuxtLink to="/lists/create" class="hover:underline" v-if="isAdmin"
-            >Listes</NuxtLink
+            <NuxtLink
+              to="/films/selections"
+              class="text-[#f5f5f5] hover:text-white"
+            >
+              Présélections
+            </NuxtLink>
+
+            <NuxtLink
+              to="/programmation"
+              class="text-[#f5f5f5] hover:text-white"
+            >
+              Programmation
+            </NuxtLink>
+
+            <NuxtLink to="/films/films" class="text-[#f5f5f5] hover:text-white">
+              Films
+            </NuxtLink>
+
+            <NuxtLink to="/projections" class="text-[#f5f5f5] hover:text-white">
+              Projections
+            </NuxtLink>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <NuxtLink
+              v-if="!isAuthenticated"
+              to="/login"
+              class="text-sm text-white hover:underline"
+            >
+              Se connecter
+            </NuxtLink>
+
+            <Button
+              v-if="isAuthenticated"
+              label="Se déconnecter"
+              icon="pi pi-sign-out"
+              severity="secondary"
+              text
+              @click="doLogout"
+              class="!py-2 !text-white hover:!bg-white/10"
+            />
+          </div>
+        </div>
+
+        <!-- Menu mobile admin -->
+        <div v-if="isAdmin && mobileMenuOpen" class="md:hidden pb-4 space-y-3">
+          <div
+            v-for="group in navGroups"
+            :key="group.label"
+            class="rounded-lg border border-white/10 bg-white/5"
           >
-          <!--  <NuxtLink
-          to="/selections/preferences"
-          class="hover:underline"
-          v-if="isAdmin"
-          >Preferences</NuxtLink
-        >
-        <NuxtLink to="/admin" v-if="isAdmin" class="hover:underline"
-          >Admin</NuxtLink
-        > -->
-          <NuxtLink to="/activity" v-if="isAdmin" class="hover:underline"
-            >Logs</NuxtLink
-          >
-          <NuxtLink to="/projections" class="hover:underline"
-            >Projections</NuxtLink
-          >
-          <NuxtLink
-            v-if="!isAuthenticated"
-            to="/login"
-            class="text-sm text-white hover:underline"
-            style="color: #fff"
-          >
-            Se connecter
-          </NuxtLink>
-          <Button
-            v-if="isAuthenticated"
-            label="Se déconnecter"
-            icon="pi pi-sign-out"
-            severity="secondary"
-            text
-            @click="doLogout"
-            class="!py-2 text-white hover:!bg-white/10"
-            style="color: #fff"
-          />
+            <button
+              type="button"
+              class="w-full text-left px-4 py-3 text-white font-medium hover:bg-white/10 rounded-t-lg"
+              @click="toggleMobileGroup(group.label)"
+            >
+              {{ group.label }}
+            </button>
+
+            <div v-if="openMobileGroups.includes(group.label)" class="pb-2">
+              <NuxtLink
+                v-for="item in group.items"
+                :key="item.to"
+                :to="item.to"
+                class="block px-4 py-2 text-sm text-white hover:bg-white/10"
+                @click="mobileMenuOpen = false"
+              >
+                {{ item.label }}
+              </NuxtLink>
+            </div>
+          </div>
+
+          <div class="pt-2 flex flex-col gap-2">
+            <NuxtLink
+              v-if="!isAuthenticated"
+              to="/login"
+              class="text-sm text-white hover:underline px-1"
+              @click="mobileMenuOpen = false"
+            >
+              Se connecter
+            </NuxtLink>
+
+            <Button
+              v-if="isAuthenticated"
+              label="Se déconnecter"
+              icon="pi pi-sign-out"
+              severity="secondary"
+              text
+              @click="doLogout"
+              class="justify-start !px-1 !text-white hover:!bg-white/10"
+            />
+          </div>
         </div>
       </div>
     </header>
 
     <main class="container mx-auto py-8 px-4">
-      <!-- Bonjour, {{ user.username }} -->
-      <!--  <div
+      <!--
+      <div
         class="bg-red-600 text-white p-2 text-center"
         v-if="config.public.apiBase.includes('localhost')"
       >
         ⚠️ Mode LOCAL connecté à {{ config.public.apiBase }}
-      </div> -->
+      </div>
+      -->
       <slot />
     </main>
+
     <Toast position="top-left" />
+
     <footer class="bg-[#08C5D1] text-white py-4 text-center mt-8">
       <p class="text-sm">© Emmanuel Guilbert {{ new Date().getFullYear() }}</p>
     </footer>
@@ -160,119 +212,75 @@
 </template>
 
 <script setup>
-const config = useRuntimeConfig();
+import { ref, computed, onMounted } from "vue";
 import Toast from "primevue/toast";
-import MenuBar from "primevue/menubar";
 import Button from "primevue/button";
 
-const { login, logout, user, isAuthenticated, isAdmin, ensureUserLoaded } =
-  useAuth();
+const config = useRuntimeConfig();
+const route = useRoute();
+const auth = useAuth();
+
+const { logout, isAuthenticated, isAdmin } = auth;
 
 const loading = ref(true);
-const route = useRoute();
-/* const props = defineProps({
-  isAdmin: Boolean,
-  isAuthenticated: Boolean,
-  logout: Function,
-}); */
-const auth = useAuth();
+const openMenu = ref(null);
+const mobileMenuOpen = ref(false);
+const openMobileGroups = ref([]);
+
 await auth.getUser();
-//const supabase = useSupabaseClient();
-//const user = useSupabaseUser();
+
 const doLogout = async () => {
-  /* auth.logout; */
-  logout();
+  await logout();
   navigateTo("/login");
 };
-onMounted(async () => {
-  console.log("🎯 ROUTE", route.fullPath);
 
-  /*   console.log("logged", isLoggedIn.value);
-   */ // if (isLoggedIn.value) {
-  //   await fetchRole();
-  //   console.log("role", role.value);
-  // }
-  //
+const toggleMobileGroup = (label) => {
+  if (openMobileGroups.value.includes(label)) {
+    openMobileGroups.value = openMobileGroups.value.filter((l) => l !== label);
+  } else {
+    openMobileGroups.value.push(label);
+  }
+};
+
+const navGroups = computed(() => [
+  {
+    label: "Films",
+    items: [
+      { label: "Films", to: "/films/films" },
+      { label: "Imports", to: "/films/import" },
+      { label: "Présélections", to: "/films/selections" },
+      { label: "Listes", to: "/lists/create" },
+    ],
+  },
+  {
+    label: "Programmation",
+    items: [
+      { label: "Programmation", to: "/programmation" },
+      { label: "Projections", to: "/projections" },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "Logs", to: "/activity" },
+      { label: "Tags", to: "/films/TagValidation" },
+      { label: "Film Tags", to: "/films/tags" },
+      { label: "Admin", to: "/admin" },
+    ],
+  },
+]);
+
+onMounted(() => {
+  console.log("🎯 ROUTE", route.fullPath);
   loading.value = false;
 });
 
-const menuItems = computed(() => {
-  const items = [
-    {
-      label: "Films",
-      icon: "pi pi-video",
-      items: [
-        { label: "Films", to: "/films/films" },
-        isAdmin.value && { label: "Imports", to: "/films/import" },
-        { label: "Présélections", to: "/films/selections" },
-        isAdmin.value && { label: "Listes", to: "/lists/create" },
-      ].filter(Boolean),
-    },
-    {
-      label: "Programmation",
-      icon: "pi pi-calendar",
-      items: [
-        { label: "Programmation", to: "/programmation" },
-        isAdmin.value && { label: "Projections", to: "/projections" },
-      ].filter(Boolean),
-    },
-    isAdmin.value && {
-      label: "Administration",
-      icon: "pi pi-cog",
-      items: [
-        { label: "Logs", to: "/activity" },
-        { label: "Tags", to: "/films/TagValidation" },
-        { label: " Film Tags", to: "/films/tags" },
-        { label: "Admin", to: "/admin" },
-      ],
-    },
-  ];
-
-  return items.filter(Boolean);
-});
-
-console.log("API Base =", useRuntimeConfig().public.apiBase);
+console.log("API Base =", config.public.apiBase);
 console.log("process.env.NODE_ENV =", process.env.NODE_ENV);
 </script>
 
 <style scoped>
 html {
   scroll-behavior: smooth;
-}
-/* Optionnel : affiner l’apparence pour coller à ton header */
-:deep(.p-menubar) {
-  background: transparent !important;
-  border: none !important;
-  color: #f5f5f5 !important;
-}
-:deep(.p-menubar-root-list > .p-menuitem > .p-menuitem-content) {
-  color: #f5f5f5 !important;
-}
-:deep(.p-submenu-list) {
-  background: #26474e !important;
-  color: #f5f5f5 !important;
-}
-:deep(.p-submenu-list .p-menuitem-link:hover) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-:deep(.p-menubar a) {
-  color: #f5f5f5;
-}
-:deep(
-    .p-menubar a:hover,
-    .p-menubar a:hover span.pi,
-    .p-menubar .p-menubar-item-active a.p-menubar-item-link,
-    .p-menubar .p-menubar-item-active a.p-menubar-item-link,
-
-  ) {
-}
-:deep(.p-menubar .pi) {
-  color: #f5f5f5 !important;
-}
-.p-menubar-submenu a.p-menubar-item-link {
-  color: #26474e !important;
-}
-.p-menubar-item-content {
-  color: #26474e !important;
 }
 </style>
