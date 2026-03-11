@@ -123,7 +123,7 @@ const searchFilms = async () => {
   }
 
   const data = await apiFetch(
-    `/films/search?q=${encodeURIComponent(q)}&page=1&pageSize=20`
+    `/films/search?q=${encodeURIComponent(q)}&page=1&pageSize=20`,
   );
   const items = Array.isArray(data?.items) ? data.items : [];
   filmResults.value = items.map((f: any) => ({
@@ -136,7 +136,7 @@ const searchFilms = async () => {
 const loadSelection = async () => {
   status.value = "Chargement sélection…";
   const data = await apiFetch(
-    `/selections/${selectionId.value}/films?includeTags=1`
+    `/selectionsFilms/${selectionId.value}/films?includeTags=1`,
   );
   films.value = Array.isArray(data)
     ? data.map((x: any) => ({
