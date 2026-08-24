@@ -7,7 +7,9 @@ export default defineEventHandler(async (event) => {
   const path = Array.isArray(params.path)
     ? params.path.join("/")
     : params.path || "";
-  const upstream = apiBase.replace(/\/+$/, "") + "/" + path;
+  const requestUrl = getRequestURL(event);
+  const upstream =
+    apiBase.replace(/\/+$/, "") + "/" + path + requestUrl.search;
 
   const method = event.node.req.method || "GET";
 

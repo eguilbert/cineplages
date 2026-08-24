@@ -1,7 +1,5 @@
 // composables/useAuth.js
 export const useAuth = () => {
-  const config = useRuntimeConfig();
-  const apiBase = (config.public?.apiBase || "").replace(/\/$/, "");
   const sessionCookie = useCookie("session", { path: "/", sameSite: "lax" });
 
   const user = useState("auth:user", () => null);
@@ -22,7 +20,10 @@ export const useAuth = () => {
 
   // 👉 $fetch uniquement côté client (sinon pas de localStorage → pas de token)
   const apiFetch = async (path, opts = {}) => {
-    const url = `${apiBase}${path}`;
+    // Passe par le proxy Nitro (/server/api/[...path].js). Le navigateur reste
+    // sur cineplages.vercel.app et ne dépend donc pas de la configuration CORS
+    // de l'API Railway.
+    const url = path.startsWith("/api/") ? path : `/api${path}`;
     const token = getToken();
 
     return await $fetch(url, {

@@ -1,10 +1,5 @@
 // composables/useApi.js
 export const useApi = () => {
-  const {
-    public: { apiBase },
-  } = useRuntimeConfig();
-  const base = (apiBase || "").replace(/\/+$/, "");
-
   const apiFetch = async (path, opts = {}) => {
     // Normaliser l'URL
     const normalized = path.startsWith("/api/")
@@ -22,7 +17,9 @@ export const useApi = () => {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    return await $fetch(`${base}${normalized}`, {
+    // Utilise le proxy Nitro plutôt que l'URL Railway depuis le navigateur.
+    // Cela évite les prérequis CORS et conserve le jeton Authorization.
+    return await $fetch(normalized, {
       server: false,
       headers,
       ...opts,

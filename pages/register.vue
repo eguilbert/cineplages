@@ -34,7 +34,6 @@ const username = ref("");
 const password = ref("");
 const error = ref("");
 const message = ref("");
-const config = useRuntimeConfig();
 
 onMounted(async () => {});
 
@@ -45,8 +44,7 @@ const onRegister = async () => {
   error.value = "";
   message.value = "";
 
-  await $fetch("/auth/register", {
-    baseURL: config.public.apiBase,
+  await $fetch("/api/auth/register", {
     method: "POST",
     body: {
       email: email.value,
