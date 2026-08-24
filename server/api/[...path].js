@@ -8,8 +8,14 @@ export default defineEventHandler(async (event) => {
     ? params.path.join("/")
     : params.path || "";
   const requestUrl = getRequestURL(event);
-  const upstream =
-    apiBase.replace(/\/+$/, "") + "/" + path + requestUrl.search;
+  const normalizedApiBase = apiBase.replace(/\/+$/, "");
+  // NUXT_PUBLIC_API_BASE peut contenir le domaine seul ou déjà se terminer par
+  // /api. Le proxy reçoit toujours /api/** et doit donc viser l'API dans les
+  // deux cas.
+  const upstreamBase = normalizedApiBase.endsWith("/api")
+    ? normalizedApiBase
+    : `${normalizedApiBase}/api`;
+  const upstream = upstreamBase + "/" + path + requestUrl.search;
 
   const method = event.node.req.method || "GET";
 

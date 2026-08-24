@@ -22,10 +22,20 @@
       <button
         type="submit"
         class="bg-blue-600 text-white px-4 py-2 rounded w-full"
+        :disabled="loading"
       >
-        Se connecter
+        {{ loading ? "Connexion…" : "Se connecter" }}
       </button>
     </form>
+
+    <p
+      v-if="error"
+      class="mt-3 text-sm text-red-700"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ error }}
+    </p>
 
     <div class="text-sm mt-4 text-right">
       <button class="text-blue-600 hover:underline" @click="showReset = true">
@@ -69,7 +79,7 @@ const resetEmail = ref("");
 const resetMessage = ref("");
 const resetError = ref("");
 const route = useRoute();
-const { login, logout, getUser, user, isAuthenticated } = useAuth();
+const { login, error, loading } = useAuth();
 
 /*
 const handleLogin = async () => {
@@ -87,12 +97,13 @@ const handleLogin = async () => {
   }
 }; */
 const doLogin = async () => {
-  const res = await login(email.value, password.value);
-  console.log("✅ connecté :", user.value);
-  console.log("✅ connecté :", user.value.username);
-  localStorage.setItem("token", res.token);
-  if (user.value.username) {
-    await navigateTo(route.query.next || "/films/selections");
+  try {
+    const response = await login(email.value, password.value);
+    if (response?.token) {
+      await navigateTo(route.query.next || "/films/selections");
+    }
+  } catch {
+    // Le composable expose déjà un message adapté dans `error`.
   }
 };
 // ⚠️ Ton sendCustomReset utilise `res` sans le définir (fetch commenté). Soit tu retires le bloc,

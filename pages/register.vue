@@ -28,6 +28,8 @@
 </template>
 
 <script setup>
+import { getApiErrorMessage } from "@/utils/apiError";
+
 const supabase = useSupabaseClient();
 const email = ref("");
 const username = ref("");
@@ -44,19 +46,23 @@ const onRegister = async () => {
   error.value = "";
   message.value = "";
 
-  await $fetch("/api/auth/register", {
-    method: "POST",
-    body: {
-      email: email.value,
-      password: password.value,
-      username: username.value,
-    },
-    credentials: "include", // indispensable pour les cookies
-    server: false,
-  });
+  try {
+    await $fetch("/api/auth/register", {
+      method: "POST",
+      body: {
+        email: email.value,
+        password: password.value,
+        username: username.value,
+      },
+      credentials: "include", // indispensable pour les cookies
+      server: false,
+    });
 
-  message.value =
-    "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.";
+    message.value =
+      "Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte de réception.";
+  } catch (e) {
+    error.value = getApiErrorMessage(e, "La création du compte a échoué.");
+  }
 };
 </script>
 

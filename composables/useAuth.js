@@ -1,4 +1,6 @@
 // composables/useAuth.js
+import { getApiErrorMessage } from "@/utils/apiError";
+
 export const useAuth = () => {
   const sessionCookie = useCookie("session", { path: "/", sameSite: "lax" });
 
@@ -52,8 +54,19 @@ export const useAuth = () => {
       user.value = res?.user ?? null;
     } catch (e) {
       user.value = null;
-      error.value =
-        e?.data?.error || e?.message || "Impossible de récupérer l'utilisateur";
+      const status = e?.statusCode || e?.status || e?.response?.status;
+      if (status === 401 || status === 403) {
+        // Un jeton expiré/invalide ne doit pas déclencher un appel /me à chaque
+        // navigation. On le supprime et on invite l'utilisateur à se reconnecter.
+        if (process.client) localStorage.removeItem("token");
+        sessionCookie.value = null;
+        error.value = "Votre session a expiré. Veuillez vous reconnecter.";
+      } else {
+        error.value = getApiErrorMessage(
+          e,
+          "Impossible de récupérer les informations de votre compte."
+        );
+      }
     } finally {
       loading.value = false;
       loadedOnce.value = true;
@@ -84,8 +97,7 @@ export const useAuth = () => {
       await getUser();
       return response;
     } catch (e) {
-      error.value =
-        e?.data?.error || e?.message || "Erreur lors de la connexion";
+      error.value = getApiErrorMessage(e, "La connexion a échoué.");
       throw e;
     } finally {
       loading.value = false;
