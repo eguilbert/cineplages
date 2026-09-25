@@ -537,12 +537,35 @@ const handleFilmUpdate = async (updatedFilm) => {
   }
 };
 
-const handleFilmRemove = (filmToRemove) => {
-  if (!selection.value) return;
-  selection.value.films = selection.value.films.filter(
-    (f) => f.id !== filmToRemove.id,
-  );
-  //TODO delete film from selection
+const handleFilmRemove = async (filmToRemove) => {
+  if (!selection.value || !selectedSelectionId.value) return;
+
+  try {
+    await apiFetch(`/selections/${selectedSelectionId.value}/films`, {
+      method: "DELETE",
+      body: { filmId: filmToRemove.id },
+    });
+    selection.value.films = selection.value.films.filter(
+      (f) => f.id !== filmToRemove.id,
+    );
+    selectedFilms.value = selectedFilms.value.filter(
+      (f) => f.id !== filmToRemove.id,
+    );
+    toast.add({
+      severity: "success",
+      summary: "Film retiré",
+      detail: "Le film a été retiré de la sélection.",
+      life: 2500,
+    });
+  } catch (error) {
+    console.error("Erreur lors du retrait du film de la sélection", error);
+    toast.add({
+      severity: "error",
+      summary: "Retrait impossible",
+      detail: "Le film n'a pas pu être retiré de la sélection.",
+      life: 3000,
+    });
+  }
 };
 
 const scrollToCategory = (cat) => {
