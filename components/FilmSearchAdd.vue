@@ -73,10 +73,19 @@ const searchFilm = async () => {
     return;
   }
 
-  // Essaie local d'abord
-  const local = await apiFetch(`/films/search?q=${encodeURIComponent(q)}`);
-  if (Array.isArray(local) && local.length) {
-    results.value = local;
+  // Essaie local d'abord (l'API renvoie { items }, pas directement un tableau).
+  const localResponse = await apiFetch(
+    `/films/search?q=${encodeURIComponent(q)}`,
+  );
+  const localItems = Array.isArray(localResponse)
+    ? localResponse
+    : localResponse?.items || [];
+  if (localItems.length) {
+    results.value = localItems.map((film) => ({
+      ...film,
+      poster: film.poster || film.posterUrl || null,
+      _fromDatabase: true,
+    }));
     return;
   }
 
@@ -86,6 +95,11 @@ const searchFilm = async () => {
 };
 
 const addFilmToSelection = async (film) => {
+  if (!props.selectionId) {
+    alert("Choisissez d'abord une programmation.");
+    return;
+  }
+
   const tmdbId = getTmdbId(film);
   const category = selectedCategories.value[tmdbId];
 
@@ -96,7 +110,12 @@ const addFilmToSelection = async (film) => {
 
   const res = await apiFetch(`/selections/${props.selectionId}/add-film`, {
     method: "POST",
-    body: { tmdbId, category },
+    body: {
+      ...(film._fromDatabase && film.id
+        ? { filmId: film.id }
+        : { tmdbId }),
+      category,
+    },
   });
 
   // ✅ rafraîchir la sélection affichée

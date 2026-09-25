@@ -2,7 +2,6 @@
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Programmation</h1>
 
-    <FilmSearchAdd :selection-id="selectedSelectionId" v-if="isAdmin" />
     <!-- Sélecteur de sélection -->
     <Select
       v-model="selectedSelectionId"
@@ -13,6 +12,11 @@
       class="mb-4 md:w-1/3 text-sm h-9 px-2 py-0"
       @change="loadSelection"
       panelClass="text-sm"
+    />
+    <FilmSearchAdd
+      v-if="isAdmin && selectedSelectionId"
+      :selection-id="selectedSelectionId"
+      @added="loadSelection"
     />
 
     <!-- Menu flottant catégories -->
