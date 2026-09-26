@@ -266,6 +266,7 @@ const navGroups = computed(() => [
       { label: "Tags", to: "/films/TagValidation" },
       { label: "Film Tags", to: "/films/tags" },
       { label: "Admin", to: "/admin" },
+      { label: "Recommandations", to: "/admin/recommendations" },
     ],
   },
 ]);
