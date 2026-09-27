@@ -57,7 +57,8 @@
           </label>
           <button :disabled="researching || !selectionId" class="rounded bg-[#26474e] px-4 py-2 text-white disabled:opacity-50" @click="researchSelection">{{ researching ? 'Recherche en cours…' : 'Rechercher pour la sélection' }}</button>
         </div>
-        <p class="text-sm text-gray-600">Jusqu’à 30 films par lancement. Les films doivent déjà avoir une analyse. Les résultats disponibles apparaissent ci-dessous.</p>
+        <p v-if="researchProgress" role="status" class="text-sm font-medium">{{ researchProgress }}</p>
+        <p class="text-sm text-gray-600">Recherche par catégorie, en lots successifs de 12 films. Les films doivent déjà avoir une analyse. Les résultats disponibles apparaissent ci-dessous.</p>
       </section>
 
       <section v-if="cinemaId" class="rounded-xl bg-white p-5 shadow-sm space-y-4">
@@ -135,6 +136,7 @@ const portrait = ref(null);
 const selections = ref([]);
 const selectionId = ref(null);
 const researching = ref(false);
+const researchProgress = ref('');
 const researchingId = ref(null);
 const saving = ref(false);
 const searching = ref(false);
@@ -205,11 +207,26 @@ async function researchOne(item) {
 
 async function researchSelection() {
   researching.value = true; error.value = ''; notice.value = '';
+  researchProgress.value = '';
+  let offset = 0;
+  let successes = 0;
+  let failures = 0;
   try {
-    const rows = await apiFetch(`/cinemas/${cinemaId.value}/selections/${selectionId.value}/research`, { method: 'POST' });
+    do {
+      const page = await apiFetch(`/cinemas/${cinemaId.value}/selections/${selectionId.value}/research`, {
+        method: 'POST', body: { offset },
+      });
+      successes += page.results.filter((row) => row.ok).length;
+      failures += page.results.filter((row) => !row.ok).length;
+      offset = page.nextOffset;
+      researchProgress.value = `${offset ?? page.total} / ${page.total} films traités · ${page.category}`;
+    } while (offset !== null);
     recommendations.value = await apiFetch(`/cinemas/${cinemaId.value}/recommendations`);
-    notice.value = `${rows.filter((r) => r.ok).length} film(s) recherchés ; ${rows.filter((r) => !r.ok).length} sans résultat.`;
-  } catch (e) { showError(e); }
+    notice.value = `${successes} film(s) recherchés ; ${failures} sans résultat.`;
+  } catch (e) {
+    showError(e);
+    researchProgress.value = `${successes} film(s) recherchés avant l'interruption. Relancer reprendra la sélection depuis le début.`;
+  }
   finally { researching.value = false; }
 }
 
