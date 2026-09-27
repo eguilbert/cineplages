@@ -204,6 +204,7 @@
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
               :critical-environment="criticalEnvironment"
+              :critical-runtime-ids="criticalRuntimeIds"
               :critical-availability-error="criticalAvailabilityError"
               :critical-error="criticalErrors[film.id] || ''"
               @critical-analyze="analyzeCritically"
@@ -234,6 +235,7 @@
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
               :critical-environment="criticalEnvironment"
+              :critical-runtime-ids="criticalRuntimeIds"
               :critical-availability-error="criticalAvailabilityError"
               :critical-error="criticalErrors[film.id] || ''"
               @critical-analyze="analyzeCritically"
@@ -361,6 +363,7 @@ const criticalResults = ref({});
 const criticalLoading = ref({});
 const criticalAvailable = ref(false);
 const criticalEnvironment = ref('');
+const criticalRuntimeIds = ref('');
 const criticalAvailabilityError = ref('');
 const criticalErrors = ref({});
 const criticalTimers = new Map();
@@ -569,6 +572,7 @@ async function refreshCriticalAvailability() {
     const availability = await apiFetch('/critical-analysis/availability');
     criticalAvailable.value = availability.available;
     criticalEnvironment.value = [availability.environment, availability.service].filter(Boolean).join(' / ');
+    criticalRuntimeIds.value = [availability.environmentId, availability.serviceId].filter(Boolean).join(' / ');
     criticalAvailabilityError.value = '';
   } catch (error) {
     criticalAvailable.value = false;
