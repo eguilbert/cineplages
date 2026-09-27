@@ -377,6 +377,8 @@
         :analysis="criticalAnalysis"
         :loading="criticalLoading"
         :available="criticalAvailable"
+        :environment="criticalEnvironment"
+        :availability-error="criticalAvailabilityError"
         :error="criticalError"
         @analyze="$emit('critical-analyze', film.id)"
       />
@@ -467,6 +469,8 @@ const props = defineProps({
   criticalAnalysis: { type: Object, default: null },
   criticalLoading: { type: Boolean, default: false },
   criticalAvailable: { type: Boolean, default: true },
+  criticalEnvironment: { type: String, default: '' },
+  criticalAvailabilityError: { type: String, default: '' },
   criticalError: { type: String, default: '' },
 });
 

@@ -3,10 +3,11 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h4 class="font-semibold">Regard cinéphile</h4>
       <button class="rounded border border-[#26474e] px-2 py-1 text-[#26474e] disabled:opacity-50" :disabled="loading || !available" @click="$emit('analyze')">
-        {{ !available ? 'Analyse à activer' : loading ? 'Recherche en cours…' : analysis ? 'Actualiser cette analyse' : 'Analyser ce film' }}
+        {{ availabilityError ? 'Vérification impossible' : !available ? 'Analyse à activer' : loading ? 'Recherche en cours…' : analysis ? 'Actualiser cette analyse' : 'Analyser ce film' }}
       </button>
     </div>
-    <p v-if="!available" class="mt-2 text-gray-600">La clé API de recherche doit être configurée sur le serveur Railway.</p>
+    <p v-if="availabilityError" role="alert" class="mt-2 text-red-700">Vérification de la recherche impossible : {{ availabilityError }}</p>
+    <p v-else-if="!available" class="mt-2 text-gray-600">Clé API absente sur l'API appelée{{ environment ? ` (${environment})` : '' }}. Vérifier le service et l’environnement Railway.</p>
     <p v-if="error" role="alert" class="mt-2 text-red-700">{{ error }}</p>
     <p v-if="loading" role="status" class="mt-2 text-gray-600">Recherche dans la presse et les revues de cinéma. Vous pouvez continuer à consulter la sélection.</p>
     <details v-if="analysis" class="mt-3">
@@ -24,7 +25,7 @@
 </template>
 
 <script setup>
-const props = defineProps({ analysis: { type: Object, default: null }, loading: Boolean, available: { type: Boolean, default: true }, error: { type: String, default: '' } });
+const props = defineProps({ analysis: { type: Object, default: null }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
 defineEmits(['analyze']);
 const segments = computed(() => {
   const text = props.analysis?.text || '';
