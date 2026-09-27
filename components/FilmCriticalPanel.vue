@@ -8,6 +8,7 @@
     </div>
     <p v-if="availabilityError" role="alert" class="mt-2 text-red-700">Vérification de la recherche impossible : {{ availabilityError }}</p>
     <p v-else-if="!available" class="mt-2 text-gray-600">Clé API absente sur l'API appelée{{ environment ? ` (${environment})` : '' }}. Vérifier le service et l’environnement Railway.</p>
+    <p v-if="!available && runtimeIds" class="mt-1 break-all text-xs text-gray-500">Identifiants de l’API appelée : {{ runtimeIds }}</p>
     <p v-if="error" role="alert" class="mt-2 text-red-700">{{ error }}</p>
     <p v-if="loading" role="status" class="mt-2 text-gray-600">Recherche dans la presse et les revues de cinéma. Vous pouvez continuer à consulter la sélection.</p>
     <details v-if="analysis" class="mt-3">
@@ -25,7 +26,7 @@
 </template>
 
 <script setup>
-const props = defineProps({ analysis: { type: Object, default: null }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
+const props = defineProps({ analysis: { type: Object, default: null }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, runtimeIds: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
 defineEmits(['analyze']);
 const segments = computed(() => {
   const text = props.analysis?.text || '';
