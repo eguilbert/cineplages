@@ -372,6 +372,14 @@
           }
         "
       />
+      <FilmCriticalPanel
+        v-if="isAdmin && criticalCinemaId"
+        :analysis="criticalAnalysis"
+        :loading="criticalLoading"
+        :available="criticalAvailable"
+        :error="criticalError"
+        @analyze="$emit('critical-analyze', film.id)"
+      />
     </div>
   </div>
 </template>
@@ -409,6 +417,7 @@ const emit = defineEmits([
   "interest-change",
   "score-changed",
   "vote-change",
+  "critical-analyze",
 ]);
 
 // charger les noms français
@@ -454,6 +463,11 @@ const props = defineProps({
   mode: { type: String, default: "none" },
   selectionId: { type: [Number, String], default: null },
   compact: { type: Boolean, default: false },
+  criticalCinemaId: { type: Number, default: null },
+  criticalAnalysis: { type: Object, default: null },
+  criticalLoading: { type: Boolean, default: false },
+  criticalAvailable: { type: Boolean, default: true },
+  criticalError: { type: String, default: '' },
 });
 
 const localExpanded = ref(false);

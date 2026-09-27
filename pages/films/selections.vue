@@ -59,6 +59,9 @@
         <small> ({{ selection.films.length }} films)</small>
       </h2>
       <NuxtLink v-if="isAdmin" :to="`/recommendations?selection=${selection.id}`" class="inline-block mb-3 text-[#26474e] underline">Analyser cette présélection et lancer une recherche</NuxtLink>
+      <label v-if="isAdmin && researchCinemas.length" class="block mb-3 text-sm">Cinéma pour les analyses cinéphiles
+        <select v-model.number="researchCinemaId" class="block rounded border p-2"><option v-for="cinema in researchCinemas" :key="cinema.id" :value="cinema.id">{{ cinema.name }}</option></select>
+      </label>
 
       <p class="text-sm text-gray-600">
         👥 {{ interestParticipantCount }} participant(s) au vote d'intérêt
@@ -196,6 +199,12 @@
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               :compact="view.mode === 'compact'"
+              :critical-cinema-id="researchCinemaId"
+              :critical-analysis="criticalResults[film.id] || null"
+              :critical-loading="!!criticalLoading[film.id]"
+              :critical-available="criticalAvailable"
+              :critical-error="criticalErrors[film.id] || ''"
+              @critical-analyze="analyzeCritically"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -218,6 +227,12 @@
               :displayMode="layout"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
+              :critical-cinema-id="researchCinemaId"
+              :critical-analysis="criticalResults[film.id] || null"
+              :critical-loading="!!criticalLoading[film.id]"
+              :critical-available="criticalAvailable"
+              :critical-error="criticalErrors[film.id] || ''"
+              @critical-analyze="analyzeCritically"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -324,6 +339,7 @@ import { useInterestStats } from "@/composables/useInterestStats";
 import { useViewMode } from "@/stores/useViewMode";
 import TagCloudGraphic from "~/components/selection/TagCloudGraphic.vue";
 import { buildTagCloud } from "~/composables/useSelectionTagCloud";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 const view = useViewMode();
 
@@ -331,10 +347,17 @@ onMounted(() => {
   view.init();
 });
 
-const { user, isAuthenticated, isAdmin, getUser } = useAuth();
+const { user, isAuthenticated, isAdmin, getUser, ensureUserLoaded } = useAuth();
 
 const selections = ref([]);
 const selection = ref(null);
+const researchCinemas = ref([]);
+const researchCinemaId = ref(null);
+const criticalResults = ref({});
+const criticalLoading = ref({});
+const criticalAvailable = ref(false);
+const criticalErrors = ref({});
+const criticalTimers = new Map();
 const selectedSelectionId = ref();
 const selectedDate = ref(null);
 const layout = ref("grid");
@@ -519,11 +542,69 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
+  await ensureUserLoaded();
   selections.value = await apiFetch(`/selections`);
+  if (isAdmin.value) {
+    try {
+      const [cinemas, availability] = await Promise.all([apiFetch('/cinemas'), apiFetch('/critical-analysis/availability')]);
+      researchCinemas.value = cinemas;
+      criticalAvailable.value = availability.available;
+      researchCinemaId.value = researchCinemas.value.find((c) => c.id === user.value?.cinemaId)?.id ?? researchCinemas.value[0]?.id ?? null;
+    } catch (error) { console.error('Cinémas indisponibles:', error); }
+  }
   if (selectedSelectionId.value) {
     await loadSelection();
   }
 });
+
+watch(researchCinemaId, async (id) => {
+  criticalTimers.forEach(clearTimeout); criticalTimers.clear();
+  criticalResults.value = {}; criticalErrors.value = {}; criticalLoading.value = {};
+  if (!id) return;
+  try {
+    const rows = await apiFetch(`/cinemas/${id}/recommendations`);
+    if (researchCinemaId.value !== id) return;
+    criticalResults.value = Object.fromEntries(rows.filter((row) => row.evidence?.criticalAnalysis).map((row) => [row.filmId, row.evidence.criticalAnalysis]));
+    for (const row of rows.filter((r) => r.evidence?.criticalJob)) pollCritical(row.filmId, id);
+  } catch (error) { console.error('Analyses indisponibles:', error); }
+});
+
+async function pollCritical(filmId, cinemaId) {
+  if (researchCinemaId.value !== cinemaId) return;
+  criticalLoading.value = { ...criticalLoading.value, [filmId]: true };
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis`);
+    if (researchCinemaId.value !== cinemaId) return;
+    if (result.status === 'completed') {
+      criticalResults.value = { ...criticalResults.value, [filmId]: result.analysis };
+      criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+      criticalTimers.delete(filmId);
+    } else if (['queued', 'in_progress'].includes(result.status)) {
+      criticalTimers.set(filmId, setTimeout(() => pollCritical(filmId, cinemaId), 5000));
+    } else criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  } catch (error) {
+    criticalErrors.value = { ...criticalErrors.value, [filmId]: getApiErrorMessage(error, 'Analyse indisponible, réessayez.') };
+    criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  }
+}
+
+async function analyzeCritically(filmId) {
+  if (!researchCinemaId.value || criticalLoading.value[filmId]) return;
+  criticalLoading.value = { ...criticalLoading.value, [filmId]: true };
+  criticalErrors.value = { ...criticalErrors.value, [filmId]: '' };
+  try {
+    const cinemaId = researchCinemaId.value;
+    await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis`, {
+      method: 'POST', body: { refresh: true },
+    });
+    pollCritical(filmId, cinemaId);
+  } catch (error) {
+    criticalErrors.value = { ...criticalErrors.value, [filmId]: getApiErrorMessage(error, 'Impossible de démarrer la recherche.') };
+    criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  }
+}
+
+onUnmounted(() => { criticalTimers.forEach(clearTimeout); criticalTimers.clear(); });
 
 watch(selectedSelectionId, async (newId) => {
   if (newId) await loadSelection();
