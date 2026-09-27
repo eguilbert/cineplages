@@ -1,7 +1,7 @@
 <template>
   <section v-if="isAdmin || analysis" class="mt-4 border-t pt-3 text-sm screen-only" @click.stop>
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h4 class="font-semibold">Regard cinéphile<span v-if="cinemaName"> · {{ cinemaName }}</span></h4>
+      <h4 class="font-semibold">Regard cinéphile · Cinéma de la plage</h4>
       <button v-if="isAdmin" class="rounded border border-[#26474e] px-2 py-1 text-[#26474e] disabled:opacity-50" :disabled="loading || !available" @click="$emit('analyze')">
         {{ availabilityError ? 'Vérification impossible' : !available ? 'Analyse à activer' : loading ? 'Recherche en cours…' : analysis ? 'Actualiser cette analyse' : 'Analyser ce film' }}
       </button>
@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-const props = defineProps({ analysis: { type: Object, default: null }, cinemaName: { type: String, default: '' }, isAdmin: { type: Boolean, default: false }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, runtimeIds: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
+const props = defineProps({ analysis: { type: Object, default: null }, isAdmin: { type: Boolean, default: false }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, runtimeIds: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
 defineEmits(['analyze']);
 const segments = computed(() => {
   const text = props.analysis?.text || '';
