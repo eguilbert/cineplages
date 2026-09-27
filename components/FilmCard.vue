@@ -373,7 +373,7 @@
         "
       />
       <FilmCriticalPanel
-        v-if="criticalCinemaId && (isAdmin || criticalAnalysis)"
+        v-if="isAdmin && criticalCinemaId"
         :is-admin="isAdmin"
         :analysis="criticalAnalysis"
         :loading="criticalLoading"
@@ -383,6 +383,12 @@
         :availability-error="criticalAvailabilityError"
         :error="criticalError"
         @analyze="$emit('critical-analyze', film.id)"
+      />
+      <FilmCriticalPanel
+        v-for="entry in isAdmin ? [] : criticalPublishedAnalyses"
+        :key="entry.cinemaId"
+        :analysis="entry.analysis"
+        :cinema-name="entry.cinemaName"
       />
     </div>
   </div>
@@ -469,6 +475,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   criticalCinemaId: { type: Number, default: null },
   criticalAnalysis: { type: Object, default: null },
+  criticalPublishedAnalyses: { type: Array, default: () => [] },
   criticalLoading: { type: Boolean, default: false },
   criticalAvailable: { type: Boolean, default: true },
   criticalEnvironment: { type: String, default: '' },

@@ -201,6 +201,7 @@
               :compact="view.mode === 'compact'"
               :critical-cinema-id="researchCinemaId"
               :critical-analysis="criticalResults[film.id] || null"
+              :critical-published-analyses="publishedAnalyses[film.id] || []"
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
               :critical-environment="criticalEnvironment"
@@ -232,6 +233,7 @@
               :interestCounts="interestStats?.[film.id] || null"
               :critical-cinema-id="researchCinemaId"
               :critical-analysis="criticalResults[film.id] || null"
+              :critical-published-analyses="publishedAnalyses[film.id] || []"
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
               :critical-environment="criticalEnvironment"
@@ -360,6 +362,7 @@ const selection = ref(null);
 const researchCinemas = ref([]);
 const researchCinemaId = ref(null);
 const criticalResults = ref({});
+const publishedAnalyses = ref({});
 const criticalLoading = ref({});
 const criticalAvailable = ref(false);
 const criticalEnvironment = ref('');
@@ -643,6 +646,19 @@ watch(selectedSelectionId, async (newId) => {
 
 const loadSelection = async () => {
   selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
+  const loadedSelectionId = selection.value.id;
+  publishedAnalyses.value = {};
+  if (isAuthenticated.value) {
+    try {
+      const rows = await apiFetch(`/selections/${loadedSelectionId}/critical-analyses`);
+      if (Number(selectedSelectionId.value) === loadedSelectionId) {
+        publishedAnalyses.value = rows.reduce((groups, row) => {
+          (groups[row.filmId] ||= []).push(row);
+          return groups;
+        }, {});
+      }
+    } catch (error) { console.error('Analyses des films indisponibles:', error); }
+  }
 
   // ✅ normalisation + score + tags
   selection.value.films = selection.value.films.map((film) => {
