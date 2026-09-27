@@ -551,7 +551,8 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
-  await ensureUserLoaded();
+  // L'authentification globale peut déjà charger le profil : attendre ici le cinéma de l'utilisateur.
+  if (!user.value) await getUser();
   selections.value = await apiFetch(`/selections`);
   if (isAdmin.value) {
     try {
