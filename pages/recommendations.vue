@@ -36,6 +36,30 @@
         </button>
       </section>
 
+      <section v-if="cinemaId" class="rounded-xl bg-white p-5 shadow-sm space-y-3">
+        <h2 class="text-xl font-semibold">Portrait des entrées du cinéma</h2>
+        <p class="text-sm text-gray-600">Séances passées dont le nombre d’entrées est renseigné. Ces chiffres décrivent la fréquentation observée.</p>
+        <template v-if="portrait?.shows">
+          <p><strong>{{ portrait.admissions }}</strong> entrées sur <strong>{{ portrait.shows }}</strong> séances et {{ portrait.films }} films.</p>
+          <div class="grid gap-5 md:grid-cols-2">
+            <div><h3 class="font-semibold">Par catégorie</h3><ul class="list-disc pl-5 text-sm"><li v-for="row in portrait.categories" :key="row.category">{{ row.category }} : {{ row.admissions }} entrées, {{ row.averagePerShow }}/séance ({{ row.shows }} séances)</li></ul></div>
+            <div><h3 class="font-semibold">Films les plus fréquentés</h3><ol class="list-decimal pl-5 text-sm"><li v-for="row in portrait.topFilms" :key="row.filmId">{{ row.title }} : {{ row.admissions }} entrées ({{ row.shows }} séances)</li></ol></div>
+          </div>
+        </template>
+        <p v-else>Aucune séance passée avec entrées renseignées.</p>
+      </section>
+
+      <section v-if="cinemaId" class="rounded-xl bg-white p-5 shadow-sm space-y-3">
+        <h2 class="text-xl font-semibold">Recherche sur une présélection</h2>
+        <div class="flex flex-wrap gap-2 items-end">
+          <label>Sélection
+            <select v-model.number="selectionId" class="block rounded border p-2"><option :value="null">Choisir…</option><option v-for="s in selections" :key="s.id" :value="s.id">{{ s.name }}</option></select>
+          </label>
+          <button :disabled="researching || !selectionId" class="rounded bg-[#26474e] px-4 py-2 text-white disabled:opacity-50" @click="researchSelection">{{ researching ? 'Recherche en cours…' : 'Rechercher pour la sélection' }}</button>
+        </div>
+        <p class="text-sm text-gray-600">Jusqu’à 30 films par lancement. Les films doivent déjà avoir une analyse. Les résultats disponibles apparaissent ci-dessous.</p>
+      </section>
+
       <section v-if="cinemaId" class="rounded-xl bg-white p-5 shadow-sm space-y-4">
         <h2 class="text-xl font-semibold">Analyser un film</h2>
         <div class="flex gap-2">
@@ -69,6 +93,15 @@
                 Historique {{ item.evidence.attendanceHistory.category }} : {{ item.evidence.attendanceHistory.averagePerShow }} entrées par séance en moyenne
                 ({{ item.evidence.attendanceHistory.projectionCount }} séances, {{ item.evidence.attendanceHistory.filmCount }} films). Observation, pas une prévision.
               </p>
+              <div class="text-sm space-y-1 border-t pt-2">
+                <button :disabled="researchingId === item.filmId" class="rounded border px-3 py-1 disabled:opacity-50" @click="researchOne(item)">{{ researchingId === item.filmId ? 'Recherche…' : 'Rechercher réception, avis et tags' }}</button>
+                <template v-if="item.evidence?.research">
+                  <p>Réception TMDB : {{ item.evidence.research.reception.count }} votes, moyenne {{ item.evidence.research.reception.average ?? 'indisponible' }}/10. <a :href="item.evidence.research.source" target="_blank" rel="noopener noreferrer" class="underline">Source</a></p>
+                  <p>Avis TMDB : {{ item.evidence.research.reviewCountOnTmdb }} ; <a v-for="review in item.evidence.research.reviews" :key="review.url" :href="review.url" target="_blank" rel="noopener noreferrer" class="underline mr-2">{{ review.author }}{{ review.rating == null ? '' : ` (${review.rating}/10)` }}</a></p>
+                  <p>Mots-clés TMDB : {{ item.evidence.research.keywords.join(', ') || 'aucun' }}. Tags locaux : {{ item.evidence.research.localTags.join(', ') || 'aucun' }}.</p>
+                  <p>Prix et festivals : non vérifiés. Recherche du {{ new Date(item.evidence.research.searchedAt).toLocaleDateString('fr-FR') }}.</p>
+                </template>
+              </div>
               <div class="flex flex-wrap items-center gap-2 pt-2">
                 <select :value="item.feedback?.decision || 'PENDING'" class="rounded border p-2 text-sm" @change="saveFeedback(item, $event.target.value)">
                   <option value="PENDING">À décider</option>
@@ -98,6 +131,11 @@ const avoidedText = ref('');
 const query = ref('');
 const results = ref([]);
 const recommendations = ref([]);
+const portrait = ref(null);
+const selections = ref([]);
+const selectionId = ref(null);
+const researching = ref(false);
+const researchingId = ref(null);
 const saving = ref(false);
 const searching = ref(false);
 const analyzingId = ref(null);
@@ -110,14 +148,16 @@ async function loadCinema() {
   if (!cinemaId.value) return;
   error.value = '';
   try {
-    const [profile, rows] = await Promise.all([
+    const [profile, rows, attendance] = await Promise.all([
       apiFetch(`/cinemas/${cinemaId.value}/profile`),
       apiFetch(`/cinemas/${cinemaId.value}/recommendations`),
+      apiFetch(`/cinemas/${cinemaId.value}/attendance-portrait`),
     ]);
     description.value = profile.description || '';
     favoredText.value = (profile.favoredTerms || []).join(', ');
     avoidedText.value = (profile.avoidedTerms || []).join(', ');
     recommendations.value = rows;
+    portrait.value = attendance;
   } catch (e) { showError(e); }
 }
 
@@ -153,6 +193,26 @@ async function analyze(filmId) {
   finally { analyzingId.value = null; }
 }
 
+async function researchOne(item) {
+  researchingId.value = item.filmId; error.value = ''; notice.value = '';
+  try {
+    const updated = await apiFetch(`/cinemas/${cinemaId.value}/films/${item.filmId}/research`, { method: 'POST' });
+    item.evidence = updated.evidence;
+    notice.value = 'Recherche terminée.';
+  } catch (e) { showError(e); }
+  finally { researchingId.value = null; }
+}
+
+async function researchSelection() {
+  researching.value = true; error.value = ''; notice.value = '';
+  try {
+    const rows = await apiFetch(`/cinemas/${cinemaId.value}/selections/${selectionId.value}/research`, { method: 'POST' });
+    recommendations.value = await apiFetch(`/cinemas/${cinemaId.value}/recommendations`);
+    notice.value = `${rows.filter((r) => r.ok).length} film(s) recherchés ; ${rows.filter((r) => !r.ok).length} sans résultat.`;
+  } catch (e) { showError(e); }
+  finally { researching.value = false; }
+}
+
 async function saveFeedback(item, decision) {
   error.value = '';
   try {
@@ -167,7 +227,9 @@ onMounted(async () => {
   await ensureUserLoaded();
   if (!isAdmin.value) return;
   try {
-    cinemas.value = await apiFetch('/cinemas');
+    [cinemas.value, selections.value] = await Promise.all([apiFetch('/cinemas'), apiFetch('/selections')]);
+    const requested = Number(useRoute().query.selection);
+    if (selections.value.some((s) => s.id === requested)) selectionId.value = requested;
     cinemaId.value = cinemas.value.find((cinema) => cinema.id === user.value?.cinemaId)?.id ?? cinemas.value[0]?.id ?? null;
   } catch (e) { showError(e); }
 });

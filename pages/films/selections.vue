@@ -58,6 +58,7 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
+      <NuxtLink v-if="isAdmin" :to="`/recommendations?selection=${selection.id}`" class="inline-block mb-3 text-[#26474e] underline">Analyser cette présélection et lancer une recherche</NuxtLink>
 
       <p class="text-sm text-gray-600">
         👥 {{ interestParticipantCount }} participant(s) au vote d'intérêt
