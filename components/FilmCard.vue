@@ -249,19 +249,6 @@
             </AccordionContent>
           </AccordionPanel>
         </Accordion>
-        <div v-if="voteOpen" class="mt-2">
-          VOTES
-          <label for="vote-count" class="block text-xs text-gray-500 mb-1">
-            Nombre de voix (max {{ nbVotants }}) note:{{ note }}
-          </label>
-          <InputNumber
-            v-model="vote"
-            :max="nbVotants"
-            :min="0"
-            class="w-full"
-            @input="handleVoteChange"
-          />
-        </div>
 
         <div class="absolute bottom-4 right-2 screen-only" v-if="isAdmin">
           <button
@@ -388,7 +375,6 @@
         v-for="entry in isAdmin ? [] : criticalPublishedAnalyses"
         :key="entry.cinemaId"
         :analysis="entry.analysis"
-        :cinema-name="entry.cinemaName"
       />
     </div>
   </div>
@@ -396,7 +382,6 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive, watch, toRaw } from "vue";
-import InputNumber from "primevue/inputnumber";
 
 import { getInterestCount, computeAggregateScore } from "@/utils/score";
 import Rating from "primevue/rating";
