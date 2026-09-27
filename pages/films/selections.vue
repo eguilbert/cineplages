@@ -546,9 +546,9 @@ onMounted(async () => {
   selections.value = await apiFetch(`/selections`);
   if (isAdmin.value) {
     try {
-      const [cinemas, availability] = await Promise.all([apiFetch('/cinemas'), apiFetch('/critical-analysis/availability')]);
+      const cinemas = await apiFetch('/cinemas');
       researchCinemas.value = cinemas;
-      criticalAvailable.value = availability.available;
+      await refreshCriticalAvailability();
       researchCinemaId.value = researchCinemas.value.find((c) => c.id === user.value?.cinemaId)?.id ?? researchCinemas.value[0]?.id ?? null;
     } catch (error) { console.error('Cinémas indisponibles:', error); }
   }
@@ -556,6 +556,17 @@ onMounted(async () => {
     await loadSelection();
   }
 });
+
+async function refreshCriticalAvailability() {
+  if (!isAdmin.value) return;
+  try {
+    const availability = await apiFetch('/critical-analysis/availability');
+    criticalAvailable.value = availability.available;
+  } catch (error) { criticalAvailable.value = false; }
+}
+
+const checkAvailabilityOnFocus = () => { refreshCriticalAvailability(); };
+onMounted(() => window.addEventListener('focus', checkAvailabilityOnFocus));
 
 watch(researchCinemaId, async (id) => {
   criticalTimers.forEach(clearTimeout); criticalTimers.clear();
@@ -604,7 +615,10 @@ async function analyzeCritically(filmId) {
   }
 }
 
-onUnmounted(() => { criticalTimers.forEach(clearTimeout); criticalTimers.clear(); });
+onUnmounted(() => {
+  window.removeEventListener('focus', checkAvailabilityOnFocus);
+  criticalTimers.forEach(clearTimeout); criticalTimers.clear();
+});
 
 watch(selectedSelectionId, async (newId) => {
   if (newId) await loadSelection();
