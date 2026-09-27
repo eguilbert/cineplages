@@ -373,7 +373,8 @@
         "
       />
       <FilmCriticalPanel
-        v-if="isAdmin && criticalCinemaId"
+        v-if="criticalCinemaId && (isAdmin || criticalAnalysis)"
+        :is-admin="isAdmin"
         :analysis="criticalAnalysis"
         :loading="criticalLoading"
         :available="criticalAvailable"

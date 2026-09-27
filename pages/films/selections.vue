@@ -561,6 +561,7 @@ onMounted(async () => {
       researchCinemaId.value = researchCinemas.value.find((c) => c.id === user.value?.cinemaId)?.id ?? researchCinemas.value[0]?.id ?? null;
     } catch (error) { console.error('Cinémas indisponibles:', error); }
   }
+  if (!isAdmin.value) researchCinemaId.value = user.value?.cinemaId ?? null;
   if (selectedSelectionId.value) {
     await loadSelection();
   }
@@ -615,7 +616,7 @@ async function pollCritical(filmId, cinemaId) {
 }
 
 async function analyzeCritically(filmId) {
-  if (!researchCinemaId.value || criticalLoading.value[filmId]) return;
+  if (!isAdmin.value || !researchCinemaId.value || criticalLoading.value[filmId]) return;
   criticalLoading.value = { ...criticalLoading.value, [filmId]: true };
   criticalErrors.value = { ...criticalErrors.value, [filmId]: '' };
   try {
