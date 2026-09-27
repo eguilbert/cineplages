@@ -73,7 +73,7 @@
             <span>{{ item.editorialFit === null ? 'Affinité non évaluée' : `${item.editorialFit}/100` }}</span>
           </li>
         </ul>
-        <NuxtLink to="/admin/recommendations" class="inline-block text-[#26474e] underline">Voir les explications et décider</NuxtLink>
+        <NuxtLink to="/recommendations" class="inline-block text-[#26474e] underline">Voir les explications et décider</NuxtLink>
       </template>
       <NuxtLink to="/films/selections" class="inline-block text-[#26474e] underline">Voir les sélections</NuxtLink>
     </section>
