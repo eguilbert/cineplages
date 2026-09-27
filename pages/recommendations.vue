@@ -58,7 +58,7 @@
           <button :disabled="researching || !selectionId" class="rounded bg-[#26474e] px-4 py-2 text-white disabled:opacity-50" @click="researchSelection">{{ researching ? 'Recherche en cours…' : 'Rechercher pour la sélection' }}</button>
         </div>
         <p v-if="researchProgress" role="status" class="text-sm font-medium">{{ researchProgress }}</p>
-        <p class="text-sm text-gray-600">Recherche par catégorie, en lots successifs de 12 films. Les films doivent déjà avoir une analyse. Les résultats disponibles apparaissent ci-dessous.</p>
+        <p class="text-sm text-gray-600">Recherche par catégorie, en lots successifs de 12 films. L’analyse manquante est créée automatiquement ; les résultats apparaissent ci-dessous.</p>
       </section>
 
       <section v-if="cinemaId" class="rounded-xl bg-white p-5 shadow-sm space-y-4">
@@ -211,6 +211,7 @@ async function researchSelection() {
   let offset = 0;
   let successes = 0;
   let failures = 0;
+  const failureReasons = {};
   try {
     do {
       const page = await apiFetch(`/cinemas/${cinemaId.value}/selections/${selectionId.value}/research`, {
@@ -218,11 +219,12 @@ async function researchSelection() {
       });
       successes += page.results.filter((row) => row.ok).length;
       failures += page.results.filter((row) => !row.ok).length;
+      for (const row of page.results.filter((row) => !row.ok)) failureReasons[row.error] = (failureReasons[row.error] || 0) + 1;
       offset = page.nextOffset;
       researchProgress.value = `${offset ?? page.total} / ${page.total} films traités · ${page.category}`;
     } while (offset !== null);
     recommendations.value = await apiFetch(`/cinemas/${cinemaId.value}/recommendations`);
-    notice.value = `${successes} film(s) recherchés ; ${failures} sans résultat.`;
+    notice.value = `${successes} film(s) recherchés ; ${failures} sans résultat${failures ? ` (${Object.entries(failureReasons).map(([reason, count]) => `${reason} : ${count}`).join(', ')})` : ''}.`;
   } catch (e) {
     showError(e);
     researchProgress.value = `${successes} film(s) recherchés avant l'interruption. Relancer reprendra la sélection depuis le début.`;
