@@ -369,7 +369,15 @@
         :runtime-ids="criticalRuntimeIds"
         :availability-error="criticalAvailabilityError"
         :error="criticalError"
+        :tagging="criticalTagging"
+        :tag-error="criticalTagError"
+        :comparables="criticalComparables"
+        :comparables-loading="criticalComparablesLoading"
+        :comparables-error="criticalComparablesError"
         @analyze="$emit('critical-analyze', film.id)"
+        @suggest-tags="$emit('critical-suggest-tags', film.id)"
+        @apply-tags="(labels) => $emit('critical-apply-tags', film.id, labels)"
+        @load-comparables="$emit('critical-load-comparables', film.id)"
       />
       <FilmCriticalPanel
         v-for="entry in isAdmin ? [] : criticalPublishedAnalyses"
@@ -413,6 +421,9 @@ const emit = defineEmits([
   "score-changed",
   "vote-change",
   "critical-analyze",
+  "critical-suggest-tags",
+  "critical-apply-tags",
+  "critical-load-comparables",
 ]);
 
 // charger les noms français
@@ -460,6 +471,11 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   criticalCinemaId: { type: Number, default: null },
   criticalAnalysis: { type: Object, default: null },
+  criticalTagging: { type: Boolean, default: false },
+  criticalTagError: { type: String, default: '' },
+  criticalComparables: { type: Object, default: null },
+  criticalComparablesLoading: { type: Boolean, default: false },
+  criticalComparablesError: { type: String, default: '' },
   criticalPublishedAnalyses: { type: Array, default: () => [] },
   criticalLoading: { type: Boolean, default: false },
   criticalAvailable: { type: Boolean, default: true },
