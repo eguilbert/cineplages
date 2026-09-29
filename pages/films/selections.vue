@@ -201,6 +201,11 @@
               :compact="view.mode === 'compact'"
               :critical-cinema-id="researchCinemaId"
               :critical-analysis="criticalResults[film.id] || null"
+              :critical-tagging="!!criticalTagging[film.id]"
+              :critical-tag-error="criticalTagErrors[film.id] || ''"
+              :critical-comparables="criticalComparables[film.id] || null"
+              :critical-comparables-loading="!!criticalComparablesLoading[film.id]"
+              :critical-comparables-error="criticalComparablesErrors[film.id] || ''"
               :critical-published-analyses="publishedAnalyses[film.id] || []"
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
@@ -209,6 +214,9 @@
               :critical-availability-error="criticalAvailabilityError"
               :critical-error="criticalErrors[film.id] || ''"
               @critical-analyze="analyzeCritically"
+              @critical-suggest-tags="suggestTags"
+              @critical-apply-tags="applyTags"
+              @critical-load-comparables="loadComparables"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -233,6 +241,11 @@
               :interestCounts="interestStats?.[film.id] || null"
               :critical-cinema-id="researchCinemaId"
               :critical-analysis="criticalResults[film.id] || null"
+              :critical-tagging="!!criticalTagging[film.id]"
+              :critical-tag-error="criticalTagErrors[film.id] || ''"
+              :critical-comparables="criticalComparables[film.id] || null"
+              :critical-comparables-loading="!!criticalComparablesLoading[film.id]"
+              :critical-comparables-error="criticalComparablesErrors[film.id] || ''"
               :critical-published-analyses="publishedAnalyses[film.id] || []"
               :critical-loading="!!criticalLoading[film.id]"
               :critical-available="criticalAvailable"
@@ -241,6 +254,9 @@
               :critical-availability-error="criticalAvailabilityError"
               :critical-error="criticalErrors[film.id] || ''"
               @critical-analyze="analyzeCritically"
+              @critical-suggest-tags="suggestTags"
+              @critical-apply-tags="applyTags"
+              @critical-load-comparables="loadComparables"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -362,6 +378,11 @@ const selection = ref(null);
 const researchCinemas = ref([]);
 const researchCinemaId = ref(null);
 const criticalResults = ref({});
+const criticalTagging = ref({});
+const criticalTagErrors = ref({});
+const criticalComparables = ref({});
+const criticalComparablesLoading = ref({});
+const criticalComparablesErrors = ref({});
 const publishedAnalyses = ref({});
 const criticalLoading = ref({});
 const criticalAvailable = ref(false);
@@ -591,6 +612,7 @@ onMounted(() => window.addEventListener('focus', checkAvailabilityOnFocus));
 watch(researchCinemaId, async (id) => {
   criticalTimers.forEach(clearTimeout); criticalTimers.clear();
   criticalResults.value = {}; criticalErrors.value = {}; criticalLoading.value = {};
+  criticalComparables.value = {};
   if (!id) return;
   try {
     const rows = await apiFetch(`/cinemas/${id}/recommendations`);
@@ -608,6 +630,7 @@ async function pollCritical(filmId, cinemaId) {
     if (researchCinemaId.value !== cinemaId) return;
     if (result.status === 'completed') {
       criticalResults.value = { ...criticalResults.value, [filmId]: result.analysis };
+      criticalComparables.value = { ...criticalComparables.value, [filmId]: null };
       criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
       criticalTimers.delete(filmId);
     } else if (['queued', 'in_progress'].includes(result.status)) {
@@ -632,6 +655,43 @@ async function analyzeCritically(filmId) {
   } catch (error) {
     criticalErrors.value = { ...criticalErrors.value, [filmId]: getApiErrorMessage(error, 'Impossible de démarrer la recherche.') };
     criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  }
+}
+
+async function updateCriticalTags(filmId, action, labels) {
+  if (!isAdmin.value || !researchCinemaId.value || criticalTagging.value[filmId]) return;
+  criticalTagging.value = { ...criticalTagging.value, [filmId]: true };
+  criticalTagErrors.value = { ...criticalTagErrors.value, [filmId]: '' };
+  const cinemaId = researchCinemaId.value;
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis/tags/${action}`, { method: 'POST', ...(labels ? { body: { labels } } : {}) });
+    if (researchCinemaId.value === cinemaId) {
+      criticalResults.value = { ...criticalResults.value, [filmId]: result.analysis };
+      criticalComparables.value = { ...criticalComparables.value, [filmId]: null };
+      if (action === 'apply') await loadSelection();
+    }
+  } catch (error) {
+    criticalTagErrors.value = { ...criticalTagErrors.value, [filmId]: getApiErrorMessage(error, 'Impossible de traiter les tags.') };
+  } finally {
+    criticalTagging.value = { ...criticalTagging.value, [filmId]: false };
+  }
+}
+
+const suggestTags = (filmId) => updateCriticalTags(filmId, 'suggest');
+const applyTags = (filmId, labels) => updateCriticalTags(filmId, 'apply', labels);
+
+async function loadComparables(filmId) {
+  if (!isAdmin.value || !researchCinemaId.value || criticalComparablesLoading.value[filmId]) return;
+  const cinemaId = researchCinemaId.value;
+  criticalComparablesLoading.value = { ...criticalComparablesLoading.value, [filmId]: true };
+  criticalComparablesErrors.value = { ...criticalComparablesErrors.value, [filmId]: '' };
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/comparable-attendance`);
+    if (researchCinemaId.value === cinemaId) criticalComparables.value = { ...criticalComparables.value, [filmId]: result };
+  } catch (error) {
+    criticalComparablesErrors.value = { ...criticalComparablesErrors.value, [filmId]: getApiErrorMessage(error, 'Films comparables indisponibles.') };
+  } finally {
+    criticalComparablesLoading.value = { ...criticalComparablesLoading.value, [filmId]: false };
   }
 }
 
