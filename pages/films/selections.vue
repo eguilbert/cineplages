@@ -681,7 +681,7 @@ const suggestTags = (filmId) => updateCriticalTags(filmId, 'suggest');
 const applyTags = (filmId, labels) => updateCriticalTags(filmId, 'apply', labels);
 
 async function loadComparables(filmId) {
-  if (!isAdmin.value || !researchCinemaId.value || criticalComparablesLoading.value[filmId]) return;
+  if (!isAuthenticated.value || !researchCinemaId.value || criticalComparablesLoading.value[filmId]) return;
   const cinemaId = researchCinemaId.value;
   criticalComparablesLoading.value = { ...criticalComparablesLoading.value, [filmId]: true };
   criticalComparablesErrors.value = { ...criticalComparablesErrors.value, [filmId]: '' };
