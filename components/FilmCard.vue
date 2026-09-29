@@ -363,6 +363,7 @@
         v-if="isAdmin && criticalCinemaId"
         :is-admin="isAdmin"
         :analysis="criticalAnalysis"
+        :can-compare="!!criticalCinemaId"
         :loading="criticalLoading"
         :available="criticalAvailable"
         :environment="criticalEnvironment"
@@ -383,6 +384,11 @@
         v-for="entry in isAdmin ? [] : criticalPublishedAnalyses"
         :key="entry.cinemaId"
         :analysis="entry.analysis"
+        :can-compare="!!criticalCinemaId"
+        :comparables="criticalComparables"
+        :comparables-loading="criticalComparablesLoading"
+        :comparables-error="criticalComparablesError"
+        @load-comparables="$emit('critical-load-comparables', film.id)"
       />
     </div>
   </div>
