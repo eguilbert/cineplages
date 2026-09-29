@@ -36,7 +36,7 @@
           <span v-if="tagError" role="alert" class="text-xs text-red-700">{{ tagError }}</span>
         </div>
       </div>
-      <div v-if="isAdmin" class="mt-3 border-t pt-2">
+      <div v-if="canCompare" class="mt-3 border-t pt-2">
         <button class="rounded border px-2 py-1 text-[#26474e] disabled:opacity-50" :disabled="comparablesLoading" @click="$emit('load-comparables')">Voir les films déjà projetés avec des tags communs</button>
         <span v-if="comparablesLoading" role="status" class="ml-2 text-xs">Chargement…</span>
         <p v-if="comparablesError" role="alert" class="mt-2 text-red-700">{{ comparablesError }}</p>
@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-const props = defineProps({ analysis: { type: Object, default: null }, isAdmin: { type: Boolean, default: false }, tagging: Boolean, tagError: { type: String, default: '' }, comparables: { type: Object, default: null }, comparablesLoading: Boolean, comparablesError: { type: String, default: '' }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, runtimeIds: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
+const props = defineProps({ analysis: { type: Object, default: null }, isAdmin: { type: Boolean, default: false }, canCompare: Boolean, tagging: Boolean, tagError: { type: String, default: '' }, comparables: { type: Object, default: null }, comparablesLoading: Boolean, comparablesError: { type: String, default: '' }, loading: Boolean, available: { type: Boolean, default: true }, environment: { type: String, default: '' }, runtimeIds: { type: String, default: '' }, availabilityError: { type: String, default: '' }, error: { type: String, default: '' } });
 defineEmits(['analyze', 'suggest-tags', 'apply-tags', 'load-comparables']);
 const selectedLabels = ref([]);
 watch(() => props.analysis?.tags, (tags) => { selectedLabels.value = (tags || []).map(({ label }) => label); }, { immediate: true });
