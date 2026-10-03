@@ -1,12 +1,18 @@
 <template>
   <div class="p-6 space-y-4">
     <h1 class="text-2xl font-bold">Films</h1>
-
+    <NuxtLink to="/films/add">+ Ajouter depuis TMDB</NuxtLink>
     <!-- Filtres -->
-    <div class="bg-white border rounded-lg p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+    <div
+      class="bg-white border rounded-lg p-4 grid grid-cols-1 md:grid-cols-6 gap-3 items-end"
+    >
       <div class="md:col-span-2">
         <label class="block text-xs text-gray-600 mb-1">Titre</label>
-        <InputText v-model="filters.q" placeholder="Rechercher un titre..." class="w-full" />
+        <InputText
+          v-model="filters.q"
+          placeholder="Rechercher un titre..."
+          class="w-full"
+        />
       </div>
 
       <div>
@@ -29,7 +35,11 @@
 
       <div>
         <label class="block text-xs text-gray-600 mb-1">Réalisateur</label>
-        <InputText v-model="filters.director" placeholder="Nom du réalisateur" class="w-full" />
+        <InputText
+          v-model="filters.director"
+          placeholder="Nom du réalisateur"
+          class="w-full"
+        />
       </div>
 
       <div class="md:col-span-2">
@@ -45,11 +55,20 @@
       </div>
 
       <div class="flex gap-2">
-        <Button label="Rechercher" icon="pi pi-search" @click="performSearch(1)" />
+        <Button
+          label="Rechercher"
+          icon="pi pi-search"
+          @click="performSearch(1)"
+        />
       </div>
 
       <div class="flex gap-2">
-        <Button label="Réinitialiser" severity="secondary" text @click="resetFilters" />
+        <Button
+          label="Réinitialiser"
+          severity="secondary"
+          text
+          @click="resetFilters"
+        />
       </div>
     </div>
 
@@ -67,7 +86,11 @@
     >
       <Column header="" style="width: 72px">
         <template #body="{ data }">
-          <img v-if="data.posterUrl" :src="data.posterUrl" class="w-12 h-16 object-cover rounded" />
+          <img
+            v-if="data.posterUrl"
+            :src="data.posterUrl"
+            class="w-12 h-16 object-cover rounded"
+          />
           <div v-else class="w-12 h-16 bg-gray-100 rounded"></div>
         </template>
       </Column>
@@ -75,28 +98,27 @@
       <Column header="Titre">
         <template #body="{ data }">
           <div class="font-medium">{{ data.title }}</div>
-          <div v-if="data.director?.name" class="text-xs text-gray-500">— {{ data.director.name }}</div>
+          <div v-if="data.director?.name" class="text-xs text-gray-500">
+            — {{ data.director.name }}
+          </div>
         </template>
       </Column>
 
       <Column field="category" header="Catégorie" style="width: 160px" />
+      <Column field="genre" header="Genre" style="width: 160px" />
 
       <Column header="Sortie" style="width: 140px">
-        <template #body="{ data }">
-          {{ formatDate(data.releaseDate) }}
-        </template>
+        <template #body="{ data }">{{ formatDate(data.releaseDate) }}</template>
       </Column>
 
       <Column header="Sélections" style="width: 120px">
-        <template #body="{ data }">
-          {{ data._count?.selections ?? 0 }}
-        </template>
+        <template #body="{ data }">{{ data._count?.selections ?? 0 }}</template>
       </Column>
 
       <Column header="Projections" style="width: 120px">
-        <template #body="{ data }">
-          {{ data._count?.filmProjections ?? 0 }}
-        </template>
+        <template #body="{ data }">{{
+          data._count?.filmProjections ?? 0
+        }}</template>
       </Column>
 
       <Column header="" style="width: 80px">
@@ -107,16 +129,24 @@
     </DataTable>
 
     <!-- Sidebar fiche film -->
-    <Sidebar v-model:visible="showDetails" position="right" class="w-full md:w-[740px]">
+    <Sidebar
+      v-model:visible="showDetails"
+      position="right"
+      class="w-full md:w-[860px]"
+    >
       <template #header>
         <div class="flex items-center gap-3 w-full">
-          <img v-if="detailsPoster" :src="detailsPoster" class="w-10 h-14 object-cover rounded" />
+          <img
+            v-if="form.posterUrl"
+            :src="form.posterUrl"
+            class="w-10 h-14 object-cover rounded"
+          />
           <div class="min-w-0 flex-1">
             <div class="font-semibold truncate">
               {{ details?.title || selected?.title || "Film" }}
             </div>
             <div class="text-xs text-gray-500 truncate">
-              {{ details?.director?.name || selected?.director?.name || "—" }}
+              {{ details?.director?.name || "—" }}
             </div>
           </div>
 
@@ -127,7 +157,6 @@
               label="Modifier"
               size="small"
               @click="enterEdit()"
-              :disabled="detailsLoading"
             />
             <Button
               v-else
@@ -136,7 +165,6 @@
               severity="secondary"
               size="small"
               @click="cancelEdit()"
-              :disabled="saving"
             />
             <Button
               v-if="editMode"
@@ -156,17 +184,33 @@
 
       <div v-else-if="details" class="p-2">
         <TabView>
-          <!-- ONGLET INFOS -->
           <TabPanel header="Infos">
             <div class="space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs text-gray-600 mb-1">Titre</label>
-                  <InputText v-model="form.title" class="w-full" :disabled="!editMode" />
+                  <InputText
+                    v-model="form.title"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
                 </div>
 
                 <div>
-                  <label class="block text-xs text-gray-600 mb-1">Catégorie</label>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Genre (obligatoire)</label
+                  >
+                  <InputText
+                    v-model="form.genre"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Catégorie</label
+                  >
                   <Dropdown
                     v-model="form.category"
                     :options="categoryOptions"
@@ -175,11 +219,14 @@
                     placeholder="Choisir..."
                     class="w-full"
                     :disabled="!editMode"
+                    showClear
                   />
                 </div>
 
                 <div>
-                  <label class="block text-xs text-gray-600 mb-1">Date de sortie</label>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Date de sortie</label
+                  >
                   <Calendar
                     v-model="form.releaseDate"
                     dateFormat="yy-mm-dd"
@@ -190,69 +237,166 @@
                 </div>
 
                 <div>
-                  <label class="block text-xs text-gray-600 mb-1">Réalisateur</label>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Réalisateur</label
+                  >
                   <InputText
                     v-model="form.directorName"
-                    placeholder="Nom du réalisateur"
+                    placeholder="Nom"
                     class="w-full"
                     :disabled="!editMode"
                   />
                   <div class="text-[11px] text-gray-500 mt-1">
-                    Astuce : si tu gères un directorId côté backend, remplace par un select.
+                    (Sauvé via Director.name + connectOrCreate)
                   </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Origine</label
+                  >
+                  <InputText
+                    v-model="form.origin"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Durée (min)</label
+                  >
+                  <InputNumber
+                    v-model="form.duration"
+                    class="w-full"
+                    :disabled="!editMode"
+                    :min="0"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1">Budget</label>
+                  <InputNumber
+                    v-model="form.budget"
+                    class="w-full"
+                    :disabled="!editMode"
+                    :min="0"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Seances (défaut)</label
+                  >
+                  <InputNumber
+                    v-model="form.seances"
+                    class="w-full"
+                    :disabled="!editMode"
+                    :min="1"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs text-gray-600 mb-1">Rating</label>
+                  <InputNumber
+                    v-model="form.rating"
+                    class="w-full"
+                    :disabled="!editMode"
+                    :min="0"
+                    :max="10"
+                    :step="0.1"
+                  />
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="block text-xs text-gray-600 mb-1">Synopsis</label>
-                  <Textarea v-model="form.synopsis" autoResize rows="4" class="w-full" :disabled="!editMode" />
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Synopsis</label
+                  >
+                  <Textarea
+                    v-model="form.synopsis"
+                    autoResize
+                    rows="4"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="block text-xs text-gray-600 mb-1">Poster URL</label>
-                  <InputText v-model="form.posterUrl" class="w-full" :disabled="!editMode" />
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Acteurs (texte)</label
+                  >
+                  <Textarea
+                    v-model="form.actors"
+                    autoResize
+                    rows="2"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="block text-xs text-gray-600 mb-1">Trailer URL</label>
-                  <InputText v-model="form.trailerUrl" class="w-full" :disabled="!editMode" />
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Keywords (texte)</label
+                  >
+                  <Textarea
+                    v-model="form.keywords"
+                    autoResize
+                    rows="2"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
                 </div>
-              </div>
 
-              <div class="flex gap-3 flex-wrap items-start">
-                <img
-                  v-if="form.posterUrl"
-                  :src="form.posterUrl"
-                  class="w-28 h-40 object-cover rounded border"
-                />
-                <div v-else class="w-28 h-40 bg-gray-100 rounded border"></div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Commentaire interne</label
+                  >
+                  <Textarea
+                    v-model="form.commentaire"
+                    autoResize
+                    rows="2"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
+                </div>
 
-                <div class="text-sm text-gray-600">
-                  <div>
-                    <span class="font-medium">Sortie:</span>
-                    {{ formatDate(details.releaseDate) }}
-                  </div>
-                  <div>
-                    <span class="font-medium">Sélections:</span>
-                    {{ details._count?.selections ?? details.selections?.length ?? 0 }}
-                  </div>
-                  <div>
-                    <span class="font-medium">Projections:</span>
-                    {{ details._count?.filmProjections ?? details.filmProjections?.length ?? 0 }}
-                  </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Poster URL</label
+                  >
+                  <InputText
+                    v-model="form.posterUrl"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs text-gray-600 mb-1"
+                    >Trailer URL</label
+                  >
+                  <InputText
+                    v-model="form.trailerUrl"
+                    class="w-full"
+                    :disabled="!editMode"
+                  />
                 </div>
               </div>
             </div>
           </TabPanel>
 
-          <!-- ONGLET AJOUT -->
-          <TabPanel header="Ajouter">
-            <div class="space-y-4">
+          <TabPanel header="Ajouter à une sélection">
+            <div class="space-y-3">
               <div class="bg-gray-50 border rounded-lg p-4 space-y-3">
-                <div class="text-sm font-semibold">Ajouter ce film à une sélection</div>
+                <div class="text-sm font-semibold">
+                  Ajouter ce film à une sélection
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                   <div class="md:col-span-2">
-                    <label class="block text-xs text-gray-600 mb-1">Sélection</label>
+                    <label class="block text-xs text-gray-600 mb-1"
+                      >Sélection</label
+                    >
                     <Dropdown
                       v-model="addTo.selectionId"
                       :options="selectionsOptions"
@@ -261,6 +405,7 @@
                       placeholder="Choisir..."
                       class="w-full"
                       :loading="selectionsLoading"
+                      showClear
                     />
                   </div>
 
@@ -275,29 +420,45 @@
                   </div>
                 </div>
 
-                <div class="text-xs text-gray-500">
-                  Si ta “Programmation” est une sélection avec <code>status=PROGRAMMATION</code>, tu peux filtrer dans la
-                  liste via le toggle ci-dessous.
+                <div class="flex items-center gap-2">
+                  <Checkbox
+                    v-model="addTo.onlyProgrammations"
+                    binary
+                    inputId="onlyProg"
+                  />
+                  <label for="onlyProg" class="text-sm"
+                    >Afficher seulement les programmations</label
+                  >
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <Checkbox v-model="addTo.onlyProgrammations" binary inputId="onlyProg" />
-                  <label for="onlyProg" class="text-sm">Afficher seulement les programmations</label>
+                <div class="text-xs text-gray-500">
+                  (Une “programmation” = une sélection avec
+                  <code>status</code> contenant PROGRAMMATION)
                 </div>
               </div>
             </div>
           </TabPanel>
 
-          <!-- ONGLET SÉLECTIONS / LISTES / PROJECTIONS -->
           <TabPanel header="Liens">
             <div class="space-y-5">
               <div>
                 <h3 class="font-semibold mb-2">Sélections</h3>
-                <div v-if="!details.selections?.length" class="text-sm text-gray-500">Aucune sélection.</div>
+                <div
+                  v-if="!details.selections?.length"
+                  class="text-sm text-gray-500"
+                >
+                  Aucune sélection.
+                </div>
                 <ul class="space-y-2">
-                  <li v-for="sf in details.selections" :key="sf.id" class="text-sm">
+                  <li
+                    v-for="sf in details.selections"
+                    :key="sf.id"
+                    class="text-sm"
+                  >
                     <span class="font-medium">{{ sf.selection?.name }}</span>
-                    <span class="text-gray-500"> — {{ sf.selection?.status }}</span>
+                    <span class="text-gray-500">
+                      — {{ sf.selection?.status }}</span
+                    >
                   </li>
                 </ul>
               </div>
@@ -306,9 +467,18 @@
 
               <div>
                 <h3 class="font-semibold mb-2">Listes</h3>
-                <div v-if="!details.lists?.length" class="text-sm text-gray-500">Aucune liste.</div>
+                <div
+                  v-if="!details.lists?.length"
+                  class="text-sm text-gray-500"
+                >
+                  Aucune liste.
+                </div>
                 <ul class="space-y-2">
-                  <li v-for="fl in details.lists" :key="fl.id" class="text-sm">
+                  <li
+                    v-for="fl in details.lists"
+                    :key="`${fl.listId}-${fl.filmId}`"
+                    class="text-sm"
+                  >
                     {{ fl.list?.name }}
                   </li>
                 </ul>
@@ -318,16 +488,33 @@
 
               <div>
                 <h3 class="font-semibold mb-2">Projections</h3>
-                <div v-if="!details.filmProjections?.length" class="text-sm text-gray-500">
+                <div
+                  v-if="!details.filmProjections?.length"
+                  class="text-sm text-gray-500"
+                >
                   Aucune projection.
                 </div>
                 <ul class="space-y-2">
-                  <li v-for="p in details.filmProjections" :key="p.id" class="text-sm">
-                    <span class="font-medium">{{ formatDate(p.date) }} {{ p.hour }}</span>
-                    <span class="text-gray-500"> — {{ p.cinema?.name || "Cinéma" }}</span>
-                    <span v-if="p.salle" class="text-gray-500">, salle {{ p.salle }}</span>
-                    <span v-if="p.audienceCount != null" class="text-gray-500"> — {{ p.audienceCount }} spect.</span>
-                    <div v-if="p.commentaire" class="text-xs text-gray-500">{{ p.commentaire }}</div>
+                  <li
+                    v-for="p in details.filmProjections"
+                    :key="p.id"
+                    class="text-sm"
+                  >
+                    <span class="font-medium"
+                      >{{ formatDate(p.date) }} {{ p.hour }}</span
+                    >
+                    <span class="text-gray-500">
+                      — {{ p.cinema?.name || "Cinéma" }}</span
+                    >
+                    <span v-if="p.salle" class="text-gray-500"
+                      >, salle {{ p.salle }}</span
+                    >
+                    <span v-if="p.audienceCount != null" class="text-gray-500">
+                      — {{ p.audienceCount }} spect.</span
+                    >
+                    <div v-if="p.commentaire" class="text-xs text-gray-500">
+                      {{ p.commentaire }}
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -342,11 +529,9 @@
 </template>
 
 <script setup>
-// Pas de TypeScript
 import { ref, watch, computed, onMounted } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 
-// PrimeVue
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
@@ -360,20 +545,17 @@ import TabPanel from "primevue/tabpanel";
 import Dropdown from "primevue/dropdown";
 import Textarea from "primevue/textarea";
 import Checkbox from "primevue/checkbox";
+import InputNumber from "primevue/inputnumber";
 
 const { apiFetch } = useApi();
 
-/**
- * -----------------------
- * Filtres / Search
- * -----------------------
- */
+/* ----------------- Search ----------------- */
 const filters = ref({
   q: "",
   id: "",
   categories: [],
   director: "",
-  dateRange: null, // [Date, Date]
+  dateRange: null,
 });
 
 const categoryOptions = [
@@ -397,11 +579,9 @@ function toYMD(d) {
   const dd = String(dt.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
 function formatDate(d) {
   if (!d) return "—";
-  const dt = new Date(d);
-  return dt.toLocaleDateString("fr-FR");
+  return new Date(d).toLocaleDateString("fr-FR");
 }
 
 async function fetchSearch() {
@@ -410,10 +590,13 @@ async function fetchSearch() {
     const q = { page: page.value, pageSize: pageSize.value };
     if (filters.value.q) q.q = filters.value.q;
     if (filters.value.id) q.id = filters.value.id;
-    if (filters.value.categories?.length) q.category = filters.value.categories.join(",");
+    if (filters.value.categories?.length)
+      q.category = filters.value.categories.join(",");
     if (filters.value.director) q.director = filters.value.director;
-    if (filters.value.dateRange?.[0]) q.dateFrom = toYMD(filters.value.dateRange[0]);
-    if (filters.value.dateRange?.[1]) q.dateTo = toYMD(filters.value.dateRange[1]);
+    if (filters.value.dateRange?.[0])
+      q.dateFrom = toYMD(filters.value.dateRange[0]);
+    if (filters.value.dateRange?.[1])
+      q.dateTo = toYMD(filters.value.dateRange[1]);
 
     const res = await apiFetch("/films/search", { query: q });
     items.value = res.items || [];
@@ -436,7 +619,7 @@ const debouncedSearch = useDebounceFn(() => performSearch(1), 350);
 watch(() => [filters.value.q, filters.value.director], debouncedSearch);
 watch(
   () => [filters.value.id, filters.value.categories, filters.value.dateRange],
-  () => performSearch(1)
+  () => performSearch(1),
 );
 
 function onPage(e) {
@@ -444,17 +627,18 @@ function onPage(e) {
   pageSize.value = e.rows;
   fetchSearch();
 }
-
 function resetFilters() {
-  filters.value = { q: "", id: "", categories: [], director: "", dateRange: null };
+  filters.value = {
+    q: "",
+    id: "",
+    categories: [],
+    director: "",
+    dateRange: null,
+  };
   performSearch(1);
 }
 
-/**
- * -----------------------
- * Sidebar / Details / Edit
- * -----------------------
- */
+/* ----------------- Details/Edit ----------------- */
 const showDetails = ref(false);
 const selected = ref(null);
 const details = ref(null);
@@ -463,37 +647,43 @@ const detailsLoading = ref(false);
 const editMode = ref(false);
 const saving = ref(false);
 
-// Form éditable (copie de details)
 const form = ref({
   title: "",
-  category: "",
-  releaseDate: null, // Date
-  directorName: "",
+  genre: "", // REQUIRED
+  category: null,
   synopsis: "",
+  releaseDate: null,
+  duration: null,
+  budget: null,
+  origin: "",
   posterUrl: "",
   trailerUrl: "",
+  actors: "",
+  keywords: "",
+  commentaire: "",
+  rating: null,
+  seances: 1,
+  directorName: "",
 });
 
-// Poster (compat champs)
-const detailsPoster = computed(() => {
-  return (
-    form.value.posterUrl ||
-    details.value?.posterUrl ||
-    details.value?.poster ||
-    selected.value?.posterUrl ||
-    null
-  );
-});
-
-function hydrateFormFromDetails(d) {
+function hydrateForm(d) {
   form.value = {
     title: d?.title || "",
-    category: d?.category || "",
-    releaseDate: d?.releaseDate ? new Date(d.releaseDate) : null,
-    directorName: d?.director?.name || "",
+    genre: d?.genre || "",
+    category: d?.category || null,
     synopsis: d?.synopsis || "",
-    posterUrl: d?.posterUrl || d?.poster || "",
-    trailerUrl: d?.trailerUrl || "",
+    releaseDate: d?.releaseDate ? new Date(d.releaseDate) : null,
+    duration: d?.duration ?? null,
+    budget: d?.budget ?? null,
+    origin: d?.origin ?? "",
+    posterUrl: d?.posterUrl ?? "",
+    trailerUrl: d?.trailerUrl ?? "",
+    actors: d?.actors ?? "",
+    keywords: d?.keywords ?? "",
+    commentaire: d?.commentaire ?? "",
+    rating: d?.rating ?? null,
+    seances: d?.seances ?? 1,
+    directorName: d?.director?.name ?? "",
   };
 }
 
@@ -506,7 +696,7 @@ async function openDetails(row) {
   try {
     const d = await apiFetch(`/films/${row.id}/full`);
     details.value = d;
-    hydrateFormFromDetails(d);
+    hydrateForm(d);
   } catch (e) {
     console.error("details error", e);
     details.value = null;
@@ -518,13 +708,11 @@ async function openDetails(row) {
 function enterEdit() {
   if (!details.value) return;
   editMode.value = true;
-  // on repart de la source (au cas où)
-  hydrateFormFromDetails(details.value);
+  hydrateForm(details.value);
 }
-
 function cancelEdit() {
   editMode.value = false;
-  if (details.value) hydrateFormFromDetails(details.value);
+  if (details.value) hydrateForm(details.value);
 }
 
 async function saveFilm() {
@@ -534,27 +722,33 @@ async function saveFilm() {
   try {
     const payload = {
       title: form.value.title,
+      genre: form.value.genre, // REQUIRED
       category: form.value.category,
-      releaseDate: form.value.releaseDate ? form.value.releaseDate.toISOString() : null,
-      directorName: form.value.directorName || "",
-      synopsis: form.value.synopsis || "",
-      posterUrl: form.value.posterUrl || "",
-      trailerUrl: form.value.trailerUrl || "",
+      synopsis: form.value.synopsis,
+      releaseDate: form.value.releaseDate
+        ? form.value.releaseDate.toISOString()
+        : null,
+      duration: form.value.duration,
+      budget: form.value.budget,
+      origin: form.value.origin,
+      posterUrl: form.value.posterUrl,
+      trailerUrl: form.value.trailerUrl,
+      actors: form.value.actors,
+      keywords: form.value.keywords,
+      commentaire: form.value.commentaire,
+      rating: form.value.rating,
+      seances: form.value.seances,
+      directorName: form.value.directorName, // ✅ backend le mappe vers Director
     };
 
-    // endpoint: PUT /films/:id
     const updated = await apiFetch(`/films/${selected.value.id}`, {
       method: "PUT",
       body: payload,
     });
 
-    // 1) met à jour le panneau
     details.value = updated;
-    // 2) met à jour le form (propre)
-    hydrateFormFromDetails(updated);
-    // 3) rafraîchit la liste (pour voir titre/cat/date changer)
+    hydrateForm(updated);
     await fetchSearch();
-
     editMode.value = false;
   } catch (e) {
     console.error("save error", e);
@@ -563,7 +757,6 @@ async function saveFilm() {
   }
 }
 
-// reset mode quand on ferme
 watch(showDetails, (v) => {
   if (!v) {
     editMode.value = false;
@@ -573,17 +766,9 @@ watch(showDetails, (v) => {
   }
 });
 
-/**
- * -----------------------
- * Ajouter à une sélection / programmation
- * -----------------------
- * Hypothèses API :
- * - GET /selections -> [{id,name,status}]
- * - POST /selections/:selectionId/films { filmId }
- */
+/* ----------------- Add to Selection ----------------- */
 const selections = ref([]);
 const selectionsLoading = ref(false);
-
 const addTo = ref({
   selectionId: null,
   onlyProgrammations: false,
@@ -593,7 +778,11 @@ const addTo = ref({
 const selectionsOptions = computed(() => {
   const src = Array.isArray(selections.value) ? selections.value : [];
   const filtered = addTo.value.onlyProgrammations
-    ? src.filter((s) => String(s.status || "").toUpperCase().includes("PROGRAM"))
+    ? src.filter((s) =>
+        String(s.status || "")
+          .toUpperCase()
+          .includes("PROGRAM"),
+      )
     : src;
 
   return filtered.map((s) => ({
@@ -624,10 +813,9 @@ async function addFilmToSelection() {
       body: { filmId: selected.value.id },
     });
 
-    // refresh détails pour voir apparaître la sélection dans l’onglet Liens
     const d = await apiFetch(`/films/${selected.value.id}/full`);
     details.value = d;
-    hydrateFormFromDetails(d);
+    hydrateForm(d);
   } catch (e) {
     console.error("add to selection error", e);
   } finally {
@@ -635,11 +823,7 @@ async function addFilmToSelection() {
   }
 }
 
-/**
- * -----------------------
- * init
- * -----------------------
- */
+/* ----------------- init ----------------- */
 onMounted(() => {
   performSearch(1);
   loadSelections();
@@ -647,5 +831,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* rien pour l’instant */
+/* nothing */
 </style>

@@ -1,288 +1,91 @@
-<template>
-  <div class="p-6 space-y-6">
-    <h1 class="text-2xl font-bold">Ajouter un film</h1>
-
-    <!-- Recherche -->
-    <div class="flex gap-2">
-      <InputText
-        v-model="query"
-        placeholder="Rechercher un film..."
-        class="w-full md:w-1/2"
-        @keyup.enter="searchFilm"
-      />
-      <Button label="Rechercher" icon="pi pi-search" @click="searchFilm" />
-    </div>
-
-    <div v-if="loading" class="text-gray-500">Recherche en cours…</div>
-
-    <!-- Résultats (DB + TMDB) -->
-    <div v-else-if="results.length" class="space-y-3">
-      <div
-        v-for="r in results"
-        :key="keyFor(r)"
-        class="flex items-center justify-between border p-2 rounded"
-      >
-        <div class="flex items-center gap-2">
-          <img
-            v-if="r.poster"
-            :src="r.poster"
-            alt=""
-            class="w-12 h-18 object-cover rounded"
-          />
-          <div>
-            <div class="font-medium">
-              {{ r.title }}
-              <span class="text-xs text-gray-500 ml-2">
-                {{ yearOf(r.releaseDate) }}
-              </span>
-            </div>
-            <div
-              class="text-xs"
-              :class="r.id ? 'text-emerald-600' : 'text-sky-600'"
-            >
-              {{ r.id ? "Dans la base" : "TMDB" }}
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <select
-            v-model="selectedCategories[keyFor(r)]"
-            class="border rounded p-1 text-sm"
-          >
-            <option disabled value="">Catégorie</option>
-            <option>Art et Essai</option>
-            <option>Grand Public</option>
-            <option>Jeunesse</option>
-            <option>Documentaire</option>
-          </select>
-          <Button size="small" label="Choisir" @click="onChoose(r)" />
-        </div>
-      </div>
-    </div>
-
-    <div v-else-if="hasSearched" class="text-gray-500">Aucun film trouvé.</div>
-
-    <!-- Fiche (optionnel) -->
-    <div v-if="film" class="mt-6">
-      <FilmVignette :film="film" />
-    </div>
-
-    <!-- Dialog destination quand autonome -->
-    <Dialog
-      v-model:visible="showDialog"
-      modal
-      header="Ajouter le film"
-      :style="{ width: '420px' }"
-    >
-      <div class="space-y-4">
-        <div>
-          <label class="block mb-2 font-medium">Destination :</label>
-          <div class="flex gap-2">
-            <Button
-              label="Sélection"
-              :outlined="destination !== 'selection'"
-              @click="destination = 'selection'"
-            />
-            <Button
-              label="Liste"
-              :outlined="destination !== 'list'"
-              @click="destination = 'list'"
-            />
-          </div>
-        </div>
-
-        <div v-if="destination === 'selection'">
-          <Dropdown
-            v-model="selectionId"
-            :options="selections"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Choisir une sélection"
-            class="w-full"
-          />
-        </div>
-
-        <div v-else-if="destination === 'list'">
-          <Dropdown
-            v-model="listId"
-            :options="lists"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Choisir une liste"
-            class="w-full"
-          />
-        </div>
-
-        <div class="flex justify-end gap-2">
-          <Button
-            label="Annuler"
-            severity="secondary"
-            @click="showDialog = false"
-          />
-          <Button label="Valider" @click="confirmAdd" />
-        </div>
-      </div>
-    </Dialog>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from "vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Dropdown from "primevue/dropdown";
-import Dialog from "primevue/dialog";
-import FilmVignette from "~/components/FilmVignette.vue";
-
-const { apiFetch } = useApi();
-const { isAdmin } = useAuth();
-
-const props = defineProps({
-  selectionId: Number, // optionnel (mode intégré)
-  listId: Number, // optionnel (mode intégré)
-});
-
-const query = ref("");
-const loading = ref(false);
-const hasSearched = ref(false);
-const results = ref([]);
-const film = ref(null); // film choisi (toujours DB après import)
-const selectedCategories = ref({}); // clé = id (DB) ou tmdbId (TMDB) avant import
-
-// Mode autonome
-const showDialog = ref(false);
-const destination = ref(null);
-const selectionId = ref(props.selectionId || null);
-const listId = ref(props.listId || null);
-const selections = ref([]);
-const lists = ref([]);
-const pendingFilm = ref(null); // film choisi (avant/pendant import)
-
+const { apiFetch } = useApi()
+const { isAdmin, isAuthenticated, loading: authLoading, error: authError, ensureUserLoaded } = useAuth()
+const ready = ref(false)
 onMounted(async () => {
-  // On peut précharger selections/lists pour le Dialog autonome
-  if (isAdmin.value) {
-    try {
-      selections.value = await apiFetch("/selections");
-      lists.value = await apiFetch("/lists");
-    } catch (e) {
-      console.warn("Chargement selections/lists:", e.message);
-    }
-  }
-});
-
-function keyFor(r) {
-  return r.id ?? r.tmdbId;
-}
-
-function yearOf(d) {
-  if (!d) return "";
-  const s = typeof d === "string" ? d : new Date(d).toISOString();
-  return s?.slice(0, 4) || "";
-}
-
-async function searchFilm() {
-  if (!query.value.trim()) return;
-  loading.value = true;
-  hasSearched.value = true;
-  results.value = [];
-  film.value = null;
-
+  try { await ensureUserLoaded() }
+  finally { ready.value = true }
+})
+const query = ref('')
+const results = ref([])
+const searching = ref(false)
+const searched = ref(false)
+const importing = ref(null)
+const error = ref('')
+const imported = ref({})
+const message = (e) => e?.data?.error || e?.data?.message || e?.message || 'Opération impossible. Vérifier la connexion et les droits administrateur.'
+async function search() {
+  if (!ready.value || authLoading.value || !isAdmin.value || !query.value.trim() || searching.value || importing.value !== null) return
+  searching.value = true
+  searched.value = false
+  results.value = []
+  error.value = ''
   try {
-    // 1) DB
-    let localRes = [];
-    let tmdb = [];
-    localRes = await apiFetch(
-      `/films/search?q=${encodeURIComponent(query.value)}`
-    );
-    const local = localRes?.items || [];
-    console.log("local", local?.length);
-    // 2) TMDB (résultats simples, sans import)
-    tmdb = await apiFetch(`/tmdb/search?q=${encodeURIComponent(query.value)}`);
-
-    // On concatène (DB d’abord)
-    results.value = [...(local || []), ...(tmdb || [])];
-    console.log("résultats", results.value.length);
-  } catch (err) {
-    console.error("Erreur recherche:", err);
-  } finally {
-    loading.value = false;
-  }
+    const data = await apiFetch('/api/tmdb/search', { query: { q: query.value.trim() } })
+    results.value = data
+    searched.value = true
+  } catch (e) { error.value = message(e) }
+  finally { searching.value = false }
 }
-
-async function onChoose(r) {
-  // r peut venir de DB (r.id défini) ou de TMDB (r.tmdbId seul)
-  pendingFilm.value = r;
-
+async function importMovie(movie) {
+  if (!ready.value || authLoading.value || !isAdmin.value || importing.value !== null) return
+  importing.value = movie.tmdbId
+  error.value = ''
   try {
-    // Si le film n’existe pas encore → importer maintenant
-    if (!r.id && r.tmdbId) {
-      const created = await apiFetch(`/import-one/${r.tmdbId}`);
-      // created est le film DB complet (avec id)
-      film.value = created;
-      pendingFilm.value = created;
-    } else {
-      film.value = r;
-    }
-
-    // Si on a reçu une destination via props → ajout direct
-    if (props.selectionId) {
-      destination.value = "selection";
-      selectionId.value = props.selectionId;
-      return confirmAdd();
-    }
-    if (props.listId) {
-      destination.value = "list";
-      listId.value = props.listId;
-      return confirmAdd();
-    }
-
-    // Sinon → mode autonome : demander destination
-    destination.value = null;
-    showDialog.value = true;
-  } catch (e) {
-    console.error("Choix/Import:", e);
-    alert("Impossible d’importer ce film depuis TMDB.");
-  }
-}
-
-async function confirmAdd() {
-  const chosen = pendingFilm.value;
-  if (!chosen) return;
-
-  // Catégorie nécessaire pour une sélection
-  const catKey = keyFor(chosen);
-  const category = selectedCategories.value[catKey];
-  if (destination.value === "selection" && !category) {
-    alert("Merci de sélectionner une catégorie.");
-    return;
-  }
-
-  try {
-    const filmId = chosen.id; // garanti après import éventuel
-
-    if (destination.value === "selection" && selectionId.value) {
-      await apiFetch(`/selections/${selectionId.value}/add-film`, {
-        method: "POST",
-        body: { filmId, category },
-      });
-      alert(`Film "${chosen.title}" ajouté à la sélection.`);
-    } else if (destination.value === "list" && listId.value) {
-      await apiFetch(`/lists/${listId.value}/add-film`, {
-        method: "POST",
-        body: { filmId },
-      });
-      alert(`Film "${chosen.title}" ajouté à la liste.`);
-    } else {
-      alert("Destination invalide.");
-      return;
-    }
-  } catch (err) {
-    console.error("Erreur ajout film:", err);
-    alert("Erreur lors de l'ajout.");
-  } finally {
-    showDialog.value = false;
-    pendingFilm.value = null;
-  }
+    const data = await apiFetch(`/api/import-one/${movie.tmdbId}`, { method: 'POST' })
+    imported.value = { ...imported.value, [movie.tmdbId]: data }
+  } catch (e) { error.value = message(e) }
+  finally { importing.value = null }
 }
 </script>
+
+<template>
+  <main class="tmdb-add">
+    <NuxtLink to="/films">← Films</NuxtLink>
+    <h1>Ajouter un film depuis TMDB</h1>
+    <p v-if="!ready || authLoading" role="status">Vérification de votre compte…</p>
+    <p v-else-if="!isAuthenticated" role="alert">{{ authError || 'Connectez-vous avec un compte administrateur pour importer un film.' }}</p>
+    <p v-else-if="!isAdmin" role="alert">L’import de films est réservé aux administrateurs.</p>
+    <template v-else>
+    <p>Recherchez un titre, puis vérifiez l’année et le résumé avant de l’importer.</p>
+    <form class="search" @submit.prevent="search">
+      <label for="film-title">Titre du film</label>
+      <input id="film-title" v-model="query" required maxlength="200" placeholder="La Pie voleuse" :disabled="searching || importing !== null">
+      <button :disabled="!query.trim() || searching || importing !== null">{{ searching ? 'Recherche…' : 'Rechercher' }}</button>
+    </form>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <p v-if="searched && !results.length" role="status">Aucun résultat. Essayez le titre original.</p>
+    <p v-if="searching" role="status">Recherche en cours…</p>
+    <article v-for="movie in results" :key="movie.tmdbId" class="movie">
+      <img v-if="movie.poster" :src="movie.poster" :alt="`Affiche de ${movie.title}`" loading="lazy">
+      <div>
+        <h2>{{ movie.title }} <small>({{ movie.releaseDate?.slice(0, 4) || 'Année inconnue' }})</small></h2>
+        <p v-if="movie.originalTitle !== movie.title">Titre original : {{ movie.originalTitle }}</p>
+        <p>{{ movie.synopsis || 'Résumé indisponible.' }}</p>
+        <template v-if="imported[movie.tmdbId]">
+          <p role="status">Film disponible dans Cineplages.</p>
+          <NuxtLink :to="`/films/${imported[movie.tmdbId].id}`">Voir la fiche</NuxtLink>
+        </template>
+        <button v-else type="button" :disabled="importing !== null || searching" @click="importMovie(movie)">{{ importing === movie.tmdbId ? 'Import en cours…' : 'Importer ce film' }}</button>
+      </div>
+    </article>
+    </template>
+    <p class="credit">Recherche fournie par TMDB. Ce service utilise l’API TMDB et n’est ni approuvé ni certifié par TMDB.</p>
+  </main>
+</template>
+
+<style scoped>
+.tmdb-add { max-width: 960px; margin: auto; padding: 24px; }
+.search { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.search label { width: 100%; }
+input { flex: 1; min-width: 180px; padding: 12px; border: 1px solid #aaa; border-radius: 6px; }
+button { padding: 12px 18px; border: 0; border-radius: 6px; background: #245b75; color: white; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+.movie { display: flex; align-items: flex-start; gap: 20px; border-top: 1px solid #ddd; padding: 24px 0; }
+.movie img { width: 100px; height: auto; }
+h2 { margin-top: 0; font-size: 1.3rem; }
+small { font-size: .9rem; }
+.error { color: #a52020; }
+.credit { color: #666; font-size: .85rem; margin-top: 32px; }
+@media (max-width: 500px) { .movie { gap: 12px; } .movie img { width: 70px; } }
+</style>
