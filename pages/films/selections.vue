@@ -58,6 +58,10 @@
         {{ selection.name }}
         <small> ({{ selection.films.length }} films)</small>
       </h2>
+      <NuxtLink v-if="isAdmin" :to="`/recommendations?selection=${selection.id}`" class="inline-block mb-3 text-[#26474e] underline">Analyser cette présélection et lancer une recherche</NuxtLink>
+      <label v-if="isAdmin && researchCinemas.length" class="block mb-3 text-sm">Cinéma pour les analyses cinéphiles
+        <select v-model.number="researchCinemaId" class="block rounded border p-2"><option v-for="cinema in researchCinemas" :key="cinema.id" :value="cinema.id">{{ cinema.name }}</option></select>
+      </label>
 
       <p class="text-sm text-gray-600">
         👥 {{ interestParticipantCount }} participant(s) au vote d'intérêt
@@ -195,6 +199,24 @@
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
               :compact="view.mode === 'compact'"
+              :critical-cinema-id="researchCinemaId"
+              :critical-analysis="criticalResults[film.id] || null"
+              :critical-tagging="!!criticalTagging[film.id]"
+              :critical-tag-error="criticalTagErrors[film.id] || ''"
+              :critical-comparables="criticalComparables[film.id] || null"
+              :critical-comparables-loading="!!criticalComparablesLoading[film.id]"
+              :critical-comparables-error="criticalComparablesErrors[film.id] || ''"
+              :critical-published-analyses="publishedAnalyses[film.id] || []"
+              :critical-loading="!!criticalLoading[film.id]"
+              :critical-available="criticalAvailable"
+              :critical-environment="criticalEnvironment"
+              :critical-runtime-ids="criticalRuntimeIds"
+              :critical-availability-error="criticalAvailabilityError"
+              :critical-error="criticalErrors[film.id] || ''"
+              @critical-analyze="analyzeCritically"
+              @critical-suggest-tags="suggestTags"
+              @critical-apply-tags="applyTags"
+              @critical-load-comparables="loadComparables"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -217,6 +239,24 @@
               :displayMode="layout"
               :initialInterestCounts="stats[film.id]"
               :interestCounts="interestStats?.[film.id] || null"
+              :critical-cinema-id="researchCinemaId"
+              :critical-analysis="criticalResults[film.id] || null"
+              :critical-tagging="!!criticalTagging[film.id]"
+              :critical-tag-error="criticalTagErrors[film.id] || ''"
+              :critical-comparables="criticalComparables[film.id] || null"
+              :critical-comparables-loading="!!criticalComparablesLoading[film.id]"
+              :critical-comparables-error="criticalComparablesErrors[film.id] || ''"
+              :critical-published-analyses="publishedAnalyses[film.id] || []"
+              :critical-loading="!!criticalLoading[film.id]"
+              :critical-available="criticalAvailable"
+              :critical-environment="criticalEnvironment"
+              :critical-runtime-ids="criticalRuntimeIds"
+              :critical-availability-error="criticalAvailabilityError"
+              :critical-error="criticalErrors[film.id] || ''"
+              @critical-analyze="analyzeCritically"
+              @critical-suggest-tags="suggestTags"
+              @critical-apply-tags="applyTags"
+              @critical-load-comparables="loadComparables"
               @score-changed="onScoreChanged"
               @interest-change="handleInterestChange"
               @update="handleFilmUpdate"
@@ -323,6 +363,7 @@ import { useInterestStats } from "@/composables/useInterestStats";
 import { useViewMode } from "@/stores/useViewMode";
 import TagCloudGraphic from "~/components/selection/TagCloudGraphic.vue";
 import { buildTagCloud } from "~/composables/useSelectionTagCloud";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 const view = useViewMode();
 
@@ -330,10 +371,26 @@ onMounted(() => {
   view.init();
 });
 
-const { user, isAuthenticated, isAdmin, getUser } = useAuth();
+const { user, isAuthenticated, isAdmin, getUser, ensureUserLoaded } = useAuth();
 
 const selections = ref([]);
 const selection = ref(null);
+const researchCinemas = ref([]);
+const researchCinemaId = ref(null);
+const criticalResults = ref({});
+const criticalTagging = ref({});
+const criticalTagErrors = ref({});
+const criticalComparables = ref({});
+const criticalComparablesLoading = ref({});
+const criticalComparablesErrors = ref({});
+const publishedAnalyses = ref({});
+const criticalLoading = ref({});
+const criticalAvailable = ref(false);
+const criticalEnvironment = ref('');
+const criticalRuntimeIds = ref('');
+const criticalAvailabilityError = ref('');
+const criticalErrors = ref({});
+const criticalTimers = new Map();
 const selectedSelectionId = ref();
 const selectedDate = ref(null);
 const layout = ref("grid");
@@ -518,10 +575,129 @@ const availableDates = computed(() => {
 });
 
 onMounted(async () => {
+  // L'authentification globale peut déjà charger le profil : attendre ici le cinéma de l'utilisateur.
+  if (!user.value) await getUser();
   selections.value = await apiFetch(`/selections`);
+  if (isAdmin.value) {
+    try {
+      const cinemas = await apiFetch('/cinemas');
+      researchCinemas.value = cinemas;
+      await refreshCriticalAvailability();
+      researchCinemaId.value = researchCinemas.value.find((c) => c.id === user.value?.cinemaId)?.id ?? researchCinemas.value[0]?.id ?? null;
+    } catch (error) { console.error('Cinémas indisponibles:', error); }
+  }
+  if (!isAdmin.value) researchCinemaId.value = user.value?.cinemaId ?? null;
   if (selectedSelectionId.value) {
     await loadSelection();
   }
+});
+
+async function refreshCriticalAvailability() {
+  if (!isAdmin.value) return;
+  try {
+    const availability = await apiFetch('/critical-analysis/availability');
+    criticalAvailable.value = availability.available;
+    criticalEnvironment.value = [availability.environment, availability.service].filter(Boolean).join(' / ');
+    criticalRuntimeIds.value = [availability.environmentId, availability.serviceId].filter(Boolean).join(' / ');
+    criticalAvailabilityError.value = '';
+  } catch (error) {
+    criticalAvailable.value = false;
+    criticalAvailabilityError.value = getApiErrorMessage(error, 'API inaccessible.');
+  }
+}
+
+const checkAvailabilityOnFocus = () => { refreshCriticalAvailability(); };
+onMounted(() => window.addEventListener('focus', checkAvailabilityOnFocus));
+
+watch(researchCinemaId, async (id) => {
+  criticalTimers.forEach(clearTimeout); criticalTimers.clear();
+  criticalResults.value = {}; criticalErrors.value = {}; criticalLoading.value = {};
+  criticalComparables.value = {};
+  if (!id) return;
+  try {
+    const rows = await apiFetch(`/cinemas/${id}/recommendations`);
+    if (researchCinemaId.value !== id) return;
+    criticalResults.value = Object.fromEntries(rows.filter((row) => row.evidence?.criticalAnalysis).map((row) => [row.filmId, row.evidence.criticalAnalysis]));
+    for (const row of rows.filter((r) => r.evidence?.criticalJob)) pollCritical(row.filmId, id);
+  } catch (error) { console.error('Analyses indisponibles:', error); }
+});
+
+async function pollCritical(filmId, cinemaId) {
+  if (researchCinemaId.value !== cinemaId) return;
+  criticalLoading.value = { ...criticalLoading.value, [filmId]: true };
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis`);
+    if (researchCinemaId.value !== cinemaId) return;
+    if (result.status === 'completed') {
+      criticalResults.value = { ...criticalResults.value, [filmId]: result.analysis };
+      criticalComparables.value = { ...criticalComparables.value, [filmId]: null };
+      criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+      criticalTimers.delete(filmId);
+    } else if (['queued', 'in_progress'].includes(result.status)) {
+      criticalTimers.set(filmId, setTimeout(() => pollCritical(filmId, cinemaId), 5000));
+    } else criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  } catch (error) {
+    criticalErrors.value = { ...criticalErrors.value, [filmId]: getApiErrorMessage(error, 'Analyse indisponible, réessayez.') };
+    criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  }
+}
+
+async function analyzeCritically(filmId) {
+  if (!isAdmin.value || !researchCinemaId.value || criticalLoading.value[filmId]) return;
+  criticalLoading.value = { ...criticalLoading.value, [filmId]: true };
+  criticalErrors.value = { ...criticalErrors.value, [filmId]: '' };
+  try {
+    const cinemaId = researchCinemaId.value;
+    await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis`, {
+      method: 'POST', body: { refresh: true },
+    });
+    pollCritical(filmId, cinemaId);
+  } catch (error) {
+    criticalErrors.value = { ...criticalErrors.value, [filmId]: getApiErrorMessage(error, 'Impossible de démarrer la recherche.') };
+    criticalLoading.value = { ...criticalLoading.value, [filmId]: false };
+  }
+}
+
+async function updateCriticalTags(filmId, action, labels) {
+  if (!isAdmin.value || !researchCinemaId.value || criticalTagging.value[filmId]) return;
+  criticalTagging.value = { ...criticalTagging.value, [filmId]: true };
+  criticalTagErrors.value = { ...criticalTagErrors.value, [filmId]: '' };
+  const cinemaId = researchCinemaId.value;
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/critical-analysis/tags/${action}`, { method: 'POST', ...(labels ? { body: { labels } } : {}) });
+    if (researchCinemaId.value === cinemaId) {
+      criticalResults.value = { ...criticalResults.value, [filmId]: result.analysis };
+      criticalComparables.value = { ...criticalComparables.value, [filmId]: null };
+      if (action === 'apply') await loadSelection();
+    }
+  } catch (error) {
+    criticalTagErrors.value = { ...criticalTagErrors.value, [filmId]: getApiErrorMessage(error, 'Impossible de traiter les tags.') };
+  } finally {
+    criticalTagging.value = { ...criticalTagging.value, [filmId]: false };
+  }
+}
+
+const suggestTags = (filmId) => updateCriticalTags(filmId, 'suggest');
+const applyTags = (filmId, labels) => updateCriticalTags(filmId, 'apply', labels);
+
+async function loadComparables(filmId) {
+  if (!isAuthenticated.value || !researchCinemaId.value || criticalComparablesLoading.value[filmId]) return;
+  const cinemaId = researchCinemaId.value;
+  criticalComparablesLoading.value = { ...criticalComparablesLoading.value, [filmId]: true };
+  criticalComparablesErrors.value = { ...criticalComparablesErrors.value, [filmId]: '' };
+  try {
+    const result = await apiFetch(`/cinemas/${cinemaId}/films/${filmId}/comparable-attendance`);
+    if (researchCinemaId.value === cinemaId) criticalComparables.value = { ...criticalComparables.value, [filmId]: result };
+  } catch (error) {
+    criticalComparablesErrors.value = { ...criticalComparablesErrors.value, [filmId]: getApiErrorMessage(error, 'Films comparables indisponibles.') };
+  } finally {
+    criticalComparablesLoading.value = { ...criticalComparablesLoading.value, [filmId]: false };
+  }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('focus', checkAvailabilityOnFocus);
+  criticalTimers.forEach(clearTimeout); criticalTimers.clear();
 });
 
 watch(selectedSelectionId, async (newId) => {
@@ -530,6 +706,19 @@ watch(selectedSelectionId, async (newId) => {
 
 const loadSelection = async () => {
   selection.value = await apiFetch(`/selections/${selectedSelectionId.value}`);
+  const loadedSelectionId = selection.value.id;
+  publishedAnalyses.value = {};
+  if (isAuthenticated.value) {
+    try {
+      const rows = await apiFetch(`/selections/${loadedSelectionId}/critical-analyses`);
+      if (Number(selectedSelectionId.value) === loadedSelectionId) {
+        publishedAnalyses.value = rows.reduce((groups, row) => {
+          (groups[row.filmId] ||= []).push(row);
+          return groups;
+        }, {});
+      }
+    } catch (error) { console.error('Analyses des films indisponibles:', error); }
+  }
 
   // ✅ normalisation + score + tags
   selection.value.films = selection.value.films.map((film) => {
