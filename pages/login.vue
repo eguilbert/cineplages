@@ -100,7 +100,14 @@ const doLogin = async () => {
   try {
     const response = await login(email.value, password.value);
     if (response?.token) {
-      await navigateTo(route.query.next || "/films/selections");
+      const redirect = route.query.redirect || route.query.next;
+      const destination =
+        typeof redirect === "string" &&
+        redirect.startsWith("/") &&
+        !redirect.startsWith("//")
+          ? redirect
+          : "/films/selections";
+      await navigateTo(destination);
     }
   } catch {
     // Le composable expose déjà un message adapté dans `error`.

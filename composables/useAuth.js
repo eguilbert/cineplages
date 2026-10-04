@@ -75,8 +75,22 @@ export const useAuth = () => {
 
   const ensureUserLoaded = async () => {
     if (process.server) return; // ⬅️ jamais en SSR
-    if (!loadedOnce.value && !loading.value) {
-      await getUser();
+    if (!loadedOnce.value) {
+      if (!loading.value) {
+        await getUser();
+        return;
+      }
+
+      // L'initialisation peut avoir déjà démarré getUser(). Attendre sa fin
+      // évite que le middleware lise user=null pendant la vérification.
+      await new Promise((resolve) => {
+        const stop = watch(loading, (isLoading) => {
+          if (!isLoading) {
+            stop();
+            resolve();
+          }
+        });
+      });
     }
   };
 
@@ -110,18 +124,6 @@ export const useAuth = () => {
     user.value = null;
     loadedOnce.value = false;
   };
-
-  // 🔥 Auto-init côté client après reload si un token existe
-  if (process.client) {
-    // on ne dépend PAS de loadedOnce ici, on relance au mount client
-    queueMicrotask(() => {
-      const token = getToken();
-      if (token) {
-        if (!sessionCookie.value) sessionCookie.value = token;
-        getUser();
-      } else loadedOnce.value = true;
-    });
-  }
 
   return {
     user,
