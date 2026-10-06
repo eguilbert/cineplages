@@ -2,11 +2,11 @@
   <section v-if="isAdmin || analysis" class="mt-4 border-t pt-3 text-sm screen-only" @click.stop>
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h4 class="font-semibold">Regard cinéphile · Cinéma de la plage</h4>
-      <button v-if="isAdmin" class="rounded border border-[#26474e] px-2 py-1 text-[#26474e] disabled:opacity-50" :disabled="loading || !available" @click="$emit('analyze')">
-        {{ availabilityError ? 'Vérification impossible' : !available ? 'Analyse à activer' : loading ? 'Recherche en cours…' : analysis ? 'Actualiser cette analyse' : 'Analyser ce film' }}
+      <button v-if="isAdmin" class="rounded border border-[#26474e] px-2 py-1 text-[#26474e] disabled:opacity-50" :disabled="loading || !available || !!availabilityError" @click="$emit('analyze')">
+        {{ availabilityError ? 'Vérification indisponible' : !available ? 'Analyse à activer' : loading ? 'Recherche en cours…' : analysis ? 'Actualiser cette analyse' : 'Analyser ce film' }}
       </button>
     </div>
-    <p v-if="isAdmin && availabilityError" role="alert" class="mt-2 text-red-700">Vérification de la recherche impossible : {{ availabilityError }}</p>
+    <p v-if="isAdmin && availabilityError" role="alert" class="mt-2 text-red-700">La vérification est indisponible : {{ availabilityError }}</p>
     <p v-else-if="isAdmin && !available" class="mt-2 text-gray-600">Clé API absente sur l'API appelée{{ environment ? ` (${environment})` : '' }}. Vérifier le service et l’environnement Railway.</p>
     <p v-if="isAdmin && !available && runtimeIds" class="mt-1 break-all text-xs text-gray-500">Identifiants de l’API appelée : {{ runtimeIds }}</p>
     <p v-if="isAdmin && error" role="alert" class="mt-2 text-red-700">{{ error }}</p>
