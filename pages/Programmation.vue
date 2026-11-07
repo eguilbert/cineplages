@@ -14,7 +14,7 @@
       panelClass="text-sm"
     />
     <FilmSearchAdd
-      v-if="isAdmin && selectedSelectionId"
+      v-if="canManageSelection && selectedSelectionId"
       :selection-id="selectedSelectionId"
       @added="loadSelection"
     />
@@ -141,6 +141,7 @@
               :film="film"
               :role="user.role"
               :isAdmin="isAdmin"
+              :can-manage-selection="canManageSelection"
               :username="user.username"
               :userId="user.id"
               :displayMode="layout"
@@ -167,6 +168,7 @@
               :film="film"
               :role="role"
               :isAdmin="isAdmin"
+              :can-manage-selection="canManageSelection"
               :username="username"
               :userId="userId"
               :displayMode="layout"
@@ -255,6 +257,11 @@ import { useAuth } from "@/composables/useAuth";
 import { useInterestStats } from "@/composables/useInterestStats";
 import { prefetchComponents } from "nuxt/app";
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
+const canManageSelection = computed(() => isAdmin.value || (
+  user.value?.role === "PROGRAMMEUR" && user.value.cinemaId != null &&
+  selection.value?.id === Number(selectedSelectionId.value) && (!selection.value.cinemas?.length ||
+    selection.value.cinemas.some((c) => c.cinemaId === user.value.cinemaId))
+));
 const visibleSelections = computed(() => {
   return selections.value.filter((s) => s.status === "programmation");
 });

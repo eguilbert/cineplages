@@ -65,6 +65,7 @@ import AutoComplete from "primevue/autocomplete";
 import { useFetch } from "#imports";
 
 const { apiFetch } = useApi();
+const { user } = useAuth();
 const props = defineProps({
   modelValue: Object, // si on veut éditer
 });
@@ -74,12 +75,12 @@ const emit = defineEmits(["saved"]);
 const form = ref({
   filmId: null,
   cinemaId: null,
-  date: null,
   hour: null,
   salle: "",
   audienceCount: null,
   commentaire: "",
   ...props.modelValue,
+  date: props.modelValue?.date?.slice(0, 10) ?? null,
 });
 const displayValue = (film) => {
   if (!film) return "";
@@ -95,6 +96,10 @@ const cinemas = ref([]);
 onMounted(async () => {
   // charger cinémas
   cinemas.value = await apiFetch("/cinemas");
+  if (user.value?.role === "PROGRAMMEUR") {
+    form.value.cinemaId = user.value.cinemaId;
+    cinemas.value = cinemas.value.filter((cinema) => cinema.id === user.value.cinemaId);
+  }
 
   // si édition et filmId présent, récupérer l'objet pour préremplir l'autocomplete
   if (form.value.filmId) {
@@ -127,7 +132,17 @@ async function onSubmit() {
 
   const saved = await apiFetch(url, {
     method,
-    body: form.value,
+    body: {
+      filmId: form.value.filmId,
+      cinemaId: form.value.cinemaId,
+      date: method === "PUT" && user.value?.role !== "PROGRAMMEUR"
+        ? new Date(`${form.value.date}T${form.value.hour}:00`).toISOString()
+        : form.value.date,
+      hour: form.value.hour,
+      salle: form.value.salle,
+      audienceCount: form.value.audienceCount,
+      commentaire: form.value.commentaire,
+    },
   });
 
   emit("saved", saved);

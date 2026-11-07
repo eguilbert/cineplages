@@ -29,7 +29,7 @@
       >
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <template v-if="isAdmin">
+            <template v-if="canEditCinema(c)">
               {{ c.name }}
               <Checkbox :binary="true" v-model="state[c.id].checked" />
             </template>
@@ -45,10 +45,10 @@
           </div>
           <br />
           <span
-            v-if="isAdmin ? state[c.id].checked : programmingByCinema[c.id]"
+            v-if="canEditCinema(c) ? state[c.id].checked : programmingByCinema[c.id]"
             class="text-xs px-2 py-0.5 rounded"
             :class="
-              (isAdmin
+              (canEditCinema(c)
                 ? state[c.id].suggested
                 : programmingByCinema[c.id]?.suggested) > 6
                 ? classesFor(c).badgeHigh
@@ -56,7 +56,7 @@
             "
           >
             {{
-              isAdmin
+              canEditCinema(c)
                 ? state[c.id].suggested
                 : programmingByCinema[c.id]?.suggested
             }}
@@ -65,10 +65,10 @@
         </div>
 
         <div
-          v-if="isAdmin ? state[c.id].checked : programmingByCinema[c.id]"
+          v-if="canEditCinema(c) ? state[c.id].checked : programmingByCinema[c.id]"
           class="mt-3 space-y-2"
         >
-          <template v-if="isAdmin">
+          <template v-if="canEditCinema(c)">
             <div class="flex-col items-center gap-3">
               <label class="text-xs w-28">Séances (0..9)</label>
               <br />
@@ -136,7 +136,7 @@
       </div>
     </div> -->
     <!-- ===== ADMIN ===== -->
-    <div v-if="isAdmin" class="grid md:grid-cols-2 gap-4">
+    <div v-if="canEditProgramming" class="grid md:grid-cols-2 gap-4">
       <div
         v-for="c in adminCinemas"
         :key="c.id"
@@ -236,11 +236,12 @@
       </div>
     </div>
 
-    <div class="mt-4 flex items-center justify-between" v-if="isAdmin">
+    <div class="mt-4 flex items-center justify-between" v-if="canEditProgramming">
       <div class="flex items-center gap-3 text-xs">
         <Button
           text
           size="small"
+          v-if="isAdmin"
           icon="pi pi-copy"
           label="Dupliquer sur l'autre cinéma"
           @click="duplicateToOther"
@@ -324,7 +325,14 @@ import Divider from "primevue/divider";
 import { useApi } from "@/composables/useApi";
 import { useToast } from "primevue/usetoast";
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
+const canEditProgramming = computed(() => isAdmin.value || props.canManageSelection);
+const editableCinemas = computed(() => isAdmin.value ? props.cinemas :
+  props.cinemas.filter((cinema) => cinema.id === user.value?.cinemaId));
+function canEditCinema(cinema) {
+  return canEditProgramming.value && editableCinemas.value.some((c) => c.id === cinema.id);
+}
 const props = defineProps({
+  canManageSelection: Boolean,
   selectionId: { type: Number, required: true },
   film: { type: Object, required: true }, // { id, title, programming?: [{cinemaId, suggested, capLabel, notes, cycle:{id,name}}], ... }
   cinemas: {
@@ -375,13 +383,13 @@ const classesFor = (c) => {
 };
 const displayCinemas = computed(() => {
   return props.cinemas.filter(
-    (c) => isAdmin || programmingByCinema.value[c.id],
+    (c) => canEditCinema(c) || programmingByCinema.value[c.id],
   );
 });
 
 const emit = defineEmits(["saved", "error", "updated"]);
 function shouldDisplayCinema(c) {
-  if (isAdmin) return true;
+  if (canEditCinema(c)) return true;
   const p = programmingByCinema.value[c.id];
   return !!p && (p.suggested > 0 || p.capLabel || p.notes);
 }
@@ -423,7 +431,7 @@ const makeEmpty = () => ({
 });
 const displayedCinemas = computed(() => {
   return props.cinemas.filter((c) => {
-    return isAdmin || !!programmingByCinema.value[c.id];
+    return canEditCinema(c) || !!programmingByCinema.value[c.id];
   });
 });
 const state = reactive({});
@@ -491,11 +499,11 @@ function duplicateToOther() {
 }
 
 const payload = computed(() => {
-  const cinemasChecked = props.cinemas
+  const cinemasChecked = editableCinemas.value
     .filter((c) => state[c.id].checked)
     .map((c) => c.id);
   const perCinema = {};
-  for (const c of props.cinemas) {
+  for (const c of editableCinemas.value) {
     if (!state[c.id].checked) continue;
     perCinema[c.id] = {
       suggested: clamp09(state[c.id].suggested),
@@ -522,7 +530,7 @@ function clamp09(v) {
 
 async function save() {
   // validation
-  const anyChecked = props.cinemas.some((c) => state[c.id].checked);
+  const anyChecked = editableCinemas.value.some((c) => state[c.id].checked);
   if (!anyChecked) {
     toast.add({
       severity: "warn",
@@ -532,7 +540,7 @@ async function save() {
     });
     return;
   }
-  for (const c of props.cinemas) {
+  for (const c of editableCinemas.value) {
     if (!state[c.id].checked) continue;
     const s = clamp09(state[c.id].suggested);
     if (s < 0 || s > 9) {
@@ -653,7 +661,7 @@ const hasDetails = (cinemaId) => {
   );
 };
 
-const adminCinemas = computed(() => props.cinemas); // tout pour admin
+const adminCinemas = editableCinemas;
 const nonAdminCinemas = computed(() =>
   props.cinemas.filter((c) => isChosen(c.id)),
 ); // seulement cochés
