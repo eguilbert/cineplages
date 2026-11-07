@@ -289,9 +289,10 @@
         <!-- Actions rapides -->
         <div
           class="mt-3 flex gap-2 text-xs flex-wrap screen-only"
-          v-if="isAdmin && mode !== 'programmation'"
+          v-if="(isAdmin || canManageSelection) && mode !== 'programmation'"
         >
           <Button
+            v-if="isAdmin"
             icon="pi pi-save"
             label="Sauvegarder"
             text
@@ -306,7 +307,7 @@
             @click="removeFilm"
           />
           <Button
-            v-if="voteOpen"
+            v-if="voteOpen || canPickFilm"
             size="small"
             label="🎯 Ajouter à la sélection"
             @click="$emit('toggle-selection', film)"
@@ -343,6 +344,7 @@
       </div>
 
       <ProgrammingPanel
+        :can-manage-selection="canManageSelection"
         v-if="mode === 'programmation'"
         :selection-id="selectionId"
         :film="film"
@@ -471,6 +473,8 @@ const props = defineProps({
   initialInterestCounts: { type: Object, default: null },
   voteOpen: { type: Boolean, default: true },
   isAdmin: { type: Boolean, default: false },
+  canPickFilm: Boolean,
+  canManageSelection: { type: Boolean, default: false },
   interestCounts: { type: Object },
   mode: { type: String, default: "none" },
   selectionId: { type: [Number, String], default: null },

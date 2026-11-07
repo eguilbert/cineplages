@@ -2,7 +2,12 @@
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">Présélections</h1>
 
-    <FilmSearchAdd :selection-id="selectedSelectionId" @added="loadSelection" />
+    <form v-if="canCreateSelection" class="mb-4 flex gap-2" @submit.prevent="createSelection">
+      <input v-model.trim="newSelectionName" aria-label="Nom de la présélection" required
+        placeholder="Nom de la présélection" class="border rounded px-2" />
+      <Button type="submit" label="Créer une présélection" :loading="creatingSelection" />
+    </form>
+    <FilmSearchAdd v-if="canManageSelection && selectedSelectionId" :selection-id="selectedSelectionId" @added="loadSelection" />
     <!-- Sélecteur de sélection -->
     <Select
       v-model="selectedSelectionId"
@@ -193,6 +198,8 @@
               :film="film"
               :role="user.role"
               :isAdmin="isAdmin"
+              :can-manage-selection="canManageSelection"
+              :can-pick-film="canCreateSelection && canManageSelection"
               :username="user.username"
               :userId="user.id"
               :displayMode="layout"
@@ -234,6 +241,8 @@
               :film="film"
               :role="user.role"
               :isAdmin="isAdmin"
+              :can-manage-selection="canManageSelection"
+              :can-pick-film="canCreateSelection && canManageSelection"
               :username="user.username"
               :userId="user.id"
               :displayMode="layout"
@@ -289,7 +298,7 @@
     </transition>
 
     <!-- Barre de sélection fixe en bas -->
-    <transition name="slide-up" v-if="isAdmin">
+    <transition name="slide-up" v-if="canManageSelection">
       <div
         v-show="isBarVisible"
         class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 shadow z-50 px-4 py-3"
@@ -337,7 +346,7 @@
     <div
       class="fixed bottom-0 right-0 bg-blue-600 text-white text-sm px-4 py-2 rounded-tl cursor-pointer z-50"
       @click="isBarVisible = !isBarVisible"
-      v-if="isAdmin"
+      v-if="canManageSelection"
     >
       🎯 {{ selectedFilms.length }}
     </div>
@@ -372,6 +381,33 @@ onMounted(() => {
 });
 
 const { user, isAuthenticated, isAdmin, getUser, ensureUserLoaded } = useAuth();
+const newSelectionName = ref("");
+const creatingSelection = ref(false);
+const canCreateSelection = computed(() => user.value?.role === "PROGRAMMEUR" && user.value.cinemaId != null);
+
+async function createSelection() {
+  if (!canCreateSelection.value || !newSelectionName.value || creatingSelection.value) return;
+  creatingSelection.value = true;
+  try {
+    const created = await apiFetch("/selections", {
+      method: "POST",
+      body: { name: newSelectionName.value, films: [] },
+    });
+    selections.value.unshift(created);
+    selectedSelectionId.value = created.id;
+    newSelectionName.value = "";
+  } catch (error) {
+    alert(error?.data?.error || "Impossible de créer la présélection.");
+  } finally {
+    creatingSelection.value = false;
+  }
+}
+
+const canManageSelection = computed(() => isAdmin.value || (
+  user.value?.role === "PROGRAMMEUR" && user.value.cinemaId != null &&
+  selection.value?.id === Number(selectedSelectionId.value) && (!selection.value.cinemas?.length ||
+    selection.value.cinemas.some((c) => c.cinemaId === user.value.cinemaId))
+));
 
 const selections = ref([]);
 const selection = ref(null);
@@ -542,6 +578,7 @@ const toggleFilmSelection = (film) => {
   const index = selectedFilms.value.findIndex((f) => f.id === film.id);
   if (index === -1) selectedFilms.value.push(film);
   else selectedFilms.value.splice(index, 1);
+  if (canCreateSelection.value) isBarVisible.value = true;
 };
 
 function onKey(e) {

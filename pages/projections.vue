@@ -125,13 +125,13 @@
         </template>
       </Card>
     </div> -->
-    <Panel header="Ajouter / Modifier une projection" toggleable v-if="isAdmin">
-      <ProjectionForm :model-value="selectedProjection" @saved="onSaved" />
+    <Panel header="Ajouter / Modifier une projection" toggleable v-if="canEditProjections">
+      <ProjectionForm :key="selectedProjection?.id ?? 'new'" :model-value="selectedProjection" @saved="onSaved" />
     </Panel>
 
-    <Panel header="Liste des projections existantes" toggleable v-if="isAdmin">
+    <Panel header="Liste des projections existantes" toggleable v-if="canEditProjections">
       <DataTable
-        :value="projections"
+        :value="editableProjections"
         dataKey="id"
         :paginator="true"
         :rows="10"
@@ -153,6 +153,7 @@
               @click="selectedProjection = data"
             />
             <Button
+              v-if="isAdmin"
               icon="pi pi-trash"
               class="p-button-text p-button-danger"
               @click="deleteProjection(data.id)"
@@ -179,6 +180,10 @@ import { useToast } from "primevue/usetoast";
 const { user, isAuthenticated, isAdmin, getUser } = useAuth();
 const { apiFetch } = useApi();
 const projections = ref([]);
+const canEditProjections = computed(() => isAdmin.value ||
+  (user.value?.role === "PROGRAMMEUR" && user.value.cinemaId != null));
+const editableProjections = computed(() => isAdmin.value ? projections.value :
+  projections.value.filter((projection) => projection.cinemaId === user.value?.cinemaId));
 const selectedProjection = ref(null);
 const toast = useToast();
 
