@@ -136,15 +136,20 @@
                 Se connecter
               </NuxtLink>
 
-              <Button
-                v-if="isAuthenticated"
-                label="Se déconnecter"
-                icon="pi pi-sign-out"
-                severity="secondary"
-                text
-                @click="doLogout"
-                class="!py-2 !text-white hover:!bg-white/10"
-              />
+              <div v-if="isAuthenticated" class="flex flex-col items-center">
+                <Button
+                  label="Se déconnecter"
+                  icon="pi pi-sign-out"
+                  severity="secondary"
+                  text
+                  @click="doLogout"
+                  class="!py-2 !text-white hover:!bg-white/10"
+                />
+                <span v-if="isProgrammer" class="inline-flex items-center gap-1 text-xs text-white/90">
+                  <i class="pi pi-calendar" aria-hidden="true" />
+                  Programmeur
+                </span>
+              </div>
             </div>
           </div>
 
@@ -234,6 +239,7 @@ const route = useRoute();
 const auth = useAuth();
 
 const { logout, isAuthenticated, isAdmin } = auth;
+const isProgrammer = auth.hasRole("PROGRAMMEUR");
 
 const authReady = ref(false);
 const openMenu = ref(null);
